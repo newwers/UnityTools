@@ -96,7 +96,6 @@ namespace Tools.FileTool
         {
             try
             {
-                //using 语句内执行的对象,会在执行完后自动调用dispose函数进行释放资源
                 File.WriteAllBytes(path, content);
                 Debug.Log("文件写入完成:" + path);
             }
@@ -148,6 +147,16 @@ namespace Tools.FileTool
                 Debug.Log("文件读取失败:" + path + "," + e);
                 throw new IOException();
             }
+        }
+
+        /// <summary>
+        /// 将字节数组转为UTF8格式的字符串
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
+        public static string ByteToString(byte[] bytes)
+        {
+            return Encoding.UTF8.GetString(bytes);
         }
     }
 }
