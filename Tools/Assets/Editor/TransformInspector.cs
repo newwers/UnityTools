@@ -70,15 +70,16 @@ public class TransformInspector : Editor
 
         if (copy)
         {
-            Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
             GUIUtility.systemCopyBuffer = mPos.vector3Value.x + "," + mPos.vector3Value.y + "," + mPos.vector3Value.z;
+            Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
         }
 
         if (paste)
         {
             Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
-            string[] pos = GUIUtility.systemCopyBuffer.Split(',');
-            mPos.vector3Value = new Vector3(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]));
+            //string[] pos = GUIUtility.systemCopyBuffer.Split(',');
+            //mPos.vector3Value = new Vector3(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]));
+            mPos.vector3Value = GUIUtility.systemCopyBuffer.ParseVector3();
         }
 
         GUILayout.EndHorizontal();
@@ -130,15 +131,17 @@ public class TransformInspector : Editor
 
             if (copy)
             {
-                Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
                 GUIUtility.systemCopyBuffer = mRot.quaternionValue.x + "," + mRot.quaternionValue.y + "," + mRot.quaternionValue.z + "," + mRot.quaternionValue.w;
+                Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
             }
 
             if (paste)
             {
                 Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
-                string[] pos = GUIUtility.systemCopyBuffer.Split(',');
-                mRot.quaternionValue = new Quaternion(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]), float.Parse(pos[3]));
+                //string[] pos = GUIUtility.systemCopyBuffer.Split(',');
+                //mRot.quaternionValue = new Quaternion(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]), float.Parse(pos[3]));
+                Vector4 vector4 = GUIUtility.systemCopyBuffer.ParseVector4();
+                mRot.quaternionValue = new Quaternion(vector4.x, vector4.y, vector4.z, vector4.w);
             }
         }
         GUILayout.EndHorizontal();
@@ -160,15 +163,17 @@ public class TransformInspector : Editor
 
         if (copy)
         {
-            Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
             GUIUtility.systemCopyBuffer = mScale.vector3Value.x + "," + mScale.vector3Value.y + "," + mScale.vector3Value.z;
+            Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
         }
 
         if (paste)
         {
             Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
-            string[] pos = GUIUtility.systemCopyBuffer.Split(',');
-            mScale.vector3Value = new Vector3(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]));
+            //string[] pos = GUIUtility.systemCopyBuffer.Split(',');
+
+            //mScale.vector3Value = new Vector3(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]));
+            mScale.vector3Value = GUIUtility.systemCopyBuffer.ParseVector3();//通过扩展方法进行字符串解析,但是同时也把两个脚本关联在一起了,如果缺少扩展脚本,上面两行注释就是源代码
         }
 
         GUILayout.EndHorizontal();

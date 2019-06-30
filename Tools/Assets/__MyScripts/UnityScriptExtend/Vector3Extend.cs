@@ -7,7 +7,7 @@ using UnityEngine;
 /// 扩展Vector3类的函数
 /// </summary>
 public static class Vector3Extend  {
-
+    /*思维上有误,应该从String类型进行扩展,而不是从Vector3进行扩展
     /// <summary>
     /// 将 1,2,3 格式的字符串解析成Vector3类型
     /// </summary>
@@ -24,5 +24,5 @@ public static class Vector3Extend  {
         }
         return new Vector3();
     }
-
+    */
 }

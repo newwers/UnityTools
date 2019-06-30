@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public static class Vector2Extend  {
-
+    /*思维上有误,应该从String类型进行扩展,而不是从Vector2进行扩展
     /// <summary>
     /// 将 1,2 格式的字符串解析成Vector2类型
     /// </summary>
@@ -20,4 +20,5 @@ public static class Vector2Extend  {
         }
         return new Vector2();
     }
+    */
 }
