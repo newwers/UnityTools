@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 
 [CanEditMultipleObjects]
@@ -59,12 +59,27 @@ public class TransformInspector : Editor
     {
         GUILayout.BeginHorizontal();
 
-        var reset = GUILayout.Button("P", GUILayout.Width(20f));
+        var reset = GUILayout.Button("R", GUILayout.Width(20f));
+        var copy = GUILayout.Button("C", GUILayout.Width(20f));
+        var paste = GUILayout.Button("P", GUILayout.Width(20f));
         EditorGUILayout.PropertyField(mPos.FindPropertyRelative("x"));
         EditorGUILayout.PropertyField(mPos.FindPropertyRelative("y"));
         EditorGUILayout.PropertyField(mPos.FindPropertyRelative("z"));
 
         if (reset) mPos.vector3Value = Vector3.zero;
+
+        if (copy)
+        {
+            Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
+            GUIUtility.systemCopyBuffer = mPos.vector3Value.x + "," + mPos.vector3Value.y + "," + mPos.vector3Value.z;
+        }
+
+        if (paste)
+        {
+            Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
+            string[] pos = GUIUtility.systemCopyBuffer.Split(',');
+            mPos.vector3Value = new Vector3(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]));
+        }
 
         GUILayout.EndHorizontal();
     }
@@ -74,6 +89,8 @@ public class TransformInspector : Editor
         GUILayout.BeginHorizontal();
         {
             var reset = GUILayout.Button("R", GUILayout.Width(20f));
+            var copy = GUILayout.Button("C", GUILayout.Width(20f));
+            var paste = GUILayout.Button("P", GUILayout.Width(20f));
 
             var visible = (serializedObject.targetObject as Transform).localEulerAngles;
 
@@ -110,6 +127,19 @@ public class TransformInspector : Editor
                     t.localEulerAngles = v;
                 }
             }
+
+            if (copy)
+            {
+                Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
+                GUIUtility.systemCopyBuffer = mRot.quaternionValue.x + "," + mRot.quaternionValue.y + "," + mRot.quaternionValue.z + "," + mRot.quaternionValue.w;
+            }
+
+            if (paste)
+            {
+                Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
+                string[] pos = GUIUtility.systemCopyBuffer.Split(',');
+                mRot.quaternionValue = new Quaternion(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]), float.Parse(pos[3]));
+            }
         }
         GUILayout.EndHorizontal();
     }
@@ -118,13 +148,28 @@ public class TransformInspector : Editor
     {
         GUILayout.BeginHorizontal();
 
-        var reset = GUILayout.Button("S", GUILayout.Width(20));
+        var reset = GUILayout.Button("R", GUILayout.Width(20f));
+        var copy = GUILayout.Button("C", GUILayout.Width(20f));
+        var paste = GUILayout.Button("P", GUILayout.Width(20f));
 
         EditorGUILayout.PropertyField(mScale.FindPropertyRelative("x"));
         EditorGUILayout.PropertyField(mScale.FindPropertyRelative("y"));
         EditorGUILayout.PropertyField(mScale.FindPropertyRelative("z"));
 
         if (reset) mScale.vector3Value = Vector3.one;
+
+        if (copy)
+        {
+            Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
+            GUIUtility.systemCopyBuffer = mScale.vector3Value.x + "," + mScale.vector3Value.y + "," + mScale.vector3Value.z;
+        }
+
+        if (paste)
+        {
+            Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
+            string[] pos = GUIUtility.systemCopyBuffer.Split(',');
+            mScale.vector3Value = new Vector3(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]));
+        }
 
         GUILayout.EndHorizontal();
     }

@@ -3,4 +3,7 @@ Tools/Library
 Tools/*.csproj
 Tools/*.sln
 Tools/obj
+Tools/obj/
+Tools/obj/Debug
+Tools/obj/Debug/
 Tools/Temp

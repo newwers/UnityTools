@@ -56,6 +56,10 @@ public static class Notification  {
         {
             mNotificationList.Add(type, func);
         }
+        else
+        {
+            Debug.LogError("重复添加类型:" + type);
+        }
         
 
 
@@ -75,6 +79,10 @@ public static class Notification  {
         {
             mNotificationList[type].Invoke(arg);
             //mNotificationList[type](arg);//一样的调用函数
+        }
+        else
+        {
+            Debug.LogError("缺少对应类型:" + type);
         }
     }
     /// <summary>

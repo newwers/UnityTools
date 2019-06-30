@@ -16,14 +16,14 @@ public class NotificationTest : MonoBehaviour {
     private void Awake()
     {
         //消息的注册,注册都是比发送消息的先,通常在一开始就进行注册,在结束时进行销毁
-        Notification.Subscribe("btnTest", BtnClick);
+        Notification.Subscribe("btnTest1", BtnClick);
         Notification.Subscribe("btnTest2", BtnClick2);
     }
 
     void Start () {
         Btn.onClick.AddListener(()=> {
             //发送按钮点击消息
-            Notification.Publish("btnTest");
+            Notification.Publish("btnTest1");
         });
         Btn2.onClick.AddListener(() => {
             //发送按钮点击消息
