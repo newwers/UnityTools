@@ -142,4 +142,23 @@ public class MyUnityExtendScript : MonoBehaviour {
 
     }
 
+    [MenuItem("Tools/修改选中物体名字")]
+    public static public void ModifyName()
+    {
+        var selectList = Selection.gameObjects;
+
+        foreach (var item in selectList)
+        {
+            Debug.Log(item.name);
+        }
+        Undo.RecordObjects(selectList, "selectList");
+        for (int i = 1; i <= selectList.Length; i++)
+        {
+            string name = selectList[i - 1].name;
+            name = name.Split(' ')[0];
+            selectList[i - 1].name = name + i.ToString();
+        }
+
+    }
+
 }
