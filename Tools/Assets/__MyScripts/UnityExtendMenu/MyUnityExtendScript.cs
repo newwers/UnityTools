@@ -143,10 +143,15 @@ public class MyUnityExtendScript : MonoBehaviour {
     }
 
     [MenuItem("Tools/修改选中物体名字")]
-    public static public void ModifyName()
+    public static void ModifyName()
     {
         var selectList = Selection.gameObjects;
 
+        if (selectList.Length <=0)
+        {
+            Debug.LogError("没有选择物体!!");
+            return;
+        }
         foreach (var item in selectList)
         {
             Debug.Log(item.name);
