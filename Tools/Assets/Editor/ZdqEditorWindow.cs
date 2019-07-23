@@ -107,9 +107,9 @@ public class ZdqEditorWindow : EditorWindow {
             Undo.RecordObjects(selectList, "selectList3");
             foreach (var item in selectList)
             {
-                var sprite =  item.GetComponent<UILanguageSprite>();
-                sprite.width = size.x;
-                sprite.height = size.y;
+                //var sprite =  item.GetComponent<UILanguageSprite>();
+                //sprite.width = size.x;
+                //sprite.height = size.y;
             }
 
         }
