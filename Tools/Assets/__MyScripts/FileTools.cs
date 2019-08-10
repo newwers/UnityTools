@@ -150,6 +150,26 @@ namespace Tools.FileTool
         }
 
         /// <summary>
+        /// 按照行进行读取文件
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static string[] ReadFileLine(string path)
+        {
+
+            try
+            {
+                string[] content = File.ReadAllLines(path);
+                return content;
+            }
+            catch (System.Exception e)
+            {
+                Debug.Log("文件读取失败:" + path + "," + e);
+                throw new IOException();
+            }
+        }
+
+        /// <summary>
         /// 将字节数组转为UTF8格式的字符串
         /// </summary>
         /// <param name="bytes"></param>

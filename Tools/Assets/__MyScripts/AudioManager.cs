@@ -1,9 +1,11 @@
 ﻿/*
 	newwer
+    管理音频的加载和播放
 */
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using Tools.FileTool;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -11,22 +13,38 @@ namespace Asset.Core
 {
     /// <summary>
     /// 管理所有音频
+    /// 在一开始加载所有的音频,
+    /// todo:如果音频是不常用音频,可以在后面打开某个场景的时候进行加载(未实现)
     /// </summary>
 	public class AudioManager : MonoBehaviour {
 
 
         public static AudioManager Instance;
 
+        [Header("配置所有音频路径的文件")]
+        public string m_AudioConfigPath = "";
+        /// <summary>
+        /// 存放根据配置文件加载的所有音频
+        /// </summary>
+        public Dictionary<int, AudioInfo> m_AllAudio = new Dictionary<int, AudioInfo>();
+
+
+        [Header("----------BGM相关设置---------")]
         [Header("BGM的路径(相对Assets)")]
-        public string BGMAudioClipPath = "";
+        public string m_BGMAudioClipPath = "";
+
         [Header("背景音频的格式,好像不支持MP3格式")]
-        public AudioType BGMAudioType = AudioType.WAV;
+        public AudioType m_BGMAudioType = AudioType.WAV;
 
+        [Header("BGM初始化时,音量大小")]
+        public float m_BGMvInitVolume = 0.5f;
 
+        [Header("-------------------")]
+        [Space(50)]
 
         //当播放时,获取当前是否有audiosource组件,如果有,判断是否正在播放,如果没有,就播放,有就创建新的
 
-        public List<AudioSource> audioSources;
+        public List<AudioSource> m_AudioSources;
 
         private void Awake()
         {
@@ -34,49 +52,84 @@ namespace Asset.Core
             {
                 Instance = this;
             }
+            StartCoroutine(LoadAudioConfig());
         }
 
         void Start () {
-            StartCoroutine(PlayBackgroundMusic());
+            PlayBackgroundMusic();
+            DontDestroyOnLoad(this.gameObject);
         }
 	
+        /// <summary>
+        /// 加载配置文件中所有的音频资源
+        /// </summary>
+        /// <returns></returns>
+        private IEnumerator LoadAudioConfig()
+        {
+            if (string.IsNullOrEmpty(m_AudioConfigPath))
+            {
+                Debug.LogError("配置文件路径没填");
+                yield break;
+            }
+            var uri = Path.Combine(Application.dataPath, m_AudioConfigPath);
+            if (!FileTools.ExistFile(uri))
+            {
+                Debug.LogError("文件不存在:" + uri);
+                yield break;
+            }
+
+            string[] audioConfig = FileTools.ReadFileLine(uri);
+            foreach (var item in audioConfig)
+            {
+                //读取配置的格式:唯一序号 空格 文件路径
+                string[] temp = item.Split(' ');
+                int key = int.Parse(temp[0]);
+                string value = temp[1];
+                print("key:" + key + ",value:" + value);
+                if (!m_AllAudio.ContainsKey(key))
+                {
+                    AudioClip audioClip = null;
+                    var audioUri = new System.Uri(Path.Combine(Application.dataPath, value));
+                    print(audioUri);
+
+                    using (UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(audioUri, m_BGMAudioType))
+                    {
+                        yield return request.SendWebRequest();
+                        if (request.isNetworkError)
+                        {
+                            print(request.error);
+                        }
+                        else
+                        {
+                            audioClip = DownloadHandlerAudioClip.GetContent(request);
+                            AudioInfo audioInfo = new AudioInfo(key, value, audioClip);
+                            m_AllAudio.Add(key, audioInfo);
+                        }
+                    }
+                }
+                else
+                {
+                    print("重复的key:" + key);
+                }
+            }
+            
+        }
 
 
         /// <summary>
         /// 播放背景音乐
         /// </summary>
-        private IEnumerator PlayBackgroundMusic()
+        private void PlayBackgroundMusic()
         {
             //获取audiosource组件
             var audioSource = GetAudioSource();
-            //资源加载管理
-            var uri = new System.Uri(Path.Combine(Application.dataPath, BGMAudioClipPath));
-            
-            print(uri);
-            if (string.IsNullOrEmpty(BGMAudioClipPath))
-            {
-                //如果没有填写背景音乐路径的情况下,就不加载
-                yield break;
-            }
 
-            //这边有个注意,音频尽量用wav格式,然后Cool Edit导出时用的是Windows PCM的Wav 然后再设置Load type 为Streaming的类型(测试过,不改也可以加载)
-            using (UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(uri, BGMAudioType))
-            {
-                yield return request.SendWebRequest();
-                if (request.isNetworkError)
-                {
-                    print(request.error);
-                }
-                else
-                {
-                    AudioClip audioClip = DownloadHandlerAudioClip.GetContent(request);
-                    audioSource.clip = audioClip;
-                    audioSource.playOnAwake = true;
-                    audioSource.loop = true;
-                    audioSource.volume = 0.5f;
-                    audioSource.Play();
-                }
-            }
+            AudioClip audioClip = m_AllAudio[1].audioClip;
+            audioSource.clip = audioClip;
+            audioSource.loop = true;
+            audioSource.volume = m_BGMvInitVolume;
+            audioSource.Play();
+            
         }
 
 
@@ -88,7 +141,7 @@ namespace Asset.Core
         public AudioSource GetAudioSource()
         {
             AudioSource audioSource = null;
-            foreach (var item in audioSources)
+            foreach (var item in m_AudioSources)
             {
                 if (item.isPlaying == false)
                 {
@@ -100,7 +153,7 @@ namespace Asset.Core
             if (audioSource == null)
             {
                 audioSource = gameObject.AddComponent<AudioSource>();
-                audioSources.Add(audioSource);
+                m_AudioSources.Add(audioSource);
             }
             return audioSource;
         }
@@ -119,5 +172,37 @@ namespace Asset.Core
         }
 
         //TODO:有一个需求,根据传递进来的音频文件名称,找到对应文件位置,进行加载文件
+
+        public void Dispose()
+        {
+            m_AllAudio.Clear();
+            m_AllAudio = null;
+            m_AudioSources.Clear();
+            m_AudioSources = null;
+            Instance = null;
+        }
+
+        private void OnDestroy()
+        {
+            Dispose();
+        }
+    }
+
+    /// <summary>
+    /// 单个音频的数据格式
+    /// </summary>
+    [System.Serializable]
+    public struct AudioInfo
+    {
+        public int key;
+        public string audioPath;
+        public AudioClip audioClip;
+
+        public AudioInfo(int key, string audioPath, AudioClip audioClip)
+        {
+            this.key = key;
+            this.audioPath = audioPath;
+            this.audioClip = audioClip;
+        }
     }
 }
