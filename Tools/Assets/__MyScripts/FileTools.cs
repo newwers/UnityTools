@@ -125,9 +125,13 @@ namespace Tools.FileTool
         /// <param name="path">文件路径</param>
         /// <param name="encoding">编码格式,默认UTF-8</param>
         /// <returns></returns>
-        public static string ReadFile(string path, Encoding encoding)
+        public static string ReadFile(string path, Encoding encoding = null)
         {
             string content = "";
+            if (encoding == null)
+            {
+                encoding = Encoding.UTF8;
+            }
             try
             {
                 //using 语句内执行的对象,会在执行完后自动调用dispose函数进行释放资源
