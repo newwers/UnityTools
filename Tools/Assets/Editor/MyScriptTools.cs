@@ -38,7 +38,7 @@ public class MyScriptTools  {
         if (File.Exists(Application.dataPath + "/MyScriptTools.cs"))//如果当前目录下存在这个文件
         {
             //将自身的脚本移动到编辑文件目录下，因为打包编译的时候不允许有命名空间为UnityEditor;的，放在Editor文件下不会编译
-            File.Move(Application.dataPath + "/MyScriptTools.cs", Application.dataPath + "/Editor/MyScriptTools.cs");
+            File.Move(Application.dataPath + "/MyScriptTools.cs", Application.dataPath + "/__MyScripts/Editor/MyScriptTools.cs");
         }
 
         
