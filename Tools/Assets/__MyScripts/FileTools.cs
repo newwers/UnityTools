@@ -89,7 +89,7 @@ namespace Tools.FileTool
                 {
                     writer.Write(content);
                 }
-                Debug.Log("文件写入完成:" + path);
+                //Debug.Log("文件写入完成:" + path);
             }
             catch (System.Exception e )
             {
@@ -121,6 +121,7 @@ namespace Tools.FileTool
 
         /// <summary>
         /// 文件读取,通过流的方式,默认UTF-8编码格式
+        /// 用Encoding.UTF8.GetString(bytes);进行读取
         /// </summary>
         /// <param name="path">文件路径</param>
         /// <param name="encoding">编码格式,默认UTF-8</param>
@@ -145,6 +146,7 @@ namespace Tools.FileTool
             catch (System.Exception e)
             {
                 Debug.Log("文件读取失败:" + path + "," + e);
+                return null;
                 throw new IOException();
             }
         }

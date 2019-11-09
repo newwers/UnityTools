@@ -30,7 +30,7 @@ public class DebugCodeLocation
         if (!string.IsNullOrEmpty(stack_trace)) // 可以自定义标签 在这里添加;原有代码混乱不做修改,需要自己定位;
         {
             string strLower = stack_trace.ToLower();
-            if (strLower.Contains(logFlag))//核心:通过特殊字符区分是用log管理打印的,还是普通打印的
+            if (true)//核心:通过特殊字符区分是用log管理打印的,还是普通打印的  strLower.Contains(logFlag)
             {
                 //原理是获取到console上的打印文本,然后通过匹配(at)这个字进行划分成几个组,然后通过取对应要打印的组上面的数据即可
                 Match matches = Regex.Match(stack_trace, @"\(at(.+)\)", RegexOptions.IgnoreCase);

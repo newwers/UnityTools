@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEditor;
@@ -13,36 +13,45 @@ public enum LogLevel
     /// <summary>
     /// 不打印所有打印
     /// </summary>
-    None = 0,
+    None,
+    /// <summary>
+    /// 打印测试log
+    /// </summary>
+    Test,
     /// <summary>
     /// 打印普通log
     /// </summary>
-    Normal = 1,
+    Normal,
     /// <summary>
     /// 打印错误log
     /// </summary>
-    Error = 2,
+    Error,
     /// <summary>
     /// 打印错误log和普通log
     /// </summary>
-    ErrorAndNormal = 3,
+    ErrorAndNormal,
     /// <summary>
     /// 所有打印
     /// </summary>
-    All = 4
+    All
 }
 
 /// <summary>
 /// Log除了可以管理是否打印外,还可以将打印写到硬盘中
+/// 在开发阶段使用Test等级的打印,当开发结束不需要log打印时,可以切换到none或者其他等级来过滤不需要的打印
 /// </summary>
 public class LogManager :MonoBehaviour {
 
 
-    public static LogLevel LogType = LogLevel.All;
 
     public static LogManager Instance;
+    /// <summary>
+    /// 当前打印的log等级
+    /// </summary>
+    public LogLevel m_CurrentLogLevel = LogLevel.Test;
+    public static LogLevel m_CurrentLogLevelStatic = LogLevel.Test;
 
-    public LogLevel m_LogLevel = LogLevel.All;
+
 
     /// <summary>
     /// 当打印log的时候,进行存储,当达到一定次数的时候,写入到硬盘
@@ -63,23 +72,25 @@ public class LogManager :MonoBehaviour {
         if (Instance == null)
         {
             Instance = this;
+            Application.logMessageReceived -= DebugHandles;
+            Application.logMessageReceived += DebugHandles;
         }
-        m_LogLevel = LogType;
+        
     }
     /// <summary>
     /// 当Inspector面板属性发生改变,
     /// </summary>
     private void OnValidate()
     {
-        if (m_LogLevel != LogType)
-        {
-            LogType = m_LogLevel;
-            Debug.Log("当Inspector面板属性发生改变,LogType=" + LogType);
-        }
         if (WriteLogFrequency != WriteLogFrequencyStatic)
         {
             WriteLogFrequencyStatic = WriteLogFrequency;
             Debug.Log("设置打印次数,WriteLogFrequencyStatic=" + WriteLogFrequencyStatic);
+        }
+        if (m_CurrentLogLevel != m_CurrentLogLevelStatic)
+        {
+            m_CurrentLogLevelStatic = m_CurrentLogLevel;
+            Debug.Log("设置打印次数,m_CurrentLogLevelStatic=" + m_CurrentLogLevelStatic);
         }
     }
 
@@ -89,25 +100,35 @@ public class LogManager :MonoBehaviour {
         {
             Instance = null;
         }
+        Application.logMessageReceived -= DebugHandles;
+    }
+
+    private void DebugHandles(string logString, string stackTrace, LogType type)
+    {
+        WriteNormalLog(logString,LogLevel.Normal);
+        if (type == LogType.Error || type == LogType.Exception)
+        {
+            WriteErrorLog(string.Format("异常log: {0} ,堆栈记录: {1} ", logString, stackTrace),LogLevel.Error);
+        }
     }
 
 
-    public static void Log(string log)
+    public static void Log(string log, LogLevel logLevel = LogLevel.Normal)
     {
-        switch (LogType)
+        if (m_CurrentLogLevelStatic > logLevel)
+        {
+            return;
+        }
+        switch (logLevel)
         {
             case LogLevel.None:
                 break;
             case LogLevel.Normal:
-                NormalLog(log);
-                break;
+            case LogLevel.Test:
             case LogLevel.Error:
-                break;
             case LogLevel.ErrorAndNormal:
-                NormalLog(log);
-                break;
             case LogLevel.All:
-                NormalLog(log);
+                NormalLog(log, logLevel);
                 break;
             default:
                 break;
@@ -115,50 +136,50 @@ public class LogManager :MonoBehaviour {
         
     }
 
-    public static void LogError(string log)
+    public static void LogError(string log,LogLevel logLevel = LogLevel.Error)
     {
-        switch (LogType)
+        if (m_CurrentLogLevelStatic > logLevel)//当前设置打印等级大于log打印等级,就不进行打印
+        {
+            return;
+        }
+        switch (logLevel)
         {
             case LogLevel.None:
                 break;
+            case LogLevel.Test:
             case LogLevel.Normal:
-                break;
             case LogLevel.Error:
-                ErrorLog(log);
-                break;
             case LogLevel.ErrorAndNormal:
-                ErrorLog(log);
-                break;
             case LogLevel.All:
-                ErrorLog(log);
+                ErrorLog(log, logLevel);
                 break;
             default:
                 break;
         }
     }
-
-    private static void NormalLog(string log)
+    /// <summary>
+    /// 打印log
+    /// </summary>
+    /// <param name="log"></param>
+    /// <param name="logLevel"></param>
+    private static void NormalLog(string log,LogLevel logLevel)
     {
         Debug.Log(log);
-        m_WriteLogCount++;
-        
-        m_StringBuilder.Append(DateTime.Now.ToString());
-        m_StringBuilder.Append(" Log == ");
-        m_StringBuilder.AppendLine(log);
-        if (m_WriteLogCount >= WriteLogFrequencyStatic)
-        {
-            WriteLog();
-            m_WriteLogCount = 0;
-        }
     }
 
-    private static void ErrorLog(string log)
+    /// <summary>
+    /// 普通log写入到本地
+    /// </summary>
+    /// <param name="log"></param>
+    /// <param name="logLevel"></param>
+    private static void WriteNormalLog(string log, LogLevel logLevel)
     {
-        Debug.LogError(log);
         m_WriteLogCount++;
-        
+
         m_StringBuilder.Append(DateTime.Now.ToString());
-        m_StringBuilder.Append(" ErrorLog == ");
+        m_StringBuilder.Append(" -> ");
+        m_StringBuilder.Append(logLevel.ToString());
+        m_StringBuilder.Append(" -> ");
         m_StringBuilder.AppendLine(log);
         if (m_WriteLogCount >= WriteLogFrequencyStatic)
         {
@@ -167,13 +188,44 @@ public class LogManager :MonoBehaviour {
         }
     }
     /// <summary>
+    /// 打印异常log
+    /// </summary>
+    /// <param name="log"></param>
+    /// <param name="logLevel"></param>
+    private static void ErrorLog(string log, LogLevel logLevel)
+    {
+        Debug.LogError(log);
+    }
+    /// <summary>
+    /// 异常log写入到本地
+    /// </summary>
+    /// <param name="log"></param>
+    /// <param name="logLevel"></param>
+    private static void WriteErrorLog(string log, LogLevel logLevel)
+    {
+        m_WriteLogCount++;
+
+        m_StringBuilder.Append(DateTime.Now.ToString());
+        m_StringBuilder.Append(" -> ");
+        m_StringBuilder.Append(logLevel.ToString());
+        m_StringBuilder.Append(" -> ");
+        m_StringBuilder.AppendLine(log);
+        if (m_WriteLogCount >= WriteLogFrequencyStatic)
+        {
+            WriteLog();
+            m_WriteLogCount = 0;
+        }
+    }
+
+    /// <summary>
     /// 写入log到硬盘
     /// </summary>
     private static void WriteLog()
     {
         string log = m_StringBuilder.ToString();
+        m_StringBuilder.Clear();//这边先清空,是为了防止在写入文件时,如果再次进行打印,会出现打印两遍的情况
         Tools.FileTool.FileTools.WriteFile(Application.streamingAssetsPath + "/Log.txt", log, Encoding.UTF8, true);
-        m_StringBuilder.Clear();
+        
     }
 
 
