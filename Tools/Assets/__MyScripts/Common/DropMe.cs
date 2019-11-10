@@ -32,6 +32,11 @@ public class DropMe : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPointe
         if (dropSprite != null)
         {
             receivingImage.overrideSprite = dropSprite;//因为直接用sprite赋值是不行的,所以用overrideSprite方法
+            //todo:通知将拖拽数据添加到数据层中,刷新数据,
+            //一种情况是交换物品
+            //一种情况是改变物品位置
+            //Debug.Log("OnDrop pointerDrag==" + data.pointerDrag.name);//拖拽的对象
+            //Debug.Log("OnDrop pointerEnter==" + data.pointerEnter.name);//释放的对象
         }
 	}
 

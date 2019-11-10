@@ -80,7 +80,9 @@ public class DragMe : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHa
 			Destroy(m_DraggingIcons[eventData.pointerId]);//摧毁生成的icon游戏物体
 
 		m_DraggingIcons[eventData.pointerId] = null;//设置存放对应的RectTransform列表为空
-	}
+        //Debug.Log("pointerDrag==" + eventData.pointerDrag.name);//拖拽的对象
+        //Debug.Log("pointerEnter==" + eventData.pointerEnter.name);//释放的对象
+    }
 
     /// <summary>
     /// 获取传递的参数身上的组件,如果没有就获取其父物体身上的组件,获取完再获取其父物体的父物体直到获取不到组件为止
