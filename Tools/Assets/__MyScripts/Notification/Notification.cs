@@ -24,7 +24,7 @@ public static class Notification  {
     /// <summary>
     /// 缓存所有的注册消息
     /// </summary>
-    private static Dictionary<string, Action<object>> mNotificationList = new Dictionary<string, Action<object>>();
+    private static Dictionary<string, List<Action<object>>> mNotificationList = new Dictionary<string, List<Action<object>>>();
 
     #region 注释
     // 消息的注册
@@ -54,11 +54,13 @@ public static class Notification  {
         //添加时,应该先做个是否存在的判断,防止重复添加
         if (!mNotificationList.ContainsKey(type))
         {
-            mNotificationList.Add(type, func);
+            List<Action<object>> actions = new List<Action<object>>();
+            actions.Add(func);
+            mNotificationList.Add(type, actions);
         }
-        else
+        else//多个消息订阅同一条数据
         {
-            Debug.LogError("重复添加类型:" + type);
+            mNotificationList[type].Add(func);
         }
         
 
@@ -77,12 +79,14 @@ public static class Notification  {
     {
         if (mNotificationList.ContainsKey(type))
         {
-            mNotificationList[type].Invoke(arg);
-            //mNotificationList[type](arg);//一样的调用函数
+            foreach (var item in mNotificationList[type])
+            {
+                item.Invoke(arg);
+            }
         }
         else
         {
-            Debug.LogError("缺少对应类型:" + type);
+            //Debug.LogError("缺少对应类型:" + type);
         }
     }
     /// <summary>
