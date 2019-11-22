@@ -7,9 +7,16 @@ public class QueueTask
 {
     public TaskState state = TaskState.UnBegin;
 
-    public Action<QueueTask> m_ExcuteEvent;
+    Action<QueueTask> m_ExcuteEvent;
 
-    public Action<QueueTask> m_ComponentEvent;
+    Action<QueueTask> m_ComponentEvent;
+
+    public QueueTask(Action<QueueTask> m_ExcuteEvent, Action<QueueTask> m_ComponentEvent)
+    {
+        state = TaskState.UnBegin;
+        this.m_ExcuteEvent = m_ExcuteEvent;
+        this.m_ComponentEvent = m_ComponentEvent;
+    }
 
     /// <summary>
     /// 执行任务时的函数

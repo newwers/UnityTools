@@ -16,12 +16,10 @@ public class Task1 : MonoBehaviour
     {
         var queueManager_Instance = QueueManager.Instance;
 
-        QueueTask queueTask1 = new QueueTask();
-        queueTask1.m_ExcuteEvent = CreateCube;
+        QueueTask queueTask1 = new QueueTask(CreateCube,null);
         queueManager_Instance.m_QueueDic.Add(queueTask1);//添加一个任务进去
 
-        QueueTask queueTask2 = new QueueTask();
-        queueTask2.m_ExcuteEvent = RotateCube;
+        QueueTask queueTask2 = new QueueTask(RotateCube,null);
         queueManager_Instance.m_QueueDic.Add(queueTask2);//添加一个任务进去
 
 
