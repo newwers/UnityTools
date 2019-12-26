@@ -24,43 +24,15 @@ public enum UIInstanceIDEnum
     /// </summary>
     MainUIPanel = 4,
     /// <summary>
-    /// 土地1
+    /// 建筑
     /// </summary>
-    Soil1 = 5,
+    Builder = 5,
     /// <summary>
-    /// 土地2
+    /// 种植
     /// </summary>
-    Soil2 = 6,
+    Plant = 6,
     /// <summary>
-    /// 土地3
+    /// 商店界面
     /// </summary>
-    Soil3 = 7,
-    /// <summary>
-    /// 土地4
-    /// </summary>
-    Soil4 = 8,
-    /// <summary>
-    /// 土地5
-    /// </summary>
-    Soil5 = 9,
-    /// <summary>
-    /// 土地6
-    /// </summary>
-    Soil6 = 10,
-    /// <summary>
-    /// 土地7
-    /// </summary>
-    Soil7 = 11,
-    /// <summary>
-    /// 土地8
-    /// </summary>
-    Soil8 = 12,
-    /// <summary>
-    /// 土地9
-    /// </summary>
-    Soil9 = 13,
-    /// <summary>
-    /// 土地10
-    /// </summary>
-    Soil10 = 14,
+    Shop = 7,
 }

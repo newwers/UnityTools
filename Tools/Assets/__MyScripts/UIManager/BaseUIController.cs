@@ -5,7 +5,6 @@ using UnityEngine;
 public class BaseUIController : MonoBehaviour
 {
     public BaseUIView View;
-    public BaseUIModel Model;
 
     /// <summary>
     /// 当创建完界面时,调用一次
@@ -17,10 +16,7 @@ public class BaseUIController : MonoBehaviour
         {
             View = GetComponent<BaseUIView>();
         }
-        if (Model == null)
-        {
-            Model = GetComponent<BaseUIModel>();
-        }
+
         RegisterNotification();
     }
 

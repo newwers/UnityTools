@@ -82,6 +82,7 @@ namespace Tools.FileTool
         ///   /// <param name="append">覆盖还是追加</param>
         public static void WriteFile(string path, string content, Encoding encoding, bool append = false)
         {
+            
             try
             {
                 //using 语句内执行的对象,会在执行完后自动调用dispose函数进行释放资源
@@ -128,6 +129,10 @@ namespace Tools.FileTool
         /// <returns></returns>
         public static string ReadFile(string path, Encoding encoding = null)
         {
+            if (!ExistFile(path))
+            {
+                return null;//不存在文件
+            }
             string content = "";
             if (encoding == null)
             {
@@ -201,7 +206,11 @@ namespace Tools.FileTool
 
         #region AudioClip转成本地wav音频
 
-
+        /// <summary>
+        /// AudioClip转成本地wav音频
+        /// </summary>
+        /// <param name="clip"></param>
+        /// <param name="path"></param>
         public static void Save(AudioClip clip, string path)
         {
             string filePath = Path.GetDirectoryName(path);

@@ -51,6 +51,13 @@ public class LogManager :MonoBehaviour {
     public LogLevel m_CurrentLogLevel = LogLevel.Test;
     public static LogLevel m_CurrentLogLevelStatic = LogLevel.Test;
 
+    /// <summary>
+    /// 是否将log写到文件
+    /// </summary>
+    public static bool m_IsWriteLogStatic = true;
+
+    public bool m_IsWriteLog = true;
+
 
 
     /// <summary>
@@ -66,6 +73,7 @@ public class LogManager :MonoBehaviour {
     /// 记录写入次数,当满足写入频率时,清空
     /// </summary>
     private static int m_WriteLogCount = 0;
+
 
     private void Awake()
     {
@@ -91,6 +99,10 @@ public class LogManager :MonoBehaviour {
         {
             m_CurrentLogLevelStatic = m_CurrentLogLevel;
             Debug.Log("设置打印次数,m_CurrentLogLevelStatic=" + m_CurrentLogLevelStatic);
+        }
+        if (m_IsWriteLog != m_IsWriteLogStatic)
+        {
+            m_IsWriteLogStatic = m_IsWriteLog;
         }
     }
 
@@ -224,6 +236,10 @@ public class LogManager :MonoBehaviour {
     {
         string log = m_StringBuilder.ToString();
         m_StringBuilder.Clear();//这边先清空,是为了防止在写入文件时,如果再次进行打印,会出现打印两遍的情况
+        if (m_IsWriteLogStatic == false)
+        {
+            return;
+        }
         Tools.FileTool.FileTools.WriteFile(Application.streamingAssetsPath + "/Log.txt", log, Encoding.UTF8, true);
         
     }

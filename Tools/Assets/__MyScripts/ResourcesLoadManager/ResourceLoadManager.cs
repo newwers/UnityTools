@@ -1,7 +1,9 @@
-﻿using System;
+﻿using LitJson;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -20,12 +22,22 @@ public class ResourceLoadManager : MonoBehaviour {
 
     public Dictionary<string, Texture2D> loadTexture2DResource = new Dictionary<string, Texture2D>();
 
+    /// <summary>
+    /// 总贴图数
+    /// </summary>
+    int m_TotalTextureCount = 0;
+    /// <summary>
+    /// 当前加载贴图数
+    /// </summary>
+    int m_CurrentLoadCount = 0;
+
     private void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
         }
+        DontDestroyOnLoad(this);
 
         LoadAllTexture2DResource();
     }
@@ -34,7 +46,15 @@ public class ResourceLoadManager : MonoBehaviour {
     /// </summary>
     private void LoadAllTexture2DResource()
     {
-        var allPath = FarmGameManager.Instance.m_TexturePathConfig.allTexturePath;
+        byte[] bytes = Tools.FileTool.FileTools.ReadFile(StaticVar.TextureConfigPath);
+        string texturePathJsonConfig = Encoding.UTF8.GetString(bytes);
+        AllTexturePathEntity m_TexturePathConfig = JsonMapper.ToObject<AllTexturePathEntity>(texturePathJsonConfig);
+
+        var allPath = m_TexturePathConfig.allTexturePath;
+
+        m_TotalTextureCount = allPath.Count;
+        m_CurrentLoadCount = 0;
+
         foreach (var item in allPath)
         {
             StartCoroutine(LoadTexture2D(OnLoadSuccessTexture2DResource, item.path));
@@ -43,9 +63,21 @@ public class ResourceLoadManager : MonoBehaviour {
 
     private void OnLoadSuccessTexture2DResource(Texture2D texture2D,string path)
     {
+        m_CurrentLoadCount++;
         if (!loadTexture2DResource.ContainsKey(path))
         {
             loadTexture2DResource.Add(path, texture2D);
+            Notification.Publish("Texture2DOnLoadCompleted", new ResourceLoadInfo(m_CurrentLoadCount, m_TotalTextureCount, path));
+        }
+        else
+        {
+            LogManager.Log("重复加载path=" + path);
+        }
+
+        if (m_CurrentLoadCount == m_TotalTextureCount)
+        {
+            Notification.Publish("AllTexture2DOnLoadCompleted", new ResourceLoadInfo(m_CurrentLoadCount, m_TotalTextureCount, path));
+            LogManager.Log("所有Texture2D资源加载完毕");
         }
     }
 
@@ -124,7 +156,7 @@ public class ResourceLoadManager : MonoBehaviour {
     private IEnumerator LoadTexture2D(Action<Texture2D,string> func,string path)
     {
         //资源加载管理
-        var uri = new System.Uri(Path.Combine(Application.dataPath, path + ".png"));
+        var uri = new System.Uri(Path.Combine(Application.streamingAssetsPath, path + ".png"));
         print(uri);
 
         //这边有个注意,音频尽量用wav格式,然后Cool Edit导出时用的是Windows PCM的Wav 然后再设置Load type 为Streaming的类型(测试过,不改也可以加载)
@@ -184,5 +216,28 @@ public class ResourceLoadManager : MonoBehaviour {
     private void OnLoadSuccess(AudioClip audioClip)
     {
         LogManager.Log("OnLoadSuccess!!,audio length = " + audioClip.length);
+    }
+}
+
+public struct ResourceLoadInfo
+{
+    /// <summary>
+    /// 当前加载索引
+    /// </summary>
+    public int m_currentLoadCount;
+    /// <summary>
+    /// 总加载数量
+    /// </summary>
+    public int m_totalLoadCount;
+    /// <summary>
+    /// 加载资源的路径名字
+    /// </summary>
+    public string m_loadPath;
+
+    public ResourceLoadInfo(int m_currentLoadCount, int m_totalLoadCount, string m_loadPath)
+    {
+        this.m_currentLoadCount = m_currentLoadCount;
+        this.m_totalLoadCount = m_totalLoadCount;
+        this.m_loadPath = m_loadPath;
     }
 }
