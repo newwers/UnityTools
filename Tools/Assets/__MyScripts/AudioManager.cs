@@ -5,7 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using Tools.FileTool;
+//using Tools.FileTool;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -52,11 +52,11 @@ namespace Asset.Core
             {
                 Instance = this;
             }
-            StartCoroutine(LoadAudioConfig());
+            //StartCoroutine(LoadAudioConfig());
         }
 
         void Start () {
-            PlayBackgroundMusic();
+            //PlayBackgroundMusic();
             DontDestroyOnLoad(this.gameObject);
         }
 	
@@ -64,56 +64,56 @@ namespace Asset.Core
         /// 加载配置文件中所有的音频资源
         /// </summary>
         /// <returns></returns>
-        private IEnumerator LoadAudioConfig()
-        {
-            if (string.IsNullOrEmpty(m_AudioConfigPath))
-            {
-                Debug.LogError("配置文件路径没填");
-                yield break;
-            }
-            var uri = Path.Combine(Application.dataPath, m_AudioConfigPath);
-            if (!FileTools.ExistFile(uri))
-            {
-                Debug.LogError("文件不存在:" + uri);
-                yield break;
-            }
+        //private IEnumerator LoadAudioConfig()
+        //{
+            //if (string.IsNullOrEmpty(m_AudioConfigPath))
+            //{
+            //    Debug.LogError("配置文件路径没填");
+            //    yield break;
+            //}
+            //var uri = Path.Combine(Application.dataPath, m_AudioConfigPath);
+            //if (!FileTools.ExistFile(uri))
+            //{
+            //    Debug.LogError("文件不存在:" + uri);
+            //    yield break;
+            //}
 
-            string[] audioConfig = FileTools.ReadFileLine(uri);
-            foreach (var item in audioConfig)
-            {
-                //读取配置的格式:唯一序号 空格 文件路径
-                string[] temp = item.Split(' ');
-                int key = int.Parse(temp[0]);
-                string value = temp[1];
-                print("key:" + key + ",value:" + value);
-                if (!m_AllAudio.ContainsKey(key))
-                {
-                    AudioClip audioClip = null;
-                    var audioUri = new System.Uri(Path.Combine(Application.dataPath, value));
-                    print(audioUri);
+            //string[] audioConfig = FileTools.ReadFileLine(uri);
+            //foreach (var item in audioConfig)
+            //{
+            //    //读取配置的格式:唯一序号 空格 文件路径
+            //    string[] temp = item.Split(' ');
+            //    int key = int.Parse(temp[0]);
+            //    string value = temp[1];
+            //    print("key:" + key + ",value:" + value);
+            //    if (!m_AllAudio.ContainsKey(key))
+            //    {
+            //        AudioClip audioClip = null;
+            //        var audioUri = new System.Uri(Path.Combine(Application.dataPath, value));
+            //        print(audioUri);
 
-                    using (UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(audioUri, m_BGMAudioType))
-                    {
-                        yield return request.SendWebRequest();
-                        if (request.isNetworkError)
-                        {
-                            print(request.error);
-                        }
-                        else
-                        {
-                            audioClip = DownloadHandlerAudioClip.GetContent(request);
-                            AudioInfo audioInfo = new AudioInfo(key, value, audioClip);
-                            m_AllAudio.Add(key, audioInfo);
-                        }
-                    }
-                }
-                else
-                {
-                    print("重复的key:" + key);
-                }
-            }
+            //        using (UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(audioUri, m_BGMAudioType))
+            //        {
+            //            yield return request.SendWebRequest();
+            //            if (request.isNetworkError)
+            //            {
+            //                print(request.error);
+            //            }
+            //            else
+            //            {
+            //                audioClip = DownloadHandlerAudioClip.GetContent(request);
+            //                AudioInfo audioInfo = new AudioInfo(key, value, audioClip);
+            //                m_AllAudio.Add(key, audioInfo);
+            //            }
+            //        }
+            //    }
+            //    else
+            //    {
+            //        print("重复的key:" + key);
+            //    }
+            //}
             
-        }
+        //}
 
 
         /// <summary>
@@ -163,12 +163,12 @@ namespace Asset.Core
         /// 直接播放一个音频片段,调用者无需处理AudioSource的组件
         /// 只需要传递进来要播放的音频即可
         /// </summary>
-        public void PlayAudio(AudioClip audioClip,ulong deley = 0)
+        public void PlayAudio(AudioClip audioClip,float deley = 0)
         {
             var audioSource = GetAudioSource();
             audioSource.clip = audioClip;
             audioSource.loop = false;
-            audioSource.Play(deley);
+            audioSource.Play((ulong)(audioClip.frequency * deley));
         }
 
         //TODO:有一个需求,根据传递进来的音频文件名称,找到对应文件位置,进行加载文件
