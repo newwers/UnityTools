@@ -23,10 +23,15 @@ public class TimeManager : MonoBehaviour
         }
     }
 
+    
+    /// <summary>
+    /// 这里的委托和用List<Action>实现函数的调用,又什么区别呢?
+    /// </summary>
+    public delegate void PerSecondUpdateDelegate();
     /// <summary>
     /// 每秒更新一次函数
     /// </summary>
-    public List<Action> m_PerSecondUpdateFunc = new List<Action>();
+    private PerSecondUpdateDelegate PerSecondUpdateCallBack;
 
     private void Awake()
     {
@@ -34,8 +39,8 @@ public class TimeManager : MonoBehaviour
         {
             Instance = this;
         }
-        LogManager.Log("DateTime.UtcNow=" + DateTime.UtcNow);
-        LogManager.Log("m_CurrentTimeStamp=" + m_CurrentTimeStamp);
+        //LogManager.Log("DateTime.UtcNow=" + DateTime.UtcNow);
+        //LogManager.Log("m_CurrentTimeStamp=" + m_CurrentTimeStamp);
     }
 
     private void Update()
@@ -44,10 +49,29 @@ public class TimeManager : MonoBehaviour
         if (m_PerSecondTimer >= 1f)
         {
             m_PerSecondTimer -= 1f;
-            foreach (var item in m_PerSecondUpdateFunc)
+            if (PerSecondUpdateCallBack != null)
             {
-                item();
+                PerSecondUpdateCallBack.Invoke();
             }
         }
     }
+
+    /// <summary>
+    /// 添加每秒调用函数
+    /// </summary>
+    public void AddPerSecondUpdateDelegate(PerSecondUpdateDelegate func)
+    {
+        PerSecondUpdateCallBack += func;
+    }
+
+    /// <summary>
+    /// 移除每秒调用函数
+    /// </summary>
+    public void RemotePerSecondUpdateDelegate(PerSecondUpdateDelegate func)
+    {
+        PerSecondUpdateCallBack -= func;
+    }
+
+
+
 }
