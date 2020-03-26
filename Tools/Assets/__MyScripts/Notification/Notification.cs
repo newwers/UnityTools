@@ -26,6 +26,7 @@ public static class Notification  {
     /// </summary>
     private static Dictionary<string, List<Action<object>>> mNotificationList = new Dictionary<string, List<Action<object>>>();
 
+
     #region 注释
     // 消息的注册
     // 首先消息的注册,在注册的时候就需要指定调用时要执行的函数
@@ -41,7 +42,7 @@ public static class Notification  {
     // Func<T1,T2,TResult>:封装一个具有两个参数并返回 TResult 参数指定的类型值的方法
     // Func的特点就是一定有返回值,并且参数的最后一个是返回类型,前面都是传递的参数
     #endregion
-    
+
     /// <summary>
     /// 消息注册
     /// </summary>
@@ -64,12 +65,13 @@ public static class Notification  {
         }
         
 
-
         //Debug.Log("本身方法:" + new System.Diagnostics.StackTrace().GetFrame(0));//本身方法:Subscribe at offset 6 in file:line:column <filename unknown>:0:0
         //Debug.Log("调用方法:" + new System.Diagnostics.StackTrace().GetFrame(1).GetMethod().Name);//调用方法:Awake
         //Debug.Log("调用类名:" + new System.Diagnostics.StackTrace().GetFrame(1).GetMethod().ReflectedType.Name); //调用类名:NotificationTest
         //Debug.Log("传递的类型:" + type);
     }
+
+    
 
     /// <summary>
     /// 消息的通知,消息通知

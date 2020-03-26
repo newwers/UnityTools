@@ -46,19 +46,19 @@ public class ResourceLoadManager : MonoBehaviour {
     /// </summary>
     private void LoadAllTexture2DResource()
     {
-        byte[] bytes = Tools.FileTool.FileTools.ReadFile(StaticVar.TextureConfigPath);
-        string texturePathJsonConfig = Encoding.UTF8.GetString(bytes);
-        AllTexturePathEntity m_TexturePathConfig = JsonMapper.ToObject<AllTexturePathEntity>(texturePathJsonConfig);
+        //byte[] bytes = Tools.FileTool.FileTools.ReadFile(StaticVar.TextureConfigPath);
+        //string texturePathJsonConfig = Encoding.UTF8.GetString(bytes);
+        //AllTexturePathEntity m_TexturePathConfig = JsonMapper.ToObject<AllTexturePathEntity>(texturePathJsonConfig);
 
-        var allPath = m_TexturePathConfig.allTexturePath;
+        //var allPath = m_TexturePathConfig.allTexturePath;
 
-        m_TotalTextureCount = allPath.Count;
-        m_CurrentLoadCount = 0;
+        //m_TotalTextureCount = allPath.Count;
+        //m_CurrentLoadCount = 0;
 
-        foreach (var item in allPath)
-        {
-            StartCoroutine(LoadTexture2D(OnLoadSuccessTexture2DResource, item.path));
-        }
+        //foreach (var item in allPath)
+        //{
+        //    StartCoroutine(LoadTexture2D(OnLoadSuccessTexture2DResource, item.path));
+        //}
     }
 
     private void OnLoadSuccessTexture2DResource(Texture2D texture2D,string path)

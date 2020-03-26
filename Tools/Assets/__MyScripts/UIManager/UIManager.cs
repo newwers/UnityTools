@@ -92,27 +92,27 @@ public class UIManager : MonoBehaviour
             if (!m_AllInstantiateUI.ContainsKey((UIInstanceIDEnum)uiInstanceID))//如果界面没有生成过
             {
                 //根据界面枚举找到对应加载预制体的路径
-                if (FarmGameManager.Instance.m_UIPathConfig == null)
-                {
-                    LogManager.LogError("没有读取到界面配置");
-                    return;
-                }
-                foreach (var item in FarmGameManager.Instance.m_UIPathConfig.allUIPath)
-                {
-                    if (item.id == (int)uiInstanceID)
-                    {
-                        LogManager.Log("path=" + item.path);
-                        GameObject uiGameObject = ResourceLoadManager.Instance.Load(item.path) as GameObject;
-                        BaseUIView view = Instantiate(uiGameObject).GetComponent<BaseUIView>();
-                        view.UIInstanceID = (int)uiInstanceID;
-                        view.OnCreated(args);
-                        view.OnShow(args);
-                        BaseUIController controller = view.GetComponent<BaseUIController>();
-                        controller.OnCreated(args);
-                        controller.OnShow(args);
-                        m_AllInstantiateUI.Add((UIInstanceIDEnum)view.UIInstanceID, controller);
-                    }
-                }
+                //if (FarmGameManager.Instance.m_UIPathConfig == null)
+                //{
+                //    LogManager.LogError("没有读取到界面配置");
+                //    return;
+                //}
+                //foreach (var item in FarmGameManager.Instance.m_UIPathConfig.allUIPath)
+                //{
+                //    if (item.id == (int)uiInstanceID)
+                //    {
+                //        LogManager.Log("path=" + item.path);
+                //        GameObject uiGameObject = ResourceLoadManager.Instance.Load(item.path) as GameObject;
+                //        BaseUIView view = Instantiate(uiGameObject).GetComponent<BaseUIView>();
+                //        view.UIInstanceID = (int)uiInstanceID;
+                //        view.OnCreated(args);
+                //        view.OnShow(args);
+                //        BaseUIController controller = view.GetComponent<BaseUIController>();
+                //        controller.OnCreated(args);
+                //        controller.OnShow(args);
+                //        m_AllInstantiateUI.Add((UIInstanceIDEnum)view.UIInstanceID, controller);
+                //    }
+                //}
 
                 
                 
