@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 /// <summary>
 /// 一个界面的基类
@@ -10,6 +12,8 @@ using UnityEngine;
 /// 界面被销毁的时候
 /// 判断界面是否打开状态
 /// 每个界面都有一个唯一界面ID
+/// 在awake里面获取所有组件存放到键值对中,这样在使用的时候可以直接通过键值对进行获取UI组件,不用再次拖拽
+/// 缺点是占用一定空间
 /// </summary>
 public class BaseUIView : MonoBehaviour
 {
@@ -21,6 +25,56 @@ public class BaseUIView : MonoBehaviour
     /// 界面显示状态
     /// </summary>
     public bool isShowState = false;
+
+    public Dictionary<string, List<UIBehaviour>> m_componentDic = new Dictionary<string, List<UIBehaviour>>();
+
+    private void Awake()
+    {
+        FindChildrenControl<Button>();
+        FindChildrenControl<Image>();
+        FindChildrenControl<Text>();
+        FindChildrenControl<Slider>();
+        FindChildrenControl<ScrollRect>();
+    }
+
+    private void FindChildrenControl<T>()where T: UIBehaviour
+    {
+        T[] components = GetComponentsInChildren<T>();
+        foreach (var component in components)
+        {
+            if (m_componentDic.ContainsKey(component.name))
+            {
+                m_componentDic[component.name].Add(component);
+            }
+            else
+            {
+                m_componentDic.Add(component.name, new List<UIBehaviour>() { component });
+            }
+        }
+    }
+
+    /// <summary>
+    /// 通过组件名字获取对应组件
+    /// </summary>
+    /// <typeparam name="T">要获取的类型</typeparam>
+    /// <param name="componentName"></param>
+    /// <returns></returns>
+    protected T GetComponentByName<T>(string componentName)where T:UIBehaviour
+    {
+        if (m_componentDic.ContainsKey(componentName))
+        {
+            foreach (var item in m_componentDic[componentName])
+            {
+                if (item is T)
+                {
+                    return item as T;
+                }
+            }
+        }
+        return null;
+    }
+
+
 
     /// <summary>
     /// 当创建完界面时,调用一次
