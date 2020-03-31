@@ -92,6 +92,7 @@ public class UIManager : MonoBehaviour
             if (!m_AllInstantiateUI.ContainsKey((UIInstanceIDEnum)uiInstanceID))//如果界面没有生成过
             {
                 //根据界面枚举找到对应加载预制体的路径
+                //todo:这边应该是配置单独的模块进行配置加载和读取,而不是和其他关联
                 //if (FarmGameManager.Instance.m_UIPathConfig == null)
                 //{
                 //    LogManager.LogError("没有读取到界面配置");
@@ -110,6 +111,7 @@ public class UIManager : MonoBehaviour
                 //        BaseUIController controller = view.GetComponent<BaseUIController>();
                 //        controller.OnCreated(args);
                 //        controller.OnShow(args);
+                //todo:在这边也进行model层的初始化
                 //        m_AllInstantiateUI.Add((UIInstanceIDEnum)view.UIInstanceID, controller);
                 //    }
                 //}

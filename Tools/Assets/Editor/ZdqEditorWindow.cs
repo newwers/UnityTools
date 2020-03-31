@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.UI;
+using System;
 
 public class ZdqEditorWindow : EditorWindow {
 
@@ -20,6 +21,12 @@ public class ZdqEditorWindow : EditorWindow {
     public static void ShowWindow2()
     {
         EditorWindow.GetWindow(typeof(ZdqEditorWindow));
+    }
+
+    [MenuItem("zdq/清空控制台 &c")]
+    public static void ClearConsoleWindow()
+    {
+        ClearConsole();
     }
 
     //输入文字到内容
@@ -158,5 +165,19 @@ public class ZdqEditorWindow : EditorWindow {
 
         }
         EditorGUILayout.EndHorizontal();
+    }
+
+    private static System.Reflection.MethodInfo clearMethod = null;
+    /// <summary>
+    /// 清空log信息
+    /// </summary>
+    public static void ClearConsole()
+    {
+        if (clearMethod == null)
+        {
+            Type log = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.LogEntries");
+            clearMethod = log.GetMethod("Clear");
+        }
+        clearMethod.Invoke(null, null);
     }
 }
