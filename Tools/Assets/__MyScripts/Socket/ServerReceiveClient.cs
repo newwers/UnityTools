@@ -24,13 +24,16 @@ public class ServerReceiveClient : MonoBehaviour {
     /// </summary>
     private byte[] m_ReceiveData = new byte[6];
 
-	public ServerReceiveClient(Socket socket)
+    Thread m_thread;
+
+
+    public ServerReceiveClient(Socket socket)
     {
         m_Client = socket;
 
-        Thread thread = new Thread(new ThreadStart(ReceiveClientMessage));
-        thread.IsBackground = true;
-        thread.Start();
+        m_thread = new Thread(new ThreadStart(ReceiveClientMessage));
+        m_thread.IsBackground = true;
+        m_thread.Start();
     }
 
     /// <summary>
@@ -40,7 +43,7 @@ public class ServerReceiveClient : MonoBehaviour {
     {
         while (true)
         {
-            if (m_Client == null)
+            if (m_Client == null || m_Client.Connected == false)
             {
                 return;
             }
@@ -49,10 +52,10 @@ public class ServerReceiveClient : MonoBehaviour {
             if (length > 0)
             {
                 //获取长度
-                foreach (var item in m_ReceiveData)
-                {
-                    print(item);
-                }
+                //foreach (var item in m_ReceiveData)
+                //{
+                //    print(item);
+                //}
                 int size = BitConverter.ToInt32(m_ReceiveData, 2);
                 Debug.Log("接收到的数据长度为:" + size);
                 MessageCommand messageCommand = new MessageCommand(m_ReceiveData[0], m_ReceiveData[1], size);
@@ -61,14 +64,19 @@ public class ServerReceiveClient : MonoBehaviour {
                 if (length > 0)
                 {
                     //通过UTF8进行操作
-                    messageCommand.Message = Encoding.UTF8.GetString(messageBytes);
-                    Debug.Log("接收到的数据为:" + messageCommand.Message);
+                    messageCommand.Message = messageBytes;
+                    Debug.Log("接收到的数据为:" + Encoding.UTF8.GetString(messageCommand.Message));
                     //开始对接收到的数据进行处理
                     MessageModelHandle(messageCommand);
                 }
             }
             else
             {
+                if (m_thread != null)
+                {
+                    m_thread.Abort();
+                }
+                
                 Debug.Log("和客户端断开连接:" + (m_Client.RemoteEndPoint as IPEndPoint).ToString());
             }
 
@@ -82,14 +90,14 @@ public class ServerReceiveClient : MonoBehaviour {
     /// <param name="messageCommand"></param>
     private void MessageModelHandle(MessageCommand messageCommand)
     {
-        switch (messageCommand.Model)
+        switch (messageCommand.Module)
         {
             case 0:
                 Debug.Log("接收到模块命令为0");
                 MessageOrderHandle_0(messageCommand);
                 break;
             default:
-                Debug.Log("接收到模块命令为:" + messageCommand.Model);
+                Debug.Log("接收到模块命令为:" + messageCommand.Module);
                 break;
         }
     }
@@ -106,10 +114,28 @@ public class ServerReceiveClient : MonoBehaviour {
             case 0:
                 Debug.Log("接收到指令命令为0");
                 //将接收到的内容打印出来
-                Debug.Log(messageCommand.Message);
+                LogManager.LogColor(Encoding.UTF8.GetString(messageCommand.Message), LogColorEnum.Green);
                 break;
             default:
                 break;
         }
     }
+
+    public void Dispose()
+    {
+        if (m_thread != null)
+        {
+            m_thread.Abort();
+            m_thread = null;
+        }
+
+        if (m_Client != null)
+        {
+            m_Client.Shutdown(SocketShutdown.Both);
+            m_Client.Disconnect(false);
+            m_Client.Close();
+            m_Client = null;
+        }
+    }
+
 }

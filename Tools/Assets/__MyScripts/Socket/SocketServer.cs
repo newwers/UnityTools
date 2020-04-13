@@ -29,6 +29,9 @@ public class SocketServer  {
     /// </summary>
     public List<Socket> Clients = new List<Socket>();
 
+
+    ServerReceiveClient m_serverReceiveClient;
+
     /// <summary>
     /// 开启socket服务器
     /// </summary>
@@ -68,7 +71,7 @@ public class SocketServer  {
         while (true)
         {
             Socket client = m_TcpSocket.Accept();
-            ServerReceiveClient serverReceiveClient = new ServerReceiveClient(client);
+            m_serverReceiveClient = new ServerReceiveClient(client);
             Clients.Add(client);
             Debug.Log("<color=#00ff00>有客户端连接!</color>");
             IPEndPoint point = client.RemoteEndPoint as IPEndPoint;
@@ -86,18 +89,18 @@ public class SocketServer  {
         Debug.Log("要发送的数据长度:" + messageCommand.Size);
         byte[] sendMessage = new byte[1 + 1 + 4 + messageCommand.Size];
 
-        sendMessage[0] = messageCommand.Model;
+        sendMessage[0] = messageCommand.Module;
         sendMessage[1] = messageCommand.Order;
         //将int类型转成4个byte类型
         byte[] size = BitConverter.GetBytes(messageCommand.Size);
         //将表示大小的字节复制到头文件中
         Buffer.BlockCopy(size, 0, sendMessage, 2, size.Length);
         //获取要发送的字符串,转化为UTF8格式字节数据
-        byte[] message = Encoding.UTF8.GetBytes(messageCommand.Message);
+        byte[] message = messageCommand.Message;
         //将内容和头命令合并一起
         Buffer.BlockCopy(message, 0, sendMessage, 6, message.Length);
         socket.Send(sendMessage);
-        Debug.Log("发送模块:" + messageCommand.Model + ",指令:" + messageCommand.Order + ",消息:" + messageCommand.Message);
+        Debug.Log("发送模块:" + messageCommand.Module + ",指令:" + messageCommand.Order + ",消息:" + Encoding.UTF8.GetString(messageCommand.Message));
     }
 
     /// <summary>
@@ -121,12 +124,17 @@ public class SocketServer  {
 
     public void Dispose()
     {
-        if (m_TcpSocket == null)
+        if (m_TcpSocket == null || m_serverReceiveClient == null)
         {
             return;
         }
-        //m_TcpSocket.Shutdown(SocketShutdown.Receive);
+        //m_TcpSocket.Shutdown(SocketShutdown.Both);
+
+        m_serverReceiveClient.Dispose();
         m_TcpSocket.Close();
+
+        m_serverReceiveClient = null;
+        m_TcpSocket = null;
         Debug.Log("关闭服务器socket");
 
     }

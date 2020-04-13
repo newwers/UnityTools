@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 public class SocketTest : MonoBehaviour {
@@ -17,7 +18,6 @@ public class SocketTest : MonoBehaviour {
     {
         m_SocketServer = new SocketServer();
         m_SocketServer.StartSocketServer();
-
         
     }
 
@@ -35,7 +35,7 @@ public class SocketTest : MonoBehaviour {
         {
             return;
         }
-        MessageCommand messageCommand = new MessageCommand(0, 0, "客户端给服务器发消息");
+        MessageCommand messageCommand = new MessageCommand(0, 0, Encoding.UTF8.GetBytes("客户端给服务器发消息"));
         m_SocketClient.SendMessage(messageCommand);
     }
 
@@ -47,16 +47,24 @@ public class SocketTest : MonoBehaviour {
             print("服务器为空");
             return;
         }
-        MessageCommand messageCommand = new MessageCommand(0, 0, "服务器向客户端问好");
+        MessageCommand messageCommand = new MessageCommand(0, 0, Encoding.UTF8.GetBytes("服务器向客户端问好"));
         m_SocketServer.SendMessage(messageCommand,m_SocketServer.Clients[0]);
     }
 
-    private void OnDestroy()
+    private void OnApplicationQuit()
     {
-        m_SocketServer.Dispose();
+        
+        //注意先关闭客户端,再关闭服务器
         if (m_SocketClient != null)
         {
             m_SocketClient.Dispose();
+            LogManager.LogColor("客户端资源释放", LogColorEnum.Green);
+        }
+
+        if (m_SocketServer != null)
+        {
+            m_SocketServer.Dispose();
+            LogManager.LogColor("服务器资源释放", LogColorEnum.Green);
         }
     }
 

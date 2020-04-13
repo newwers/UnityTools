@@ -23,6 +23,8 @@ public class SocketClient  {
     /// </summary>
     private byte[] m_ReceiveData = new byte[6];
 
+    Thread m_thread;
+
     /// <summary>
     /// 开始客户端连接
     /// </summary>
@@ -41,9 +43,9 @@ public class SocketClient  {
             //4.开始连接
             m_TcpClient.Connect(endPoint);
 
-            Thread thread = new Thread(new ThreadStart(ReceiveMessage));
-            thread.IsBackground = true;
-            thread.Start();
+            m_thread = new Thread(new ThreadStart(ReceiveMessage));
+            m_thread.IsBackground = true;
+            m_thread.Start();
             Debug.Log("客户端开始连接服务器,连接IP:" + endPoint.Address + ",端口:" + endPoint.Port);
         }
         catch (System.Exception e)
@@ -63,18 +65,18 @@ public class SocketClient  {
     {
         byte[] sendMessage = new byte[1 + 1 + 4 + messageCommand.Size];
 
-        sendMessage[0] = messageCommand.Model;
+        sendMessage[0] = messageCommand.Module;
         sendMessage[1] = messageCommand.Order;
         //将int类型转成4个byte类型
         byte[] size = BitConverter.GetBytes(messageCommand.Size);
         //将表示大小的字节复制到头文件中
         Buffer.BlockCopy(size, 0, sendMessage, 2, size.Length);
         //获取要发送的字符串,转化为UTF8格式字节数据
-        byte[] message = Encoding.UTF8.GetBytes(messageCommand.Message);
+        byte[] message = messageCommand.Message;
         //将内容和头命令合并一起
         Buffer.BlockCopy(message, 0, sendMessage, 6, message.Length);
         m_TcpClient.Send(sendMessage);
-        Debug.Log("发送模块:" + messageCommand.Model + ",指令:" + messageCommand.Order + ",消息:" + messageCommand.Message);
+        Debug.Log("发送模块:" + messageCommand.Module + ",指令:" + messageCommand.Order + ",消息:" + Encoding.UTF8.GetString(messageCommand.Message));
     }
 
 
@@ -86,7 +88,7 @@ public class SocketClient  {
     {
         while (true)
         {
-            if (m_TcpClient == null)
+            if (m_TcpClient == null || m_TcpClient.Connected == false)
             {
                 return;
             }
@@ -103,7 +105,7 @@ public class SocketClient  {
                 if (length > 0)
                 {
                     //通过UTF8进行操作
-                    messageCommand.Message = Encoding.UTF8.GetString(messageBytes);
+                    messageCommand.Message = messageBytes;
                     //开始对接收到的数据进行处理
                     MessageModelHandle(messageCommand);
                 }
@@ -122,14 +124,14 @@ public class SocketClient  {
     /// <param name="messageCommand"></param>
     private void MessageModelHandle(MessageCommand messageCommand)
     {
-        switch (messageCommand.Model)
+        switch (messageCommand.Module)
         {
             case 0:
                 Debug.Log("接收到模块命令为0");
                 MessageOrderHandle_0(messageCommand);
                 break;
             default:
-                Debug.Log("接收到模块命令为:" + messageCommand.Model);
+                Debug.Log("接收到模块命令为:" + messageCommand.Module);
                 break;
         }
     }
@@ -146,7 +148,7 @@ public class SocketClient  {
             case 0:
                 Debug.Log("接收到指令命令为0");
                 //将接收到的内容打印出来
-                Debug.Log(messageCommand.Message);
+                LogManager.LogColor(Encoding.UTF8.GetString(messageCommand.Message), LogColorEnum.Green);
                 break;
             default:
                 break;
@@ -180,6 +182,9 @@ public class SocketClient  {
         {
             return;
         }
+        m_thread.Abort();
+        m_TcpClient.Shutdown(SocketShutdown.Both);
         m_TcpClient.Dispose();
+        m_TcpClient = null;
     }
 }

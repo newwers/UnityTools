@@ -17,7 +17,7 @@ public class MessageCommand  {
     /// <summary>
     /// 模块从0-255
     /// </summary>
-    private byte m_Model;
+    private byte m_Module;
     /// <summary>
     /// 指令从0-255
     /// </summary>
@@ -30,18 +30,18 @@ public class MessageCommand  {
     /// <summary>
     /// 存放接收到的指令
     /// </summary>
-    private string m_Message;
+    private byte[] m_Message;
 
-    public byte Model
+    public byte Module
     {
         get
         {
-            return m_Model;
+            return m_Module;
         }
 
         set
         {
-            m_Model = value;
+            m_Module = value;
         }
     }
 
@@ -71,7 +71,7 @@ public class MessageCommand  {
         }
     }
 
-    public string Message
+    public byte[] Message
     {
         get
         {
@@ -86,19 +86,18 @@ public class MessageCommand  {
 
     public MessageCommand(byte model, byte order, int size)
     {
-        Model = model;
+        Module = model;
         Order = order;
         Size = size;
     }
 
-    public MessageCommand(byte model, byte order, string message)
+    public MessageCommand(byte model, byte order, byte[] message)
     {
-        Model = model;
+        Module = model;
         Order = order;
         
         Message = message;
-        byte[] messageBytes = Encoding.UTF8.GetBytes(message);
-        Size = messageBytes.Length;
+        Size = Message.Length;
     }
     //public byte[] Content;
 

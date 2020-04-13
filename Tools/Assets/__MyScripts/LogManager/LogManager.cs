@@ -245,4 +245,47 @@ public class LogManager :MonoBehaviour {
     }
 
 
+    public static void LogColor(string log, LogColorEnum color)
+    {
+        switch (color)
+        {
+            case LogColorEnum.Red:
+                Debug.Log("<color=#ff0000>" + log + "</color>");
+                break;
+            case LogColorEnum.Green:
+                Debug.Log("<color=#00ff00>" + log + "</color>");
+                break;
+            case LogColorEnum.Blue:
+                Debug.Log("<color=#0000ff>" + log + "</color>");
+                break;
+            case LogColorEnum.Yellow:
+                Debug.Log("<color=#ffff00>" + log + "</color>");
+                break;
+            case LogColorEnum.White:
+                Debug.Log("<color=#ffffff>" + log + "</color>");
+                break;
+            case LogColorEnum.Gray:
+                Debug.Log("<color=#555555>" + log + "</color>");
+                break;
+            default:
+                Debug.Log(log);
+                break;
+        }
+        
+    }
+
+
+}
+
+/// <summary>
+/// Log颜色枚举
+/// </summary>
+public enum LogColorEnum
+{
+    Red,
+    Green,
+    Blue,
+    Yellow,
+    White,
+    Gray
 }
