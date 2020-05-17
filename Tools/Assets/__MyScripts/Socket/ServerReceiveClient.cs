@@ -11,7 +11,7 @@ using UnityEngine;
 /// <summary>
 /// 服务器接收到的客户端
 /// </summary>
-public class ServerReceiveClient : MonoBehaviour {
+public class ServerReceiveClient  {
 
     /// <summary>
     /// 连接到服务器的客户端对象
