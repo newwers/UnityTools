@@ -6,6 +6,7 @@ using System.Threading;
 using System.Linq;
 
 
+//使用方式:在开启线程的代码段,用Loom.RunAsync进行包围,然后在修改unity组件的代码块,用Loom.QueueOnMainThread进行包围即可
 //我们只需要关系两个函数：RunAsync(Action)和QueueOnMainThread(Action, [optional] float time) 就可以轻松实现一个函数的两段代码在C#线程和Unity的主线程中交叉运行。
 //原理也很简单：用线程池去运行RunAsync(Action)的函数，在Update中运行QueueOnMainThread(Acition, [optional] float time)传入的函数。
 public class Loom : MonoBehaviour

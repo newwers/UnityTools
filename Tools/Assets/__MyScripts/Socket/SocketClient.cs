@@ -42,10 +42,13 @@ public class SocketClient  {
             IPEndPoint endPoint = new IPEndPoint(iPAddress, 45645);
             //4.开始连接
             m_TcpClient.Connect(endPoint);
-
-            m_thread = new Thread(new ThreadStart(ReceiveMessage));
-            m_thread.IsBackground = true;
-            m_thread.Start();
+            Loom.RunAsync(() =>
+            {
+                m_thread = new Thread(new ThreadStart(ReceiveMessage));
+                m_thread.IsBackground = true;
+                m_thread.Start();
+            });
+            
             Debug.Log("客户端开始连接服务器,连接IP:" + endPoint.Address + ",端口:" + endPoint.Port);
         }
         catch (System.Exception e)
@@ -98,7 +101,7 @@ public class SocketClient  {
             {
                 //获取长度
                 int size = BitConverter.ToInt32(m_ReceiveData, 2);
-                Debug.Log("接收到的数据长度为:" + size);
+                //Debug.Log("接收到的数据长度为:" + size);
                 MessageCommand messageCommand = new MessageCommand(m_ReceiveData[0], m_ReceiveData[1], size);
                 byte[] messageBytes = new byte[size];
                 length = m_TcpClient.Receive(messageBytes);
@@ -131,7 +134,8 @@ public class SocketClient  {
                 MessageOrderHandle_0(messageCommand);
                 break;
             default:
-                Debug.Log("接收到模块命令为:" + messageCommand.Module);
+                //Debug.Log("接收到模块命令为:" + messageCommand.Module);
+                Notification.Publish("ClientMessage", messageCommand);//将指令通知出去
                 break;
         }
     }

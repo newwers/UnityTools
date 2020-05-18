@@ -1,5 +1,6 @@
 ﻿
 
+using System;
 using System.Text;
 /// <summary>
 /// 定义发送消息的格式
@@ -89,6 +90,8 @@ public class MessageCommand  {
         Module = model;
         Order = order;
         Size = size;
+
+        Message = new byte[size];
     }
 
     public MessageCommand(byte model, byte order, byte[] message)
@@ -99,7 +102,110 @@ public class MessageCommand  {
         Message = message;
         Size = Message.Length;
     }
-    //public byte[] Content;
+
+    #region 数据类型获取
+
+    
+
+    /// <summary>
+    /// 读取字节数组的索引
+    /// </summary>
+    private int m_readIndex;
+
+    /// <summary>
+    /// 读取有符号整数
+    /// int 4字节
+    /// </summary>
+    /// <returns></returns>
+    public int GetInt()
+    {
+        int value =  BitConverter.ToInt32(Message, m_readIndex);
+        //Convert.ToInt32()这个只能转字节,没有字节数组
+        m_readIndex += 4;
+
+        return value;
+    }
+
+    /// <summary>
+    /// 获取字符串
+    /// 由于字符串长度为止,所以约定在开头存放一个4字节作为长度
+    /// </summary>
+    /// <returns></returns>
+    public string GetString()
+    {
+        //先读取前面4个长度字节作为数组长度
+        int length = GetInt();
+        string value = BitConverter.ToString(Message, m_readIndex, length);
+        m_readIndex += length;
+
+        return value;
+    }
+
+    /// <summary>
+    /// 获取浮点数
+    /// 浮点数float 32位 4字节
+    /// </summary>
+    /// <returns></returns>
+    public float GetFloat()
+    {
+        float value = BitConverter.ToSingle(Message, m_readIndex);
+        m_readIndex += 4;
+
+        return value;
+    }
+
+    #endregion
+
+    #region 数据类型写入
+
+    
+
+
+    /// <summary>
+    /// 写入字节数组的索引
+    /// </summary>
+    private int m_writeIndex;
+
+    /// <summary>
+    /// 写入浮点数保存到要发送的数组里
+    /// </summary>
+    /// <param name="value"></param>
+    public void WriteFloat(float value)
+    {
+        byte[] bytes = BitConverter.GetBytes(value);
+
+        //Array.Copy(bytes,Message,)数组的赋值,但是不能指定开始位置
+        Buffer.BlockCopy(bytes, 0, Message, m_readIndex, 4);
+
+        m_readIndex += 4;
+    }
+
+    public void WriteInt(int value)
+    {
+        byte[] bytes = BitConverter.GetBytes(value);
+
+        Buffer.BlockCopy(bytes, 0, Message, m_readIndex, 4);
+
+        m_readIndex += 4;
+    }
+
+    /// <summary>
+    /// 写入字符串,约定开头4字节为字符串长度
+    /// </summary>
+    /// <param name="value"></param>
+    public void WriteString(String value)
+    {
+        //写入字符串长度
+        WriteInt(value.Length);
+
+        byte[] bytes = Encoding.UTF8.GetBytes(value);
+
+        Buffer.BlockCopy(bytes, 0, Message, m_readIndex, 4);
+
+        m_readIndex += bytes.Length;
+    }
+
+    #endregion
 
 
 }

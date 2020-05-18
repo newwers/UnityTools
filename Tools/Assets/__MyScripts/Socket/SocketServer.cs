@@ -48,12 +48,15 @@ public class SocketServer  {
             Debug.Log("服务器绑定IP为:" + point.Address + ",端口:" + point.Port);
             m_TcpSocket.Listen(m_MaxClientConnectCount);
             Debug.Log("服务器开始监听,最大连接数:" + m_MaxClientConnectCount);
-            
+
             //开始线程,等待客户端连接
-            Thread thread = new Thread(new ThreadStart(ListenClientConnect));
-            //IsBackfround 的意思是让子线程随着主线程的退出而退出
-            thread.IsBackground = true;
-            thread.Start();
+            Loom.RunAsync(() => {
+                Thread thread = new Thread(new ThreadStart(ListenClientConnect));
+                //IsBackfround 的意思是让子线程随着主线程的退出而退出
+                thread.IsBackground = true;
+                thread.Start();
+            });
+            
             Debug.Log("<color=#00ff00>服务器开启成功</color>");
         }
         catch (System.Exception e)
@@ -86,7 +89,7 @@ public class SocketServer  {
     /// <param name="socket">发送给哪个客户端</param>
     public void SendMessage(MessageCommand messageCommand,Socket socket)
     {
-        Debug.Log("要发送的数据长度:" + messageCommand.Size);
+        //Debug.Log("要发送的数据长度:" + messageCommand.Size);
         byte[] sendMessage = new byte[1 + 1 + 4 + messageCommand.Size];
 
         sendMessage[0] = messageCommand.Module;
@@ -100,7 +103,7 @@ public class SocketServer  {
         //将内容和头命令合并一起
         Buffer.BlockCopy(message, 0, sendMessage, 6, message.Length);
         socket.Send(sendMessage);
-        Debug.Log("发送模块:" + messageCommand.Module + ",指令:" + messageCommand.Order + ",消息:" + Encoding.UTF8.GetString(messageCommand.Message));
+        //Debug.Log("发送模块:" + messageCommand.Module + ",指令:" + messageCommand.Order + ",消息:" + Encoding.UTF8.GetString(messageCommand.Message));
     }
 
     /// <summary>

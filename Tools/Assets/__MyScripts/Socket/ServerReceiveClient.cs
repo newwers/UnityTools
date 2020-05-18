@@ -30,7 +30,7 @@ public class ServerReceiveClient  {
     public ServerReceiveClient(Socket socket)
     {
         m_Client = socket;
-
+        
         m_thread = new Thread(new ThreadStart(ReceiveClientMessage));
         m_thread.IsBackground = true;
         m_thread.Start();
@@ -57,7 +57,7 @@ public class ServerReceiveClient  {
                 //    print(item);
                 //}
                 int size = BitConverter.ToInt32(m_ReceiveData, 2);
-                Debug.Log("接收到的数据长度为:" + size);
+                //Debug.Log("接收到的数据长度为:" + size);
                 MessageCommand messageCommand = new MessageCommand(m_ReceiveData[0], m_ReceiveData[1], size);
                 byte[] messageBytes = new byte[size];
                 length = m_Client.Receive(messageBytes);
@@ -65,7 +65,7 @@ public class ServerReceiveClient  {
                 {
                     //通过UTF8进行操作
                     messageCommand.Message = messageBytes;
-                    Debug.Log("接收到的数据为:" + Encoding.UTF8.GetString(messageCommand.Message));
+                    //Debug.Log("接收到的数据为:" + Encoding.UTF8.GetString(messageCommand.Message));
                     //开始对接收到的数据进行处理
                     MessageModelHandle(messageCommand);
                 }
@@ -97,7 +97,8 @@ public class ServerReceiveClient  {
                 MessageOrderHandle_0(messageCommand);
                 break;
             default:
-                Debug.Log("接收到模块命令为:" + messageCommand.Module);
+                //Debug.Log("接收到模块命令为:" + messageCommand.Module);
+                Notification.Publish("ServerMessage", messageCommand);//将指令通知出去
                 break;
         }
     }
@@ -117,6 +118,7 @@ public class ServerReceiveClient  {
                 LogManager.LogColor(Encoding.UTF8.GetString(messageCommand.Message), LogColorEnum.Green);
                 break;
             default:
+                
                 break;
         }
     }
