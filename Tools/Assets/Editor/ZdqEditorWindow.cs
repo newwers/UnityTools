@@ -34,6 +34,13 @@ public class ZdqEditorWindow : EditorWindow {
 
     private Vector2Int size = new Vector2Int(50,50);
 
+    private void OnFocus()
+    {
+        m_TimeScale = Time.timeScale;
+        Debug.Log("zdq OnFocus:");
+    }
+
+
     private void OnGUI()
     {
         //绘制窗体
@@ -101,6 +108,9 @@ public class ZdqEditorWindow : EditorWindow {
         SetButtonSize();
 
         #endregion
+
+        TimeScale();
+
         //文本框显示鼠标再窗口的位置
         //EditorGUILayout.LabelField("鼠标在窗口的位置:", Event.current.mousePosition.ToString());
 
@@ -160,7 +170,10 @@ public class ZdqEditorWindow : EditorWindow {
                 text.raycastTarget = false;
                 text.alignment = TextAnchor.MiddleCenter;
                 text.color = Color.black;
-                text.resizeTextForBestFit = true;
+                text.supportRichText = false;
+                text.horizontalOverflow = HorizontalWrapMode.Overflow;
+
+                //text.resizeTextForBestFit = true;
             }
 
         }
@@ -179,5 +192,36 @@ public class ZdqEditorWindow : EditorWindow {
             clearMethod = log.GetMethod("Clear");
         }
         clearMethod.Invoke(null, null);
+
+        //unity 2017前的清空console 代码
+        //var logEntries = System.Type.GetType("UnityEditorInternal.LogEntries,UnityEditor.dll");
+        //var clearMethod = logEntries.GetMethod("Clear", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+        //clearMethod.Invoke(null, null);
+
+        //新版本的清空console 代码
+        //Assembly assembly = Assembly.GetAssembly(typeof(SceneView));
+        //Type logEntries = assembly.GetType("UnityEditor.LogEntries");
+        //MethodInfo clearConsoleMethod = logEntries.GetMethod("Clear");
+        //clearConsoleMethod.Invoke(new object(), null);
+    }
+
+    float m_TimeScale;
+
+    /// <summary>
+    /// 时间缩放管理
+    /// </summary>
+    void TimeScale()
+    {
+        EditorGUILayout.BeginHorizontal();
+
+        m_TimeScale = EditorGUILayout.FloatField("时间缩放",m_TimeScale);
+
+        //修改选中物体的属性
+        if (GUILayout.Button("设置时间缩放", GUILayout.Width(200)))
+        {
+            Time.timeScale = m_TimeScale;
+            Debug.Log("设置倍速:" + m_TimeScale);
+        }
+        EditorGUILayout.EndHorizontal();
     }
 }
