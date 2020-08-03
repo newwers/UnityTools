@@ -10,6 +10,8 @@ using UnityEngine.EventSystems;
 public class GetInputHandle : MonoBehaviour
 {
 
+    public int Frequency = 60;
+
     Queue<InputData> m_InputQueue = new Queue<InputData>();
 
     /// <summary>
@@ -24,6 +26,8 @@ public class GetInputHandle : MonoBehaviour
     /// 是否处在模拟状态,用来禁用按键监听
     /// </summary>
     private bool m_IsSimulater;
+
+    WaitForSecondsRealtime m_Wait;
 
 
     private void Update()
@@ -44,7 +48,6 @@ public class GetInputHandle : MonoBehaviour
             
             m_InputQueue.Enqueue(new InputData(InputType.Click, m_BeginClickPoint, Input.mousePosition, m_BeginClick_Point, point, Time.time - m_Timer));
             print("Time.time - m_Timer=" + (Time.time - m_Timer));
-            //MouseSimulater.UnityScreenToWindowPos(Input.mousePosition);
         }
         if (Input.GetKeyDown(KeyCode.T))
         {
@@ -69,15 +72,25 @@ public class GetInputHandle : MonoBehaviour
         MouseSimulater.MoveTo(pointStart.x, pointStart.y);
         MouseSimulater.LeftClickDown();
         yield return null;
-        for (int i = 1; i <= 30; i++)
+        m_Wait = new WaitForSecondsRealtime(data.pressTime / Frequency);
+        for (int i = 1; i <= Frequency; i++)
         {
-            Vector2 point = Vector2.Lerp(pointStart, pointEnd, i / 30f);
+            Vector2 point = Vector2.Lerp(pointStart, pointEnd, i / (float)Frequency);
             MouseSimulater.MoveTo(point.x, point.y);
-            yield return data.pressTime / 30;
+            yield return m_Wait;
         }
         MouseSimulater.LeftClickUp();
         yield return null;
-        m_IsSimulater = false;
+        
+        //这边可以开递归去把队列里面全部出队
+        if (m_InputQueue.Count >0)
+        {
+            StartCoroutine(Simulater(m_InputQueue.Dequeue()));
+        }
+        else
+        {
+            m_IsSimulater = false;
+        }
     }
 
     /// <summary>
@@ -92,15 +105,24 @@ public class GetInputHandle : MonoBehaviour
         MouseSimulater.MoveTo(pointStart.x, pointStart.y);
         MouseSimulater.LeftClickDown();
         yield return null;
-        for (int i = 1; i <= 30; i++)
+        m_Wait = new WaitForSecondsRealtime(data.pressTime / Frequency);
+        for (int i = 1; i <= Frequency; i++)
         {
-            Vector2 point = Vector2.Lerp(pointStart, pointEnd, i / 30f);
+            Vector2 point = Vector2.Lerp(pointStart, pointEnd, i / (float)Frequency);
             MouseSimulater.MoveTo(point.x, point.y);
-            yield return data.pressTime / 30;
+            yield return m_Wait;
         }
         MouseSimulater.LeftClickUp();
         yield return null;
-        m_IsSimulater = false;
+        //这边可以开递归去把队列里面全部出队
+        if (m_InputQueue.Count > 0)
+        {
+            StartCoroutine(SimulaterByWindow(m_InputQueue.Dequeue()));
+        }
+        else
+        {
+            m_IsSimulater = false;
+        }
     }
 
 
