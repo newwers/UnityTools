@@ -159,7 +159,11 @@ namespace Tools.FileTool
 
         public static byte[] ReadFile(string path)
         {
-            
+            if (!ExistFile(path))
+            {
+                return null;//不存在文件
+            }
+
             try
             {
                 byte[] content = File.ReadAllBytes(path);
