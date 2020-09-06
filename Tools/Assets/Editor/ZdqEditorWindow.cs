@@ -238,11 +238,11 @@ namespace TopGame
         {
             if (GUILayout.Button("游戏测试"))
             {
-                UI.UIBase pUI = GameInstance.getInstance().uiManager.GetUI((ushort)UI.EUIType.DefeatPanel);
-                if (pUI != null)
-                {
-                    pUI.Show();
-                }
+                //UI.UIBase pUI = GameInstance.getInstance().uiManager.GetUI((ushort)UI.EUIType.DefeatPanel);
+                //if (pUI != null)
+                //{
+                //    pUI.Show();
+                //}
             }
         }
 
