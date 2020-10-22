@@ -126,6 +126,81 @@ namespace Tools
         {
             return "Assets" + Path.GetFullPath(file).Replace(Path.GetFullPath(Application.dataPath),"").Replace('\\','/');
         }
+
+        //------------------------------------------------------
+        /// <summary>
+        /// 通过Ascii计算文字长度,汉字长度为2,其他长度为1
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public static int GetStrLength(string name)
+        {
+            int length = 0;
+            if (string.IsNullOrEmpty(name))
+            {
+                return length;
+            }
+
+            ASCIIEncoding ascii = new ASCIIEncoding();
+
+            byte[] bs = ascii.GetBytes(name);
+            for (int i = 0; i < bs.Length; i++)
+            {
+                if (bs[i] == 63 && name[i] != '?')//注意?也是63
+                {
+                    length += 2;
+                }
+                else
+                {
+                    length++;
+                }
+                Plugin.Logger.Warning((int)bs[i]);
+                Plugin.Logger.Warning(name[i]);
+            }
+
+            return length;
+        }
+        //------------------------------------------------------
+        /// <summary>
+        /// 根据中文两个字节,其他一个字节进行字符串截取
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public static string SubString(string name, int count)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return "";
+            }
+
+            StringBuilder stringBuilder = new StringBuilder(14);
+
+            int length = 0;
+
+            byte[] bs = Encoding.ASCII.GetBytes(name);
+            for (int i = 0; i < bs.Length; i++)
+            {
+                if (bs[i] == 63 && name[i] != '?')
+                {
+                    length += 2;
+                }
+                else
+                {
+                    length++;
+                }
+
+                if (length <= count)
+                {
+                    stringBuilder.Append(name[i]);
+                }
+
+                Plugin.Logger.Warning((int)bs[i]);
+                Plugin.Logger.Warning(name[i]);
+            }
+
+            return stringBuilder.ToString();
+        }
     }
 }
 
