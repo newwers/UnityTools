@@ -166,4 +166,47 @@ public class MyUnityExtendScript : MonoBehaviour {
 
     }
 
+    [MenuItem("Tools/查找某个字符串在哪些文件当中")]
+    static void GetReference()
+    {
+        //确定查找的文件类型
+        string[] assets = Directory.GetFiles(Application.dataPath, "*.asset", SearchOption.AllDirectories);
+        string[] prefabs = Directory.GetFiles(Application.dataPath, "*.prefab", SearchOption.AllDirectories);
+
+        //设置搜索的字符串内容
+        string atFunctionID = "1524476877";
+
+        List<Object> filelst = new List<Object>();
+
+        for (int i = 0; i < assets.Length; i++)
+        {
+            EditorUtility.DisplayProgressBar("搜索asset文件中", assets[i], (float)i / assets.Length);
+
+            string prefab = File.ReadAllText(assets[i]);
+            bool isContains = prefab.Contains(atFunctionID);
+            if (isContains)
+            {
+                filelst.Add(AssetDatabase.LoadMainAssetAtPath(assets[i].Replace(Application.dataPath, "Assets")));
+                Debug.LogError("匹配到文件名:" + assets[i]);
+            }
+        }
+        EditorUtility.ClearProgressBar();
+
+        for (int i = 0; i < prefabs.Length; i++)
+        {
+            EditorUtility.DisplayProgressBar("搜索prefab文件中", prefabs[i], (float)i / prefabs.Length);
+
+            string prefab = File.ReadAllText(prefabs[i]);
+            bool isContains = prefab.Contains(atFunctionID);
+            if (isContains)
+            {
+                filelst.Add(AssetDatabase.LoadMainAssetAtPath(prefabs[i].Replace(Application.dataPath, "Assets")));
+                Debug.LogError("匹配到文件名:" + prefabs[i]);
+            }
+        }
+        EditorUtility.ClearProgressBar();
+
+
+        Selection.objects = filelst.ToArray();
+    }
 }
