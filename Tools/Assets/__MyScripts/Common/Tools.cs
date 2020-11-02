@@ -201,6 +201,68 @@ namespace Tools
 
             return stringBuilder.ToString();
         }
+
+        [MenuItem("Tools/获取所有Text组件上的文本")]
+        public static void GetAllText()
+        {
+            string[] scenes = Directory.GetFiles(Application.dataPath, "*.unity", SearchOption.AllDirectories);
+            string[] prefabs = Directory.GetFiles(Application.dataPath, "*.prefab", SearchOption.AllDirectories);
+
+            List<string> textList = new List<string>();
+
+            for (int i = 0; i < scenes.Length; i++)
+            {
+                EditorUtility.DisplayProgressBar("搜索 unity 文件中", scenes[i], (float)i / scenes.Length);
+
+                Scene scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(scenes[i]);
+                textList.Add("***************" + scenes[i] + "***************************");
+                foreach (var item in scene.GetRootGameObjects())
+                {
+                    Text[] texts = item.GetComponentsInChildren<Text>(true);
+                    foreach (var text in texts)
+                    {
+                        textList.Add(text.text);
+                    }
+                }
+            }
+            EditorUtility.ClearProgressBar();
+
+            for (int i = 0; i < prefabs.Length; i++)
+            {
+                EditorUtility.DisplayProgressBar("搜索 prefab 文件中", prefabs[i], (float)i / prefabs.Length);
+
+                string path = prefabs[i].Replace("\\", "/").Replace(Application.dataPath, "Assets");
+
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                textList.Add("***************" + path + "***************************");
+                if (prefab == null)
+                {
+                    continue;
+                }
+                Text[] texts = prefab.GetComponentsInChildren<Text>(true);
+                foreach (var item in texts)
+                {
+                    textList.Add(item.text);
+                }
+            }
+            EditorUtility.ClearProgressBar();
+
+            string filePath = FileSystem.getInstance().PersistenDataPath + "AllTexts.txt";
+
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+
+            StreamWriter sw;
+            sw = File.CreateText(filePath);
+            foreach (var item in textList)
+            {
+                sw.WriteLine(item);
+            }
+            sw.Close();
+
+        }
     }
 }
 
