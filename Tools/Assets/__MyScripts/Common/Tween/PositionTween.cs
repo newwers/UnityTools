@@ -10,138 +10,134 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace TopGame.Logic
+public class PositionTweenController
 {
-    public class PositionTweenController
+    static Dictionary<int, PositionTween> ms_Tweens = new Dictionary<int, PositionTween>();
+    public static void OnAdd(PositionTween tween)
     {
-        static Dictionary<int, PositionTween> ms_Tweens = new Dictionary<int, PositionTween>();
-        public static void OnAdd(PositionTween tween)
+        if (tween == null) return;
+        ms_Tweens[tween.ID] = tween;
+    }
+    public static void OnRemove(PositionTween tween)
+    {
+        if (tween == null) return;
+        if (ms_Tweens.ContainsKey(tween.ID))
         {
-            if (tween == null) return;
-            ms_Tweens[tween.ID] = tween;
+            ms_Tweens.Remove(tween.ID);
         }
-        public static void OnRemove(PositionTween tween)
+    }
+    public static PositionTween Find(int id)
+    {
+        PositionTween tween;
+        if (ms_Tweens.TryGetValue(id, out tween))
+            return tween;
+        return null;
+    }
+    public static bool IsPlaying(int id)
+    {
+        PositionTween tween;
+        if (ms_Tweens.TryGetValue(id, out tween))
         {
-            if (tween == null) return;
-            if (ms_Tweens.ContainsKey(tween.ID))
-            {
-                ms_Tweens.Remove(tween.ID);
-            }
+            return tween.isEnable;
         }
-        public static PositionTween Find(int id)
+        return false;
+    }
+}
+
+
+public class PositionTween : MonoBehaviour
+{
+    public float Duration = 1f;
+    public Vector3 StartPos;
+    public Vector3 EndPos;
+
+    public bool isLoop = true;
+
+    [Header("是否开启动画播放")]
+    public bool isEnable = false;
+
+    public Action OnCompleteAction;
+
+    float m_Timer;
+
+    [Header("是否使用本地坐标")]
+    public bool isLocalPos = true;
+
+    public int ID;
+
+    [Header("一开始就播放动画")]
+    public bool PlayOnAwake = false;
+
+    private void Awake()
+    {
+        if (PlayOnAwake)
         {
-            PositionTween tween;
-            if (ms_Tweens.TryGetValue(id, out tween))
-                return tween;
-            return null;
-        }
-        public static bool IsPlaying(int id)
-        {
-            PositionTween tween;
-            if (ms_Tweens.TryGetValue(id, out tween))
-            {
-                return tween.isEnable;
-            }
-            return false;
+            isEnable = true;
+            OnStart(StartPos, EndPos, Duration);
         }
     }
 
-
-    public class PositionTween : MonoBehaviour
+    public void OnStart(Vector3 startPos, Vector3 endPos, float duration)
     {
-        public float Duration = 1f;
-        public Vector3 StartPos;
-        public Vector3 EndPos;
+        StartPos = startPos;
+        EndPos = endPos;
+        this.Duration = duration;
 
-        public bool isLoop = true;
+        isEnable = true;
+        m_Timer = 0f;
 
-        [Header("是否开启动画播放")]
-        public bool isEnable = false;
+        PositionTweenController.OnAdd(this);
+    }
+    public void Stop()
+    {
+        isEnable = false;
+        m_Timer = 0f;
+    }
+    public void OnComplete()
+    {
+        OnCompleteAction?.Invoke();
+    }
 
-        public Action OnCompleteAction;
-
-        float m_Timer;
-
-        [Header("是否使用本地坐标")]
-        public bool isLocalPos = true;
-
-        public int ID;
-
-        [Header("一开始就播放动画")]
-        public bool PlayOnAwake = false;
-
-        private void Awake()
+    // Update is called once per frame
+    void Update()
+    {
+        if (isEnable == false)
         {
-            if (PlayOnAwake)
-            {
-                isEnable = true;
-                OnStart(StartPos, EndPos, Duration);
-            }
+            return;
         }
-
-        public void OnStart(Vector3 startPos, Vector3 endPos, float duration)
-        {
-            StartPos = startPos;
-            EndPos = endPos;
-            this.Duration = duration;
-
-            isEnable = true;
-            m_Timer = 0f;
-
-            PositionTweenController.OnAdd(this);
-        }
-        public void Stop()
+        m_Timer += Time.deltaTime;
+        if (m_Timer >= Duration && isLoop == false)
         {
             isEnable = false;
             m_Timer = 0f;
+            OnComplete();
+            return;
         }
-        public void OnComplete()
+        if (isLoop)
         {
-            Plugin.Guide.GuideWrapper.OnCustomCallback((int)Plugin.Guide.EGuideCustomType.WaitTweenCompleted, ID);
-            OnCompleteAction?.Invoke();
-        }
+            if (m_Timer == Duration)
+            {
 
-        // Update is called once per frame
-        void Update()
-        {
-            if (isEnable == false)
-            {
-                return;
-            }
-            m_Timer += Time.deltaTime;
-            if (m_Timer >= Duration && isLoop == false)
-            {
-                isEnable = false;
-                m_Timer = 0f;
-                OnComplete();
-                return;
-            }
-            if (isLoop)
-            {
-                if (m_Timer == Duration)
-                {
-
-                }
-                else
-                {
-                    m_Timer %= Duration;
-                }
-            }
-
-            if (isLocalPos)
-            {
-                transform.localPosition = Vector3.Lerp(StartPos, EndPos, m_Timer / Duration);
             }
             else
             {
-                transform.position = Vector3.Lerp(StartPos, EndPos, m_Timer / Duration);
+                m_Timer %= Duration;
             }
-            
         }
 
-        private void OnDestroy()
+        if (isLocalPos)
         {
-            PositionTweenController.OnRemove(this);
+            transform.localPosition = Vector3.Lerp(StartPos, EndPos, m_Timer / Duration);
         }
+        else
+        {
+            transform.position = Vector3.Lerp(StartPos, EndPos, m_Timer / Duration);
+        }
+
+    }
+
+    private void OnDestroy()
+    {
+        PositionTweenController.OnRemove(this);
     }
 }

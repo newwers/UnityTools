@@ -7,12 +7,11 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using TopGame.Data;
 using UnityEngine;
 
 namespace TopGame.Core
 {
-    public class LocalizationManager : Module.IModule
+    public class LocalizationManager
     {
         public enum ELanguageType
         {
@@ -48,40 +47,42 @@ namespace TopGame.Core
 
         public void Awake()
         {
-            var cfg = SystemSettingManager.getInstance().GetSystemSettingData();
-            if (cfg != null)
-            {
-                if (cfg.Language >= (int)ELanguageType.Count)
-                {
-                    m_eLanguageType = ELanguageType.CN;//默认中文
-                }
-                else
-                {
-                    m_eLanguageType = (ELanguageType)cfg.Language;
-                }
-            }
-            else
-            {
-                m_eLanguageType = ELanguageType.CN;//默认中文
-            }
+            //获取默认的语言类型
+            //var cfg = SystemSettingManager.getInstance().GetSystemSettingData();
+            //if (cfg != null)
+            //{
+            //    if (cfg.Language >= (int)ELanguageType.Count)
+            //    {
+            //        m_eLanguageType = ELanguageType.CN;//默认中文
+            //    }
+            //    else
+            //    {
+            //        m_eLanguageType = (ELanguageType)cfg.Language;
+            //    }
+            //}
+            //else
+            //{
+            //    m_eLanguageType = ELanguageType.CN;//默认中文
+            //}
             SetCurrentLanguage(m_eLanguageType);
 
             m_vLanguageDic = new Dictionary<uint, List<string>>();
-            var datas = DataManager.getInstance().Text.datas;
+            //获取多语言表
+            //var datas = DataManager.getInstance().Text.datas;
 
-            CsvData_Text.TextData data;
-            List<string> tempList;
-            foreach (var dataID in datas.Keys)
-            {
-                data = DataManager.getInstance().Text.GetData(dataID);
-                if (data != null)
-                {
-                    tempList = new List<string>();
-                    tempList.Add(data.textCN);
-                    tempList.Add(data.textEN);//如果新增语言类型,这边要新增对应字段,要注意数组添加顺序,会影响到后面读取
-                    m_vLanguageDic.Add(dataID, tempList);
-                }
-            }
+            //CsvData_Text.TextData data;
+            //List<string> tempList;
+            //foreach (var dataID in datas.Keys)
+            //{
+            //    data = DataManager.getInstance().Text.GetData(dataID);
+            //    if (data != null)
+            //    {
+            //        tempList = new List<string>();
+            //        tempList.Add(data.textCN);
+            //        tempList.Add(data.textEN);//如果新增语言类型,这边要新增对应字段,要注意数组添加顺序,会影响到后面读取
+            //        m_vLanguageDic.Add(dataID, tempList);
+            //    }
+            //}
         }
         //------------------------------------------------------
         public void Destroy()
@@ -102,7 +103,7 @@ namespace TopGame.Core
             {
                 if (languageType >= ELanguageType.Count)
                 {
-                    Plugin.Logger.Error("设置的语言类型不对:" + languageType);
+                    Debug.LogError("设置的语言类型不对:" + languageType);
                     return;
                 }
                 m_eLanguageType = languageType;

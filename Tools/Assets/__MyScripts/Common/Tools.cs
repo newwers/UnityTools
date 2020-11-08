@@ -4,9 +4,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 namespace Tools
 {
@@ -154,8 +157,8 @@ namespace Tools
                 {
                     length++;
                 }
-                Plugin.Logger.Warning((int)bs[i]);
-                Plugin.Logger.Warning(name[i]);
+                Debug.Log((int)bs[i]);
+                Debug.Log(name[i]);
             }
 
             return length;
@@ -195,8 +198,8 @@ namespace Tools
                     stringBuilder.Append(name[i]);
                 }
 
-                Plugin.Logger.Warning((int)bs[i]);
-                Plugin.Logger.Warning(name[i]);
+                Debug.Log((int)bs[i]);
+                Debug.Log(name[i]);
             }
 
             return stringBuilder.ToString();
@@ -247,7 +250,7 @@ namespace Tools
             }
             EditorUtility.ClearProgressBar();
 
-            string filePath = FileSystem.getInstance().PersistenDataPath + "AllTexts.txt";
+            string filePath = Application.streamingAssetsPath + "/AllTexts.txt";
 
             if (File.Exists(filePath))
             {

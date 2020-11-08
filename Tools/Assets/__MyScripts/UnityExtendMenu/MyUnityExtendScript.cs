@@ -167,7 +167,7 @@ public class MyUnityExtendScript : MonoBehaviour {
     }
 
     [MenuItem("Tools/查找某个字符串在哪些文件当中")]
-    static void GetReference()
+    static void SearchFileByString()
     {
         //确定查找的文件类型
         string[] assets = Directory.GetFiles(Application.dataPath, "*.asset", SearchOption.AllDirectories);
