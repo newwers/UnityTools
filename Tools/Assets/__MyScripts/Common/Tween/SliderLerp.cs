@@ -53,7 +53,7 @@ namespace TopGame.UI
 
             if (BackSlider == null || FrontSlider == null)
             {
-                Plugin.Logger.Error("UI组件缺少,不进行过渡;BackSlider:" + BackSlider + ",FrontSlider:" + FrontSlider);
+                Debug.LogError("UI组件缺少,不进行过渡;BackSlider:" + BackSlider + ",FrontSlider:" + FrontSlider);
                 return;
             }
 

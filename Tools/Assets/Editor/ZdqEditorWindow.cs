@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.UI;
 using System;
+using System.IO;
 
 namespace TopGame
 {
@@ -113,6 +114,8 @@ namespace TopGame
             #endregion
 
             TimeScale();
+
+            SearchATReference();
 
             ImageConvertRawImage();
 
@@ -336,5 +339,92 @@ namespace TopGame
 
         }
 
+
+        string m_ATFunctionID = "";
+
+        string[] m_FileParam = new string[] { "*.asset", "*.prefab", "*.csv", "*.unity" };
+        int m_FileParamIndex = 0;
+        void SearchATReference()
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            EditorGUILayout.LabelField("搜索内容:");
+
+            m_ATFunctionID = EditorGUILayout.TextField(m_ATFunctionID);
+
+            m_FileParamIndex = EditorGUILayout.MaskField("搜索文件类型:", m_FileParamIndex, m_FileParam);
+
+            if (GUILayout.Button("搜索"))
+            {
+                Debug.LogError("m_FileParamIndex:" + m_FileParamIndex + ",二进制:" + Convert.ToString(m_FileParamIndex, 2));
+                GetReference(m_ATFunctionID, m_FileParamIndex);
+            }
+
+            EditorGUILayout.EndHorizontal();
+        }
+
+        void GetReference(string content, int fileParamIndex)
+        {
+            if (fileParamIndex == 0)
+            {
+                Debug.LogError("请选项需要搜索的文件类型");
+                return;
+            }
+
+            //获取选择的选项
+            List<string> options = new List<string>();
+            if (fileParamIndex == -1)
+            {
+                for (int i = 0; i < m_FileParam.Length; i++)
+                {
+                    options.Add(m_FileParam[i]);
+                }
+            }
+            else
+            {
+                //解析索引
+                string indexs = Convert.ToString(fileParamIndex, 2);
+                //从后往前 比如 选择第2,3个 返回的索引是 6 二级制是 110 那么从后往前就是 011 ,0代表未选择,1代表已选择
+                int index = 0;
+                for (int i = indexs.Length - 1; i >= 0; i--)
+                {
+                    //Debug.LogError("index: " + indexs[i]);
+                    if (indexs[i] == '1')
+                    {
+                        options.Add(m_FileParam[index]);
+                    }
+                    index++;
+                }
+            }
+
+            List<UnityEngine.Object> filelst = new List<UnityEngine.Object>();
+
+            for (int i = 0; i < options.Count; i++)
+            {
+                Debug.LogError("option index: " + options[i]);
+                string[] files = Directory.GetFiles(Application.dataPath, options[i], SearchOption.AllDirectories);
+
+                for (int j = 0; j < files.Length; j++)
+                {
+                    string filePath = files[j].Replace("\\", "/");
+                    EditorUtility.DisplayProgressBar("搜索" + options[i] + "文件中", filePath, (float)j / files.Length);
+
+                    string prefab = File.ReadAllText(filePath);
+                    bool isContains = prefab.Contains(content);
+                    if (isContains)
+                    {
+                        filelst.Add(AssetDatabase.LoadMainAssetAtPath(filePath.Replace(Application.dataPath, "Assets")));
+                        Debug.LogError("匹配到文件名:" + filePath);
+                    }
+                }
+                EditorUtility.ClearProgressBar();
+            }
+
+            if (filelst.Count == 0)
+            {
+                Debug.LogError("匹配不到引用文件");
+            }
+            Selection.objects = filelst.ToArray();
+        }
     }
 }
