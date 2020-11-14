@@ -115,7 +115,7 @@ namespace TopGame
 
             TimeScale();
 
-            SearchATReference();
+            SearchContentReference();
 
             ImageConvertRawImage();
 
@@ -340,24 +340,24 @@ namespace TopGame
         }
 
 
-        string m_ATFunctionID = "";
+        string m_SearchContent = "";
 
         string[] m_FileParam = new string[] { "*.asset", "*.prefab", "*.csv", "*.unity" };
         int m_FileParamIndex = 0;
-        void SearchATReference()
+        void SearchContentReference()
         {
             EditorGUILayout.BeginHorizontal();
 
             EditorGUILayout.LabelField("搜索内容:");
 
-            m_ATFunctionID = EditorGUILayout.TextField(m_ATFunctionID);
+            m_SearchContent = EditorGUILayout.TextField(m_SearchContent);
 
             m_FileParamIndex = EditorGUILayout.MaskField("搜索文件类型:", m_FileParamIndex, m_FileParam);
 
             if (GUILayout.Button("搜索"))
             {
                 Debug.LogError("m_FileParamIndex:" + m_FileParamIndex + ",二进制:" + Convert.ToString(m_FileParamIndex, 2));
-                GetReference(m_ATFunctionID, m_FileParamIndex);
+                GetReference(m_SearchContent, m_FileParamIndex);
             }
 
             EditorGUILayout.EndHorizontal();
