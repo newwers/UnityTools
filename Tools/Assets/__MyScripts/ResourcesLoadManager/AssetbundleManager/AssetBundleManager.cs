@@ -6,7 +6,7 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 
-public class SetAssetBundleName : EditorWindow
+public class AssetBundleManager : EditorWindow
 {
     //******窗口参数
     private Vector2 _FilesScrollValue;//当前文件滚动的位置
@@ -33,7 +33,7 @@ public class SetAssetBundleName : EditorWindow
         //indentation = 1;
         //EditorUtility.ExtractOggFile
         CheckFileSystemInfo();
-        SetAssetBundleName ABNameWin = GetWindow<SetAssetBundleName>("设置AssetBundlesName");
+        AssetBundleManager ABNameWin = GetWindow<AssetBundleManager>("设置AssetBundlesName");
         ABNameWin.position = new Rect(300, 100, 300, 500);
         ABNameWin.minSize = new Vector2(300, 500);
         ABNameWin.Show();
