@@ -205,6 +205,18 @@ namespace Tools
             return stringBuilder.ToString();
         }
 
+        /// <summary>
+        /// 检测字符串是否只包含数字和字母
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static bool IsOnlyNumAndLetters(string str)
+        {
+            //从头开始,匹配字母a到z,A到Z,0到9,重复,直到最后一个
+            string rule = @"^[a-zA-Z0-9]*$";
+            return System.Text.RegularExpressions.Regex.IsMatch(str, rule);
+        }
+
         [MenuItem("Tools/获取所有Text组件上的文本")]
         public static void GetAllText()
         {
