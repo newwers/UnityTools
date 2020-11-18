@@ -41,10 +41,46 @@ public class ResourceLoadManager : MonoBehaviour {
             Debug.LogError("资源路径:" + path + ",加载不到资源");
         }
         return asset;
+
 #else
         //其他平台下,包括Windows,Android,通过AB包进行加载
-
+        return LoadAssetBundle<T>(path);
 #endif
+    }
+
+    // 同步加载资源
+    T LoadAssetBundle<T>(string path) where T : UnityEngine.Object
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+        AssetBundle ab = AssetBundle.LoadFromFile(path);
+        if (ab == null)
+        {
+            return null;
+        }
+
+        //todo:优化,减少GC
+        string[] str =  path.Split('/');
+        string name;
+        if (str.Length == 0)
+        {
+            name = str[0];
+        }
+        else
+        {
+            name = str[str.Length - 1];
+        }
+         
+
+        return ab.LoadAsset<T>(name);
+    }
+
+    void LoadAssetBundleAsync()
+    {
+        //todo:异步加载 ab
+        //todo:异步加载资源
     }
 
 }
