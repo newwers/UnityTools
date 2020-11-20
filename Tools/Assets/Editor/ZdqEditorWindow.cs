@@ -466,6 +466,7 @@ namespace TopGame
                     {
                         t = item;
                         Debug.LogError(item.FullName);
+						break;
                     }
                     //Debug.LogError(item.FullName);
                 }
