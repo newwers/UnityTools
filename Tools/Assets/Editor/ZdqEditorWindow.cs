@@ -472,6 +472,12 @@ namespace TopGame
             }
 
 
+            if (t == null)
+            {
+                this.ShowNotification(new GUIContent("搜索不到对应类型!!"));
+                return;
+            }
+
             List<UnityEngine.GameObject> goList = new List<UnityEngine.GameObject>();
             foreach (var item in selectList)
             {
