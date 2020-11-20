@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEngine.UI;
 using System;
 using System.IO;
+using System.Reflection;
 
 namespace TopGame
 {
@@ -116,6 +117,8 @@ namespace TopGame
             TimeScale();
 
             SearchContentReference();
+
+            SelectComponent();
 
             ImageConvertRawImage();
 
@@ -425,6 +428,61 @@ namespace TopGame
                 Debug.LogError("匹配不到引用文件");
             }
             Selection.objects = filelst.ToArray();
+        }
+
+        string componentName = "UnityEngine.UI.Text";
+        void SelectComponent()
+        {
+            EditorGUILayout.BeginHorizontal();
+            //输入框控件
+            componentName = EditorGUILayout.TextField("搜索组件名字：", componentName);
+
+            if (GUILayout.Button("选择所有组件"))
+            {
+                SelectAllComponent(componentName);
+            }
+
+            EditorGUILayout.EndHorizontal();
+        }
+
+        void SelectAllComponent(string typeName)
+        {
+            var selectList = Selection.gameObjects;
+
+            if (selectList.Length <= 0)
+            {
+                this.ShowNotification(new GUIContent("当前没有选择物体!!"));
+                return;
+            }
+            Type t = null;
+
+            Assembly[] abs = System.AppDomain.CurrentDomain.GetAssemblies();//获取已经加载到此应用程序域的程序集
+            foreach (var ab in abs)
+            {
+                Type[] types = ab.GetTypes();
+                foreach (var item in types)
+                {
+                    if (item.FullName == typeName)
+                    {
+                        t = item;
+                        Debug.LogError(item.FullName);
+                    }
+                    //Debug.LogError(item.FullName);
+                }
+            }
+
+
+            List<UnityEngine.GameObject> goList = new List<UnityEngine.GameObject>();
+            foreach (var item in selectList)
+            {
+                UnityEngine.Object[] objs = (UnityEngine.Object[])item.GetComponentsInChildren(t, true);
+                foreach (var obj in objs)
+                {
+                    goList.Add((obj as Component).gameObject);
+                }
+            }
+
+            Selection.objects = goList.ToArray();
         }
     }
 }
