@@ -6,221 +6,203 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 
-public class AssetBundleManager : EditorWindow
+public class AssetBundleManager : BaseSingleClass<AssetBundleManager>
 {
-    //******窗口参数
-    private Vector2 _FilesScrollValue;//当前文件滚动的位置
 
-    //******资源参数
-    static List<stru_FileInfo> list_Files;//文件列表
-
-    string assetBundleName;
-    string assetBundleVariant = "ab";
-    //int indentation;//缩进等级
-    struct stru_FileInfo
+    struct ABInfo
     {
-        public string fileName;
-        public string filePath;//绝对路径
-        public string assetPath;//U3D内部路径
-        public Type assetType;
-    }
+        /// <summary>
+        /// 包名,在 GetAllDependencies 时,使用
+        /// </summary>
+        public string abPackageName;
+        /// <summary>
+        /// 包结尾后缀名
+        /// </summary>
+        public string abVariant;
+        /// <summary>
+        /// 包名全称.在AssetBundle.LoadFromFile时,使用
+        /// </summary>
+        public string abFullPath;
 
-    [MenuItem("Assets/AssetBundle工具箱/设置AB包名 _F2")]
-    private static void OpenSetAssetBundleNameWindow()
-    {
-        
-        list_Files = new List<stru_FileInfo>();
-        //indentation = 1;
-        //EditorUtility.ExtractOggFile
-        CheckFileSystemInfo();
-        AssetBundleManager ABNameWin = GetWindow<AssetBundleManager>("设置AssetBundlesName");
-        ABNameWin.position = new Rect(300, 100, 300, 500);
-        ABNameWin.minSize = new Vector2(300, 500);
-        ABNameWin.Show();
-    }
+        public AssetBundle ab;
 
-
-    private void OnGUI()
-    {
-        //设置GUI label参数
-        GUI.skin.label.fontSize = 10;
-        GUI.skin.label.alignment = TextAnchor.MiddleLeft;
-        FilesGUI();
-        SetABNameGUI();
-    }
-    void FilesGUI()
-    {
-        //标题
-        GUILayout.Space(5);
-        EditorGUILayout.BeginHorizontal();
-        GUILayout.Space(150);
-        if (GUILayout.Button("刷新资源", new GUIStyle("Box")))
+        public ABInfo(string abPackageName, string abVariant, string abFullPath,AssetBundle ab)
         {
-            if (list_Files == null)
-            {
-                return;
-            }
-            list_Files.Clear();
-            CheckFileSystemInfo();
+            this.abPackageName = abPackageName;
+            this.abVariant = abVariant;
+            this.abFullPath = abFullPath;
+            this.ab = ab;
         }
-        EditorGUILayout.EndHorizontal();
-
-        if (list_Files != null)
-        {
-            GUI.Label(new Rect(5, 35, 100, 20), "选中" + list_Files.Count + "项资源：");
-            GUILayout.Space(10);
-        }
-
-        _FilesScrollValue = EditorGUILayout.BeginScrollView(_FilesScrollValue, new GUIStyle("Box"), GUILayout.MaxHeight(300));
-        AddFileGUIToScroll();
-        EditorGUILayout.EndScrollView();
-
-        //GUI.EndGroup();
     }
+
+
+    Dictionary<string, ABInfo> m_LoadAbDic = new Dictionary<string, ABInfo>();
+
+    AssetBundle m_RootAB;
+    AssetBundleManifest m_RootManifest;
+
     /// <summary>
-    /// 绘制选中的文件资源到滑块
+    /// 包后缀,要注意是需要逗号
     /// </summary>
-    void AddFileGUIToScroll()
+    public string abVariant = ".ab";
+
+    string m_RootPath
     {
-        if (list_Files == null)
+        get
         {
+            return Application.streamingAssetsPath + "/AssetBundles/";
+        }
+    }
+
+    string m_Platform
+    {
+        get
+        {
+#if UNITY_ANDROID
+            return "Andorid";
+#elif UNITY_IOS
+            return "IOS";
+#else
+            return "PC";
+#endif
+        }
+    }
+
+    static AssetBundleManager()
+    {
+        //if (Instance != null)
+        //{
+        //    Instance.Init();
+        //}
+        //else
+        //{
+        //    Debug.LogError("未进行初始化");
+        //}
+        //在这边进行初始化变量会被清空
+    }
+
+    public void Init()
+    {
+        LoadManifest();
+    }
+
+    void LoadManifest()
+    {
+        m_RootAB = AssetBundle.LoadFromFile(m_RootPath + m_Platform + "/PC");
+        if (m_RootAB == null)
+        {
+            Debug.LogError("主 Manifest 加载失败");
             return;
         }
-        GUILayout.Space(20);
-        foreach (stru_FileInfo file in list_Files)
-        {
-            // 开启一行
-            GUILayout.BeginVertical();
-            //获取系统中的文件夹图标
-            GUIContent content = EditorGUIUtility.ObjectContent(null, file.assetType);
-            content.text = file.fileName;
-            //以lable展示
-            GUILayout.Label(content, GUILayout.Height(20));
-
-            GUILayout.EndVertical();
-        }
+        m_RootManifest = m_RootAB.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
     }
-    void SetABNameGUI()
-    {
-        EditorGUILayout.BeginVertical();
-        //设置包名
-        //GUILayout.Space(20);
-        //EditorGUILayout.BeginHorizontal();
-        //assetBundleName = EditorGUILayout.TextField("要设置的包名：", assetBundleName);
-        //EditorGUILayout.EndHorizontal();
-        //设置AB版本
-        EditorGUILayout.BeginHorizontal();
-        assetBundleVariant = EditorGUILayout.TextField("资源拓展名：", assetBundleVariant);
-        EditorGUILayout.EndHorizontal();
 
-        //确定设置
-        GUILayout.Space(20);
-        if (GUILayout.Button("确定"))
+    /// <summary>
+    /// 获取依赖
+    /// </summary>
+    /// <param name="abName"></param>
+    /// <returns></returns>
+    string[] GetDepend(string abName)
+    {
+        if (m_RootManifest == null)
         {
-            for (int a = 0; a < list_Files.Count; a++)
+            Debug.LogError("manifest对象为mull,未进行初始化");
+            return null;
+        }
+        return m_RootManifest.GetAllDependencies(abName);
+    }
+
+    /// <summary>
+    /// 加载依赖
+    /// </summary>
+    /// <param name="abName"></param>
+    void LoadDepend(string abName)
+    {
+        string[] abNames = GetDepend(abName);//这边需要从Assets开始
+        if (abNames == null)
+        {
+            Debug.LogError("获取不到依赖文件");
+            return;
+        }
+        foreach (var item in abNames)
+        {
+            AddLoadABDic(item);
+        }
+        
+    }
+
+    ABInfo AddLoadABDic(string name)
+    {
+        if (!m_LoadAbDic.ContainsKey(name))
+        {
+            ABInfo info = new ABInfo(name, abVariant, m_RootPath + m_Platform + "/" + name, null);
+            AssetBundle ab = AssetBundle.LoadFromFile(info.abFullPath);//这边需要全称
+            if (ab != null)
             {
-                SetBundleName(list_Files[a].assetPath);
+                info.ab = ab;
+                m_LoadAbDic.Add(name, info);
+                Debug.Log("加载依赖文件:" + name);
+                return info;
             }
         }
-
-        if (GUILayout.Button("打包Windows平台ab包"))
-        {
-            //  DeterministicAssetBundle = 16,//使每个Object具有唯一不变的hash id，可用于增量式发布AssetBoundle
-            //  ChunkBasedCompression = 256,//创建AssetBundle时使用LZ4压缩。默认情况是Lzma格式，下载AssetBoundle后立即解压。
-            //  Windows平台
-            BuildPipeline.BuildAssetBundles("Assets/StreamingAssets", BuildAssetBundleOptions.DeterministicAssetBundle | BuildAssetBundleOptions.ChunkBasedCompression, BuildTarget.StandaloneWindows64);
-        }
-        EditorGUILayout.EndVertical();
-
-        //GUI.EndGroup();
+        return default;
     }
-    #region 设置选中文件夹下的所有对象的assetBundle的名字
-    /// <summary>
-    /// 检查文件系统下的信息
-    /// </summary>
-    private static void CheckFileSystemInfo()
-    {
-        AssetDatabase.RemoveUnusedAssetBundleNames();//移除无用的AssetBundleName
 
-        string path = EditorUtility.OpenFolderPanel("选择要打包的文件夹路径", "", "");
-
-        CoutineCheck(path);
-    }
     /// <summary>
-    /// 是文件，继续向下
+    /// 同步资源加载
     /// </summary>
+    /// <typeparam name="T">这边的资源路径就填 Assets的相对路径即可</typeparam>
     /// <param name="path"></param>
-    private static void CoutineCheck(string path)
+    /// <returns></returns>
+    public T LoadAssetBundle<T>(string path) where T : UnityEngine.Object
     {
-        DirectoryInfo directory = new DirectoryInfo(path);
-        FileSystemInfo[] fileSystemInfos = directory.GetFileSystemInfos();
-
-        foreach (var item in fileSystemInfos)
+        if (string.IsNullOrWhiteSpace(path))
         {
-            if (item.ToString().EndsWith(".meta"))
-            {
-                continue;
-            }
-            // Debug.Log(item);
-            int idx = item.ToString().LastIndexOf(@"\");
-            string name = item.ToString().Substring(idx + 1);
-
-            CheckFileOrDirectory(item, path + "/" + name);  //item  文件系统，加相对路径
+            return null;
         }
+        path = path.ToLower();
 
-    }
-    /// <summary>
-    /// 判断是文件还是文件夹,是文件的话加入列表
-    /// </summary>
-    /// <param name="fileSystemInfo"></param>
-    /// <param name="path"></param>
-    private static void CheckFileOrDirectory(FileSystemInfo fileSystemInfo, string path)
-    {
-        FileInfo fileInfo = fileSystemInfo as FileInfo;
-        if (fileInfo != null)
+        string[] str = path.Split('/');
+
+        string name;
+        if (str.Length == 0)
         {
-            //Debug.Log(fileInfo.Name);//文件名
-            //Debug.LogWarning(fileInfo.FullName);//路径带文件名
-            //Debug.LogError(fileInfo.DirectoryName);//上级路径
-            stru_FileInfo t_file = new stru_FileInfo();
-            t_file.fileName = fileInfo.Name.ToLower();
-            t_file.filePath = fileInfo.FullName.ToLower();
-            t_file.assetPath = fileInfo.FullName.Replace("\\", "/").Replace(Application.dataPath, "Assets").ToLower();//用于下一步获得文件类型
-            t_file.assetType = AssetDatabase.GetMainAssetTypeAtPath(t_file.assetPath);
-            list_Files.Add(t_file);
+            name = str[0];
         }
         else
         {
-            CoutineCheck(path);
+            name = str[str.Length - 1];
         }
-    }
-    /// <summary>
-    /// 设置assetbundle名字
-    /// 规则:默认包名取文件上一级的文件夹从Assets开始全称作为包名,后缀自定义
-    /// </summary>
-    /// <param name="path"></param>
-    private void SetBundleName(string path)
-    {
-        var importer = AssetImporter.GetAtPath(path);
-        string[] strs = path.Split('.');
-        string[] dictors = strs[0].Split('/');
-        string abName = path.Substring(0, path.LastIndexOf('/'));
 
-        importer.SetAssetBundleNameAndVariant(abName, assetBundleVariant);
-        if (importer != null)
+        int index = path.LastIndexOf("/");
+
+        string abFileName = path.Substring(0, index) + abVariant;
+
+        LoadDepend(abFileName);
+
+        if (m_LoadAbDic.ContainsKey(abFileName))
         {
-            if (assetBundleVariant != "")
-            {
-                importer.assetBundleVariant = assetBundleVariant;
-            }
-            if (assetBundleName != "")
-            {
-                importer.assetBundleName = abName;
-            }
+            return m_LoadAbDic[abFileName].ab.LoadAsset<T>(name);
         }
-        else
-            Debug.Log("importer是空的");
+        ABInfo info = AddLoadABDic(abFileName);
+        Debug.Log("加载AB文件:" + abFileName);
+
+        if (info.ab != null)
+        {
+            return info.ab.LoadAsset<T>(name);
+        }
+
+
+        return null;
     }
 
-    #endregion
+
+    void Dispose()
+    {
+        AssetBundle.UnloadAllAssetBundles(false);
+        if (m_LoadAbDic != null)
+        {
+            m_LoadAbDic.Clear();
+        }
+    }
 }

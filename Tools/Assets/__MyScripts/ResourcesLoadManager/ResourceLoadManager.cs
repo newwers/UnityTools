@@ -19,7 +19,17 @@ using UnityEditor;
 /// </summary>
 public class ResourceLoadManager : MonoBehaviour {
 
+    public enum LoadAssetType
+    {
+        Assets,
+        AssetBundle
+    }
+
     public static ResourceLoadManager Instance;
+
+    public LoadAssetType assetType = LoadAssetType.Assets;
+
+    
 
     private void Awake()
     {
@@ -28,12 +38,18 @@ public class ResourceLoadManager : MonoBehaviour {
             Instance = this;
         }
         DontDestroyOnLoad(this);
-        
+
+        AssetBundleManager.Instance.Init();
     }
 
     public T Load<T>(string path) where T : UnityEngine.Object
     {
 #if UNITY_EDITOR
+        if (assetType == LoadAssetType.AssetBundle)
+        {
+            return LoadAssetBundle<T>(path);
+        }
+
         //编辑器状态下使用AssetDataBase.
         T asset = AssetDatabase.LoadAssetAtPath<T>(path);
         if (asset == null)
@@ -46,35 +62,13 @@ public class ResourceLoadManager : MonoBehaviour {
         //其他平台下,包括Windows,Android,通过AB包进行加载
         return LoadAssetBundle<T>(path);
 #endif
+
     }
 
     // 同步加载资源
     T LoadAssetBundle<T>(string path) where T : UnityEngine.Object
     {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return null;
-        }
-        AssetBundle ab = AssetBundle.LoadFromFile(path);
-        if (ab == null)
-        {
-            return null;
-        }
-
-        //todo:优化,减少GC
-        string[] str =  path.Split('/');
-        string name;
-        if (str.Length == 0)
-        {
-            name = str[0];
-        }
-        else
-        {
-            name = str[str.Length - 1];
-        }
-         
-
-        return ab.LoadAsset<T>(name);
+        return AssetBundleManager.Instance.LoadAssetBundle<T>(path);
     }
 
     void LoadAssetBundleAsync()
@@ -82,5 +76,7 @@ public class ResourceLoadManager : MonoBehaviour {
         //todo:异步加载 ab
         //todo:异步加载资源
     }
+
+    
 
 }
