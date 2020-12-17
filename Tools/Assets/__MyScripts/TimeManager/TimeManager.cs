@@ -23,6 +23,16 @@ public class TimeManager : MonoBehaviour
         }
     }
 
+    public DateTime Now
+    {
+        get
+        {
+            return DateTime.Now;
+        }
+    }
+
+    private List<TimeEventData> m_TimeEvents = new List<TimeEventData>();
+
     
     /// <summary>
     /// 这里的委托和用List<Action>实现函数的调用,又什么区别呢?
@@ -51,7 +61,19 @@ public class TimeManager : MonoBehaviour
             m_PerSecondTimer -= 1f;
             if (PerSecondUpdateCallBack != null)
             {
+                OnPerSecondUpdate();
                 PerSecondUpdateCallBack.Invoke();
+            }
+        }
+    }
+
+    private void OnPerSecondUpdate()
+    {
+        for (int i = m_TimeEvents.Count -1; i >= 0; i--)
+        {
+            if (m_TimeEvents[i].date.Equals(Now))
+            {
+                m_TimeEvents[i].OnTriggerAction?.Invoke();
             }
         }
     }
@@ -72,6 +94,73 @@ public class TimeManager : MonoBehaviour
         PerSecondUpdateCallBack -= func;
     }
 
+    public void AddTimeEvent(TimeEventData data)
+    {
+        m_TimeEvents.Add(data);
+    }
 
+    public void RemoveTimeEvent(TimeEventData data)
+    {
+        m_TimeEvents.Remove(data);
+    }
+
+    public void Clear()
+    {
+        m_TimeEvents.Clear();
+    }
+
+    void Test()
+    {
+        //Calendar 日历类
+        //TimeSpan 时间间隔类
+        bool isEveryDay = true;
+        bool isWeekday = false;
+        int year = 2020;
+        int month = 12;
+        int day = 17;
+        int hour = 10;
+        int minute = 30;
+        int second = 0;
+        DayOfWeek weekday = DayOfWeek.Friday;
+        TimeEventData data = new TimeEventData();
+        if (isEveryDay)
+        {
+            data.date = new DateTime(Now.Year, Now.Month, Now.Day, hour, minute, second);
+        }
+        else if (isWeekday)
+        {
+            //需要添加的天数 = 目标星期数 - 当前星期数
+            int addDays = weekday - Now.DayOfWeek;
+            if (addDays < 0)//如果小于0,就+7天
+            {
+                addDays += 7;
+            }
+            data.date = Now.AddDays(addDays);
+            data.weekday = weekday;
+        }
+        else
+        {
+            data.date = new DateTime(year, month, day, hour, minute, second);
+        }
+
+
+        data.isEveryDay = isEveryDay;
+        data.showTips = "111";
+
+        data.OnTriggerAction = () =>
+        {
+            if (isEveryDay)
+            {
+                data.date = data.date.AddDays(1);
+            }
+            else if(isWeekday)
+            {
+                data.date = data.date.AddDays(7);
+            }
+        };
+
+
+        AddTimeEvent(data);
+    }
 
 }

@@ -15,11 +15,20 @@ public struct TimeEventData
     /// 播放的音频
     /// </summary>
     public AudioClip playAudio;
-
-    public TimeEventData(DateTime date, string showTips, AudioClip playAudio)
-    {
-        this.date = date;
-        this.showTips = showTips ?? throw new ArgumentNullException(nameof(showTips));
-        this.playAudio = playAudio;
-    }
+    /// <summary>
+    /// 当时间到后,执行的函数
+    /// </summary>
+    public Action OnTriggerAction;
+    /// <summary>
+    /// 是否每一天都触发
+    /// </summary>
+    public bool isEveryDay;
+    /// <summary>
+    /// 是否每一周都触发
+    /// </summary>
+    public bool isWeekday;
+    /// <summary>
+    /// 触发的星期
+    /// </summary>
+    public DayOfWeek weekday;
 }
