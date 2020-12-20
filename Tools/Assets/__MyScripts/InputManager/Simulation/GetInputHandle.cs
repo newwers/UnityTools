@@ -2,6 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using InputModule;
+
+
+
 
 /// <summary>
 /// 获取玩家输入操作,目前只支持PC,(Android 暂不支持)
