@@ -36,12 +36,15 @@ namespace TopGame.UI
 
         bool m_IsActive = false;
 
+        Image.Type m_BackImageType = Image.Type.Filled;
+        float m_MaxWidth = 0;
+
 
         /// <summary>
         /// 设置数值
         /// </summary>
         /// <param name="newValue"></param>
-        public void SetValue(float newValue,float oldValue = 1f)
+        public void SetValue(float newValue,float oldValue = 1f,bool isSetDefaultValue = false)
         {
             newValue = Mathf.Clamp01(newValue);
 
@@ -53,7 +56,7 @@ namespace TopGame.UI
 
             if (BackSlider == null || FrontSlider == null)
             {
-                Debug.LogError("UI组件缺少,不进行过渡;BackSlider:" + BackSlider + ",FrontSlider:" + FrontSlider);
+                Plugin.Logger.Error("UI组件缺少,不进行过渡;BackSlider:" + BackSlider + ",FrontSlider:" + FrontSlider);
                 return;
             }
 
@@ -66,10 +69,26 @@ namespace TopGame.UI
                 m_Front_Scrollbar = FrontSlider as Scrollbar;
             }
 
+            m_BackImageType = BackSlider.type;
+            if (FrontSlider)
+            {
+                m_MaxWidth = (FrontSlider.transform as RectTransform).sizeDelta.x;
+            }
+
             m_SliderValue = oldValue;
+            if (isSetDefaultValue)
+            {
+                SetDefaultValue();
+            }
             ValueLerp(m_SliderValue, newValue);
             m_SliderValue = newValue;
             m_IsActive = true;
+        }
+        //------------------------------------------------------
+        void SetDefaultValue()
+        {
+            SetBackSliderValue(m_SliderValue);
+            m_CurBackValue = m_SliderValue;
         }
         //------------------------------------------------------
         void ValueLerp(float oldValue,float newValue)
@@ -98,7 +117,8 @@ namespace TopGame.UI
                     m_Front_Scrollbar.size = newValue;
                 }
 
-                BackSlider.fillAmount = newValue;
+                SetBackSliderValue(newValue);
+
                 m_CurBackValue = newValue;
                 m_CurFrontValue = newValue;
             }
@@ -107,7 +127,8 @@ namespace TopGame.UI
         IEnumerator AddValue(float oldValue, float newValue, WaitForSeconds wait)
         {
             //先让背景滑动条到最终值,
-            BackSlider.fillAmount = newValue;
+            SetBackSliderValue(newValue);
+
             m_CurBackValue = newValue;
             //再过渡前置血条
             for (int i = 1; i <= LerpCount; i++)
@@ -142,8 +163,25 @@ namespace TopGame.UI
             for (int i = 1; i <= LerpCount; i++)
             {
                 m_CurBackValue = Mathf.Lerp(oldValue, newValue, (float)i / LerpCount);
-                BackSlider.fillAmount = m_CurBackValue;
+                SetBackSliderValue(m_CurBackValue);
                 yield return wait;
+            }
+        }
+        //------------------------------------------------------
+        void SetBackSliderValue(float value)
+        {
+            if (BackSlider == null)
+            {
+                return;
+            }
+            value = Mathf.Clamp01(value);
+            if (m_BackImageType == Image.Type.Filled)
+            {
+                BackSlider.fillAmount = value;
+            }
+            else
+            {
+                SetSlicedValue(m_MaxWidth, value, BackSlider);
             }
         }
         //------------------------------------------------------
@@ -178,12 +216,32 @@ namespace TopGame.UI
             {
                 m_Front_Scrollbar.size = m_CurFrontValue;
             }
-            if (BackSlider)
-            {
-                BackSlider.fillAmount = m_CurBackValue;
-            }
+            SetBackSliderValue(m_CurBackValue);
 
             m_IsActive = false;
+        }
+        //------------------------------------------------------
+        /// <summary>
+        /// 设置Image类型未Sliced 的进度
+        /// 注意锚点在左中的位置,posx = width的一半
+        /// 设置轴心点在0,0.5即可实现不需要修改位置
+        /// </summary>
+        /// <param name="max"></param>
+        /// <param name="cur"></param>
+        void SetSlicedValue(float max,float cur,Image img,float space = 2f)
+        {
+            if (max == 0 || img == null)
+            {
+                return;
+            }
+            RectTransform rect = img.rectTransform;
+            rect.sizeDelta = new Vector2(max * cur - space, rect.sizeDelta.y);
+            //rect.anchoredPosition = new Vector2(max * cur / 2f,0);
+        }
+        //------------------------------------------------------
+        public bool GetIsActive()
+        {
+            return m_IsActive;
         }
     }
 }
