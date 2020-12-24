@@ -10,7 +10,6 @@ using UnityEngine;
 
 namespace TopGame.UI
 {
-    [UIWidgetExport]
     public class ScaleTween : MonoBehaviour
     {
         public AnimationCurve ScaleCurve;

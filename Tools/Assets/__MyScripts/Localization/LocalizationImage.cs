@@ -32,10 +32,11 @@ namespace TopGame.Core
         //------------------------------------------------------
         private void Start()
         {
-            if (GameInstance.getInstance() != null && GameInstance.getInstance().localizationMgr != null)
-            {
-                GameInstance.getInstance().localizationMgr.OnLanguageChangeCallback += OnLanguageChangeCallback;
-            }
+            //添加监听
+            //if (GameInstance.getInstance() != null && GameInstance.getInstance().localizationMgr != null)
+            //{
+            //    GameInstance.getInstance().localizationMgr.OnLanguageChangeCallback += OnLanguageChangeCallback;
+            //}
         }
         //------------------------------------------------------
         private void OnLanguageChangeCallback(LocalizationManager.ELanguageType languageType)
@@ -49,11 +50,12 @@ namespace TopGame.Core
         //------------------------------------------------------
         private void OnDestroy()
         {
-            if (Module.ModuleManager.mainModule == null || GameInstance.getInstance() == null || GameInstance.getInstance().localizationMgr == null)
-            {
-                return;
-            }
-            GameInstance.getInstance().localizationMgr.OnLanguageChangeCallback -= OnLanguageChangeCallback;
+            //取消监听
+            //if (Module.ModuleManager.mainModule == null || GameInstance.getInstance() == null || GameInstance.getInstance().localizationMgr == null)
+            //{
+            //    return;
+            //}
+            //GameInstance.getInstance().localizationMgr.OnLanguageChangeCallback -= OnLanguageChangeCallback;
         }
         //------------------------------------------------------
         [ContextMenu("测试显示")]
@@ -67,45 +69,46 @@ namespace TopGame.Core
             if (Application.isPlaying == false)
                 return;
 #endif
-            if (GameInstance.getInstance().localizationMgr == null) return;
-            string strPath = GameInstance.getInstance().localizationMgr.GetLocalization(ID);
-            if (strPath != null)
-            {
-                //加载图片资源
-                Core.AssetOperiaon pOp =  Core.FileSystem.getInstance().AsyncReadFile(strPath, OnLoadAssetCallback);
-                if (pOp != null)
-                {
-                    pOp.userData = new Core.VariableObj() { pGO = m_image };
-                }
-            }
+            //从多语言表获取对应路径后,加载图片
+            //if (GameInstance.getInstance().localizationMgr == null) return;
+            //string strPath = GameInstance.getInstance().localizationMgr.GetLocalization(ID);
+            //if (strPath != null)
+            //{
+            //    //加载图片资源
+            //    Core.AssetOperiaon pOp =  Core.FileSystem.getInstance().AsyncReadFile(strPath, OnLoadAssetCallback);
+            //    if (pOp != null)
+            //    {
+            //        pOp.userData = new Core.VariableObj() { pGO = m_image };
+            //    }
+            //}
         }
         //------------------------------------------------------
-        private void OnLoadAssetCallback(Core.AssetOperiaon pCB)
-        {
-            if (pCB == null) return;
-            UnityEngine.Object pObject = ((Core.VariableObj)pCB.userData).pGO;
+        //private void OnLoadAssetCallback(Core.AssetOperiaon pCB)
+        //{
+        //    if (pCB == null) return;
+        //    UnityEngine.Object pObject = ((Core.VariableObj)pCB.userData).pGO;
 
-            if (pObject == null)
-            {
-                if (pCB.pAsset != null)
-                {
-                    pCB.pAsset.Release();
-                }
-                return;
-            }
+        //    if (pObject == null)
+        //    {
+        //        if (pCB.pAsset != null)
+        //        {
+        //            pCB.pAsset.Release();
+        //        }
+        //        return;
+        //    }
 
-            if (!pCB.isValid()) return;
+        //    if (!pCB.isValid()) return;
 
 
-            if (OnLoadAsset(pObject, pCB.objectAsset) && pObject)
-            {
-                pCB.pAsset.Release();
-            }
-            else
-            {
-                pCB.pAsset.Release();
-            }
-        }
+        //    if (OnLoadAsset(pObject, pCB.objectAsset) && pObject)
+        //    {
+        //        pCB.pAsset.Release();
+        //    }
+        //    else
+        //    {
+        //        pCB.pAsset.Release();
+        //    }
+        //}
         //------------------------------------------------------
         protected virtual bool OnLoadAsset(UnityEngine.Object pObj, UnityEngine.Object objectAsset)
         {
