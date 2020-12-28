@@ -9,15 +9,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace TopGame.UI
+namespace InputModule
 {
     public class InputEvent : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerDownHandler, IPointerUpHandler
     {
         [Range(0.01f, 2f)]
         public float DragRotateTime = 0.5f;
 
-        public System.Action OnSwapLeft;
-        public System.Action OnSwapRight;
+        public System.Action OnSlideLeft;
+        public System.Action OnSlideRight;
         public System.Action OnRotationBegin;
         public System.Action<float> OnRotation;
         public System.Action OnRotationEnd;
@@ -37,12 +37,12 @@ namespace TopGame.UI
                 if (delta.x > 0)//左下角(0,0)点,右上角(屏幕分辨率)
                 {
                     //Debug.Log("右滑动");
-                    OnSwapRight?.Invoke();
+                    OnSlideRight?.Invoke();
                 }
                 else
                 {
                     //Debug.Log("左滑动");
-                    OnSwapLeft?.Invoke();
+                    OnSlideLeft?.Invoke();
                 }
             }
             else
@@ -76,7 +76,7 @@ namespace TopGame.UI
             }
             else
             {
-                OnNext(eventData);
+                //OnNext(eventData);
             }
         }
 
@@ -95,6 +95,10 @@ namespace TopGame.UI
             if (m_IsRotation)
             {
                 OnRotationEnd?.Invoke();
+            }
+            else
+            {
+                OnNext(eventData);
             }
             m_IsRotation = false;
             
