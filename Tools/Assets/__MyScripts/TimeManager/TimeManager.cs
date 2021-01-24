@@ -11,6 +11,15 @@ using UnityEngine;
 public class TimeManager : MonoBehaviour
 {
     public static TimeManager Instance;
+    static int m_TimeEventIDIndex = 0;
+    public int TimeEventIDIndex
+    {
+        get
+        {
+            m_TimeEventIDIndex++;
+            return m_TimeEventIDIndex;
+        }
+    }
     /// <summary>
     /// 每秒计时器
     /// </summary>
@@ -83,7 +92,7 @@ public class TimeManager : MonoBehaviour
 
     bool CheckDateTimeEqual(DateTime time1, DateTime time2)
     {
-        Debug.Log("time1:" + (long)time1.TimeOfDay.TotalSeconds + ",time2:" + (long)time2.TimeOfDay.TotalSeconds + ",equal:" + ((long)time1.TimeOfDay.TotalSeconds == (long)time2.TimeOfDay.TotalSeconds));
+        //Debug.Log("time1:" + (long)time1.TimeOfDay.TotalSeconds + ",time2:" + (long)time2.TimeOfDay.TotalSeconds + ",equal:" + ((long)time1.TimeOfDay.TotalSeconds == (long)time2.TimeOfDay.TotalSeconds));
         return (long)time1.TimeOfDay.TotalSeconds == (long)time2.TimeOfDay.TotalSeconds;
     }
 
@@ -106,6 +115,18 @@ public class TimeManager : MonoBehaviour
     public void AddTimeEvent(TimeEventData data)
     {
         m_TimeEvents.Add(data);
+    }
+
+    public void SetTimeEvent(TimeEventData data)
+    {
+        for (int i = 0; i < m_TimeEvents.Count; i++)
+        {
+            if (m_TimeEvents[i].id == data.id)
+            {
+                m_TimeEvents[i] = data;
+                break;
+            }
+        }
     }
 
     public void RemoveTimeEvent(TimeEventData data)

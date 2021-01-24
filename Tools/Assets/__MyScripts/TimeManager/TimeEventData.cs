@@ -3,6 +3,7 @@ using UnityEngine;
 
 public struct TimeEventData 
 {
+    public int id;
     /// <summary>
     /// 设置的日期,用DateTime就可以表示
     /// </summary>
