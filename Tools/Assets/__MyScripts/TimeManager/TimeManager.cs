@@ -16,6 +16,9 @@ public class TimeManager : MonoBehaviour
     /// </summary>
     private float m_PerSecondTimer;
 
+    /// <summary>
+    /// 当前时间戳
+    /// </summary>
     public double m_CurrentTimeStamp
     {
         get {
@@ -59,9 +62,9 @@ public class TimeManager : MonoBehaviour
         if (m_PerSecondTimer >= 1f)
         {
             m_PerSecondTimer -= 1f;
+            OnPerSecondUpdate();
             if (PerSecondUpdateCallBack != null)
             {
-                OnPerSecondUpdate();
                 PerSecondUpdateCallBack.Invoke();
             }
         }
@@ -71,11 +74,17 @@ public class TimeManager : MonoBehaviour
     {
         for (int i = m_TimeEvents.Count -1; i >= 0; i--)
         {
-            if (m_TimeEvents[i].date.Equals(Now))
+            if (CheckDateTimeEqual(m_TimeEvents[i].date, Now))
             {
                 m_TimeEvents[i].OnTriggerAction?.Invoke();
             }
         }
+    }
+
+    bool CheckDateTimeEqual(DateTime time1, DateTime time2)
+    {
+        Debug.Log("time1:" + (long)time1.TimeOfDay.TotalSeconds + ",time2:" + (long)time2.TimeOfDay.TotalSeconds + ",equal:" + ((long)time1.TimeOfDay.TotalSeconds == (long)time2.TimeOfDay.TotalSeconds));
+        return (long)time1.TimeOfDay.TotalSeconds == (long)time2.TimeOfDay.TotalSeconds;
     }
 
     /// <summary>
