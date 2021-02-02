@@ -13,6 +13,7 @@ public class TransformInspector : Editor
     SerializedProperty mRot;
     SerializedProperty mScale;
 
+
     private void OnEnable()
     {
         try
@@ -25,6 +26,11 @@ public class TransformInspector : Editor
                 mPos = serializedObject.FindProperty("m_LocalPosition");
                 mRot = serializedObject.FindProperty("m_LocalRotation");
                 mScale = serializedObject.FindProperty("m_LocalScale");
+                Vector3 scaleAll_Vec3 = mScale.vector3Value;
+                if (scaleAll_Vec3.x == scaleAll_Vec3.y && scaleAll_Vec3.x == scaleAll_Vec3.z)
+                {
+                    m_Scale = scaleAll_Vec3.x;
+                }
             }
         }
         catch { }
@@ -77,9 +83,9 @@ public class TransformInspector : Editor
         if (paste)
         {
             Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
-            //string[] pos = GUIUtility.systemCopyBuffer.Split(',');
-            //mPos.vector3Value = new Vector3(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]));
-            mPos.vector3Value = GUIUtility.systemCopyBuffer.ParseVector3();
+            string[] pos = GUIUtility.systemCopyBuffer.Split(',');
+            mPos.vector3Value = new Vector3(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]));
+            //mPos.vector3Value = GUIUtility.systemCopyBuffer.ParseVector3();
         }
 
         GUILayout.EndHorizontal();
@@ -138,15 +144,16 @@ public class TransformInspector : Editor
             if (paste)
             {
                 Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
-                //string[] pos = GUIUtility.systemCopyBuffer.Split(',');
-                //mRot.quaternionValue = new Quaternion(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]), float.Parse(pos[3]));
-                Vector4 vector4 = GUIUtility.systemCopyBuffer.ParseVector4();
-                mRot.quaternionValue = new Quaternion(vector4.x, vector4.y, vector4.z, vector4.w);
+                string[] pos = GUIUtility.systemCopyBuffer.Split(',');
+                mRot.quaternionValue = new Quaternion(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]), float.Parse(pos[3]));
+                //Vector4 vector4 = GUIUtility.systemCopyBuffer.ParseVector4();
+                //mRot.quaternionValue = new Quaternion(vector4.x, vector4.y, vector4.z, vector4.w);
             }
         }
         GUILayout.EndHorizontal();
     }
 
+    float m_Scale = 1f;
     private void DrawScale()
     {
         GUILayout.BeginHorizontal();
@@ -154,6 +161,15 @@ public class TransformInspector : Editor
         var reset = GUILayout.Button("R", GUILayout.Width(20f));
         var copy = GUILayout.Button("C", GUILayout.Width(20f));
         var paste = GUILayout.Button("P", GUILayout.Width(20f));
+        var set = GUILayout.Button("S", GUILayout.Width(20f));
+        m_Scale = EditorGUILayout.FloatField("All", m_Scale);
+
+        if (set)
+        {
+            mScale.vector3Value = new Vector3(m_Scale, m_Scale, m_Scale);
+            Undo.RecordObject(serializedObject.targetObject, "m_Scale");
+        }
+
 
         EditorGUILayout.PropertyField(mScale.FindPropertyRelative("x"));
         EditorGUILayout.PropertyField(mScale.FindPropertyRelative("y"));
@@ -170,10 +186,10 @@ public class TransformInspector : Editor
         if (paste)
         {
             Debug.LogError("剪切板:" + GUIUtility.systemCopyBuffer);
-            //string[] pos = GUIUtility.systemCopyBuffer.Split(',');
+            string[] pos = GUIUtility.systemCopyBuffer.Split(',');
 
-            //mScale.vector3Value = new Vector3(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]));
-            mScale.vector3Value = GUIUtility.systemCopyBuffer.ParseVector3();//通过扩展方法进行字符串解析,但是同时也把两个脚本关联在一起了,如果缺少扩展脚本,上面两行注释就是源代码
+            mScale.vector3Value = new Vector3(float.Parse(pos[0]), float.Parse(pos[1]), float.Parse(pos[2]));
+            //mScale.vector3Value = GUIUtility.systemCopyBuffer.ParseVector3();//通过扩展方法进行字符串解析,但是同时也把两个脚本关联在一起了,如果缺少扩展脚本,上面两行注释就是源代码
         }
 
         GUILayout.EndHorizontal();
