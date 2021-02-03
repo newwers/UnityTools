@@ -68,6 +68,7 @@ public class TransformInspector : Editor
         var reset = GUILayout.Button("R", GUILayout.Width(20f));
         var copy = GUILayout.Button("C", GUILayout.Width(20f));
         var paste = GUILayout.Button("P", GUILayout.Width(20f));
+        EditorGUILayout.LabelField("Position");
         EditorGUILayout.PropertyField(mPos.FindPropertyRelative("x"));
         EditorGUILayout.PropertyField(mPos.FindPropertyRelative("y"));
         EditorGUILayout.PropertyField(mPos.FindPropertyRelative("z"));
@@ -98,7 +99,7 @@ public class TransformInspector : Editor
             var reset = GUILayout.Button("R", GUILayout.Width(20f));
             var copy = GUILayout.Button("C", GUILayout.Width(20f));
             var paste = GUILayout.Button("P", GUILayout.Width(20f));
-
+            EditorGUILayout.LabelField("Rotation");
             var visible = (serializedObject.targetObject as Transform).localEulerAngles;
 
             visible.x = WrapAngle(visible.x);
@@ -163,6 +164,7 @@ public class TransformInspector : Editor
         var paste = GUILayout.Button("P", GUILayout.Width(20f));
         var set = GUILayout.Button("S", GUILayout.Width(20f));
         m_Scale = EditorGUILayout.FloatField("All", m_Scale);
+        EditorGUILayout.LabelField("Scale");
 
         if (set)
         {
