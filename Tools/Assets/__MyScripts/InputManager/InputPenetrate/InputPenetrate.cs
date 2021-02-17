@@ -10,11 +10,12 @@ namespace InputModule
     /// </summary>
     public class InputPenetrate : MonoBehaviour, IPointerClickHandler
     {
-        public GraphicRaycaster gr;
+        //public GraphicRaycaster gr;
         List<RaycastResult> m_Results = new List<RaycastResult>();
         public void OnPointerClick(PointerEventData eventData)
         {
-            gr.Raycast(eventData, m_Results);
+            //gr.Raycast(eventData, m_Results);
+            EventSystem.current.RaycastAll(eventData, m_Results);
             foreach (var item in m_Results)
             {
                 if (name == item.gameObject.name)
@@ -22,7 +23,8 @@ namespace InputModule
                     continue;
                 }
                 //print(item.gameObject.name);
-                UIEventListener.Get(item.gameObject).onPointerClick?.Invoke(item.gameObject);
+                //UIEventListener.Get(item.gameObject).onPointerClick?.Invoke(item.gameObject);
+                ExecuteEvents.Execute<IPointerClickHandler>(item.gameObject, eventData, ExecuteEvents.pointerClickHandler);
             }
         }
         
