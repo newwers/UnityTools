@@ -7,6 +7,8 @@ using UnityEngine;
 /// <summary>
 /// 时间管理,提供游戏全局时间相关函数操作
 /// 需要定时操作的,可以将函数注册到这里进行调用
+/// 再判断时间满足触发条件后,触发对应事件
+/// 然后检测触发重复类型,
 /// </summary>
 public class TimeManager : MonoBehaviour
 {
@@ -85,7 +87,8 @@ public class TimeManager : MonoBehaviour
         {
             if (CheckDateTimeEqual(m_TimeEvents[i].date, Now))
             {
-                m_TimeEvents[i].OnTriggerAction?.Invoke();
+                OnTriggerTimeEvent(m_TimeEvents[i]);
+                CheckTriggerRepeat(m_TimeEvents[i]);
             }
         }
     }
@@ -114,7 +117,13 @@ public class TimeManager : MonoBehaviour
 
     public void AddTimeEvent(TimeEventData data)
     {
+        //todo:判断id重复
         m_TimeEvents.Add(data);
+    }
+
+    public void RemoveTimeEvent(TimeEventData data)
+    {
+        m_TimeEvents.Remove(data);
     }
 
     public void SetTimeEvent(TimeEventData data)
@@ -129,9 +138,38 @@ public class TimeManager : MonoBehaviour
         }
     }
 
-    public void RemoveTimeEvent(TimeEventData data)
+    public TimeEventData GetTimeEvent(int id)
     {
-        m_TimeEvents.Remove(data);
+        for (int i = 0; i < m_TimeEvents.Count; i++)
+        {
+            if (m_TimeEvents[i].id == id)
+            {
+                return m_TimeEvents[i];
+            }
+        }
+        return null;
+    }
+
+    void OnTriggerTimeEvent(TimeEventData data)
+    {
+        data.OnTriggerAction?.Invoke();
+    }
+
+    /// <summary>
+    /// 检测是否重复触发
+    /// </summary>
+    /// <param name="data"></param>
+    void CheckTriggerRepeat(TimeEventData data)
+    {
+        if (data == null)
+        {
+            return;
+        }
+        if (data.nextTriggerTimeSpan > 0)
+        {
+            data.date = Now.AddSeconds(data.nextTriggerTimeSpan);
+            print("设置的时间:" + data.date.ToString());
+        }
     }
 
     public void Clear()
@@ -166,7 +204,6 @@ public class TimeManager : MonoBehaviour
                 addDays += 7;
             }
             data.date = Now.AddDays(addDays);
-            data.weekday = weekday;
         }
         else
         {
@@ -174,7 +211,6 @@ public class TimeManager : MonoBehaviour
         }
 
 
-        data.isEveryDay = isEveryDay;
         data.showTips = "111";
 
         data.OnTriggerAction = () =>

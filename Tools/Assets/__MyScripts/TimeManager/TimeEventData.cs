@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-public struct TimeEventData 
+public class TimeEventData 
 {
     public int id;
     /// <summary>
@@ -21,15 +21,7 @@ public struct TimeEventData
     /// </summary>
     public Action OnTriggerAction;
     /// <summary>
-    /// 是否每一天都触发
+    /// 下次触发间隔
     /// </summary>
-    public bool isEveryDay;
-    /// <summary>
-    /// 是否每一周都触发
-    /// </summary>
-    public bool isWeekday;
-    /// <summary>
-    /// 触发的星期
-    /// </summary>
-    public DayOfWeek weekday;
+    public long nextTriggerTimeSpan;
 }
