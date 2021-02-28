@@ -2,7 +2,7 @@
 using UnityEngine;
 
 [System.Serializable]
-public class TimeEventData 
+public class TimeEventData :IComparable
 {
     public int id;
 
@@ -64,6 +64,31 @@ public class TimeEventData
         this.hour += hour;
         this.hour %= 24;
 
+    }
+
+    public int CompareTo(object obj)
+    {
+        if (obj == null) return 1;
+
+        TimeEventData other = obj as TimeEventData;
+        if (other != null)
+        {
+            if (this.hour != other.hour)
+            {
+                return this.hour - other.hour;
+            }
+            else if (this.minute != other.minute)
+            {
+                return this.minute - other.minute;
+            }
+            else if (this.second != other.second)
+            {
+                return this.second - other.second;
+            }
+            return 0;
+        }
+        else
+            throw new ArgumentException("Object is not a TimeEventData");
     }
 }
 [System.Serializable]

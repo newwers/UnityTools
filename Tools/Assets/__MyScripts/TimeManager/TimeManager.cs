@@ -210,6 +210,7 @@ public class TimeManager
     public TimeEventSaveData GetSaveData()
     {
         TimeEventSaveData datas = new TimeEventSaveData();
+        m_TimeEvents.Sort();
         datas.datas = m_TimeEvents.ToArray();
         return datas;
     }
