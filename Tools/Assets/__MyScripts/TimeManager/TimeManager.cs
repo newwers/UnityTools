@@ -10,7 +10,7 @@ using UnityEngine;
 /// 再判断时间满足触发条件后,触发对应事件
 /// 然后检测触发重复类型,
 /// </summary>
-public class TimeManager : MonoBehaviour
+public class TimeManager
 {
     public static TimeManager Instance;
     static int m_TimeEventIDIndex = 0;
@@ -57,19 +57,27 @@ public class TimeManager : MonoBehaviour
     /// </summary>
     private PerSecondUpdateDelegate PerSecondUpdateCallBack;
 
-    private void Awake()
+    static TimeManager()
     {
         if (Instance == null)
         {
-            Instance = this;
+            Instance = new TimeManager();
+
+            //LogManager.Log("DateTime.UtcNow=" + DateTime.UtcNow);
+            //LogManager.Log("m_CurrentTimeStamp=" + m_CurrentTimeStamp);
         }
-        //LogManager.Log("DateTime.UtcNow=" + DateTime.UtcNow);
-        //LogManager.Log("m_CurrentTimeStamp=" + m_CurrentTimeStamp);
     }
 
-    private void Update()
+    public void Init()
     {
-        m_PerSecondTimer += Time.deltaTime;
+        //var datas = Tool.ReadTimeEvents();
+        //SetTimeEvents(datas);
+        //读取配置由UITime里面读取,并添加委托事件
+    }
+
+    public void Update(float time)
+    {
+        m_PerSecondTimer += time;
         if (m_PerSecondTimer >= 1f)
         {
             m_PerSecondTimer -= 1f;
@@ -152,7 +160,7 @@ public class TimeManager : MonoBehaviour
 
     void OnTriggerTimeEvent(TimeEventData data)
     {
-        data.OnTriggerAction?.Invoke();
+        data.OnTriggerAction?.Invoke(data);
     }
 
     /// <summary>
@@ -167,8 +175,8 @@ public class TimeManager : MonoBehaviour
         }
         if (data.nextTriggerTimeSpan > 0)
         {
-            data.date = Now.AddSeconds(data.nextTriggerTimeSpan);
-            print("设置的时间:" + data.date.ToString());
+            data.AddSecond(data.nextTriggerTimeSpan);
+            Debug.Log("设置的时间:" + data.date.ToString());
         }
     }
 
@@ -181,52 +189,42 @@ public class TimeManager : MonoBehaviour
     {
         //Calendar 日历类
         //TimeSpan 时间间隔类
-        bool isEveryDay = true;
-        bool isWeekday = false;
-        int year = 2020;
-        int month = 12;
-        int day = 17;
-        int hour = 10;
-        int minute = 30;
-        int second = 0;
-        DayOfWeek weekday = DayOfWeek.Friday;
         TimeEventData data = new TimeEventData();
-        if (isEveryDay)
-        {
-            data.date = new DateTime(Now.Year, Now.Month, Now.Day, hour, minute, second);
-        }
-        else if (isWeekday)
-        {
-            //需要添加的天数 = 目标星期数 - 当前星期数
-            int addDays = weekday - Now.DayOfWeek;
-            if (addDays < 0)//如果小于0,就+7天
-            {
-                addDays += 7;
-            }
-            data.date = Now.AddDays(addDays);
-        }
-        else
-        {
-            data.date = new DateTime(year, month, day, hour, minute, second);
-        }
 
+        var Now = TimeManager.Instance.Now;
+        data.id = TimeManager.Instance.TimeEventIDIndex;
+        data.nextTriggerTimeSpan = 5;
+        data.hour = data.date.Hour;
+        data.minute = data.date.Minute;
+        Debug.Log("设置的时间:" + data.date.ToString());
+        //data.OnTriggerAction = () =>
+        //{
+        //    //SetTipsText(tips);
+        //};
 
         data.showTips = "111";
 
-        data.OnTriggerAction = () =>
-        {
-            if (isEveryDay)
-            {
-                data.date = data.date.AddDays(1);
-            }
-            else if(isWeekday)
-            {
-                data.date = data.date.AddDays(7);
-            }
-        };
-
-
         AddTimeEvent(data);
+    }
+
+    public TimeEventSaveData GetSaveData()
+    {
+        TimeEventSaveData datas = new TimeEventSaveData();
+        datas.datas = m_TimeEvents.ToArray();
+        return datas;
+    }
+
+    public void SetTimeEvents(TimeEventSaveData datas)
+    {
+        if (datas == null)
+        {
+            return;
+        }
+        m_TimeEvents.Clear();
+        foreach (var item in datas.datas)
+        {
+            m_TimeEvents.Add(item);
+        }
     }
 
 }
