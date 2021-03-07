@@ -6,6 +6,8 @@ using UnityEngine.UI;
 using System;
 using System.IO;
 using System.Reflection;
+using UnityEditor.SceneManagement;
+using UnityEngine.SceneManagement;
 
 namespace TopGame
 {
@@ -32,6 +34,25 @@ namespace TopGame
         public static void ClearConsoleWindow()
         {
             ClearConsole();
+        }
+
+        [MenuItem("zdq/RunGame _F5")]
+        public static void PlayUnityEditor()
+        {
+            if (EditorApplication.isPlaying)
+            {
+                EditorApplication.isPlaying = false;
+            }
+            else
+            {
+                Scene scene = EditorSceneManager.GetSceneByName("Assets/Scenes/Startup.unity");
+                if (scene.buildIndex != -1)
+                {
+                    UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/Startup.unity");//切换到自己想要的场景
+                }
+                
+                EditorApplication.isPlaying = true;
+            }
         }
 
         //输入文字到内容
