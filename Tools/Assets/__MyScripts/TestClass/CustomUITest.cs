@@ -11,6 +11,7 @@ namespace zdq.Test
     {
         public Slider slider;
         public HPCustomUI customUI;
+        public Text text;
 
         // Start is called before the first frame update
         void Start()
@@ -23,15 +24,19 @@ namespace zdq.Test
         {
             if (customUI)
             {
-                customUI.m_hp = slider.value;
+                customUI.m_hp = slider.maxValue;
+            }
+            if (text)
+            {
+                text.text = slider.value.ToString();
             }
         }
 
         private void OnValueChange(float value)
         {
-            if (customUI)
+            if (text)
             {
-                customUI.m_hp = value;
+                text.text = value.ToString();
             }
         }
 
