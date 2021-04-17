@@ -148,6 +148,8 @@ namespace TopGame
             //文本框显示鼠标再窗口的位置
             //EditorGUILayout.LabelField("鼠标在窗口的位置:", Event.current.mousePosition.ToString());
 
+            CopyGameObject();
+
             GameTest();
 
             if (GUILayout.Button("关闭窗口"))
@@ -265,11 +267,7 @@ namespace TopGame
         {
             if (GUILayout.Button("游戏测试"))
             {
-                //UI.UIBase pUI = GameInstance.getInstance().uiManager.GetUI((ushort)UI.EUIType.DefeatPanel);
-                //if (pUI != null)
-                //{
-                //    pUI.Show();
-                //}
+                
             }
         }
 
@@ -511,6 +509,97 @@ namespace TopGame
             }
 
             Selection.objects = goList.ToArray();
+        }
+
+        GameObject m_CopyGo;
+        private void CopyGameObject()
+        {
+            if (GUILayout.Button("复制一个GameObject"))
+            {
+                if (Selection.gameObjects.Length > 0)
+                {
+                    m_CopyGo = Selection.gameObjects[0];
+                    this.ShowNotification(new GUIContent("复制:" + m_CopyGo.name + ",完成!"));
+                }
+                else
+                {
+                    this.ShowNotification(new GUIContent("请选择一个GameObject!!"));
+                }
+            }
+            if (GUILayout.Button("增量黏贴一个GameObject"))
+            {
+                if (Selection.gameObjects.Length > 0)
+                {
+                    var pasteGO = Selection.gameObjects[0];
+                    Undo.RecordObject(pasteGO, "pasteGO");
+                    if (m_CopyGo == null)
+                    {
+                        this.ShowNotification(new GUIContent("请先复制一个GameObject!!"));
+                        return;
+                    }
+                    var copyComponents = m_CopyGo.GetComponents<Component>();
+                    var pasteComponents = pasteGO.GetComponents<Component>();
+                    foreach (var copyComponent in copyComponents)
+                    {
+                        foreach (var pasteComponent in pasteComponents)
+                        {
+                            if (pasteComponent.GetType() == copyComponent.GetType())
+                            {
+                                if (UnityEditorInternal.ComponentUtility.CopyComponent(copyComponent))
+                                {
+                                    UnityEditorInternal.ComponentUtility.PasteComponentValues(pasteComponent);
+                                }
+                            }
+                            else
+                            {
+                                if (UnityEditorInternal.ComponentUtility.CopyComponent(copyComponent))
+                                    UnityEditorInternal.ComponentUtility.PasteComponentAsNew(pasteComponent.gameObject);//todo:是否只复制存在的组件?
+                            }
+                        }
+                    }
+
+                    m_CopyGo = null;
+                }
+                else
+                {
+                    this.ShowNotification(new GUIContent("请选择一个GameObject!!"));
+                }
+            }
+            if (GUILayout.Button("不新增组件黏贴一个GameObject"))
+            {
+                if (Selection.gameObjects.Length > 0)
+                {
+                    var pasteGO = Selection.gameObjects[0];
+                    Undo.RecordObject(pasteGO, "pasteGO");
+                    if (m_CopyGo == null)
+                    {
+                        this.ShowNotification(new GUIContent("请先复制一个GameObject!!"));
+                        return;
+                    }
+                    var copyComponents = m_CopyGo.GetComponents<Component>();
+                    var pasteComponents = pasteGO.GetComponents<Component>();
+                    foreach (var pasteComponent in pasteComponents)
+                    {
+                        foreach (var copyComponent in copyComponents)
+                        {
+                            if (pasteComponent.GetType() == copyComponent.GetType())
+                            {
+                                if (UnityEditorInternal.ComponentUtility.CopyComponent(copyComponent))
+                                {
+                                    UnityEditorInternal.ComponentUtility.PasteComponentValues(pasteComponent);
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    m_CopyGo = null;
+                }
+                else
+                {
+                    this.ShowNotification(new GUIContent("请选择一个GameObject!!"));
+                }
+            }
         }
     }
 }
