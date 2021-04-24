@@ -17,15 +17,14 @@ using UnityEditor;
 /// 4.通过Assetbundle的形式加载
 /// 5.通过UnityWebRequest的形式加载,这个新的加载方式替换原本www旧的加载方式
 /// </summary>
-public class ResourceLoadManager : MonoBehaviour {
+public class ResourceLoadManager : BaseMonoSingleClass<ResourceLoadManager> {
 
     public enum LoadAssetType
     {
         Assets,
         AssetBundle
     }
-
-    public static ResourceLoadManager Instance;
+    
 
     public LoadAssetType assetType = LoadAssetType.Assets;
 
@@ -33,10 +32,6 @@ public class ResourceLoadManager : MonoBehaviour {
 
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
         DontDestroyOnLoad(this);
 
         AssetBundleManager.Instance.Init();
