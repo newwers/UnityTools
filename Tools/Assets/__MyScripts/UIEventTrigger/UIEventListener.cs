@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;
 /// </summary>
 public class UIEventListener : UnityEngine.EventSystems.EventTrigger
 {
-    public delegate void VoidDelegate(GameObject go);
+    public delegate void VoidDelegate();
     public VoidDelegate onBeginDrag;
     public VoidDelegate onCancel;
     public VoidDelegate onDeselect;
@@ -43,102 +43,102 @@ public class UIEventListener : UnityEngine.EventSystems.EventTrigger
     public override void OnBeginDrag(PointerEventData eventData)
     {
         if (onBeginDrag != null)
-            onBeginDrag(gameObject);
+            onBeginDrag();
     }
 
     public override void OnCancel(BaseEventData eventData)
     {
         if (onCancel != null)
-            onCancel(gameObject);
+            onCancel();
     }
 
     public override void OnDeselect(BaseEventData eventData)
     {
         if (onDeselect != null)
-            onDeselect(gameObject);
+            onDeselect();
     }
 
     public override void OnDrag(PointerEventData eventData)
     {
         if (onDrag != null)
-            onDrag(gameObject);
+            onDrag();
     }
 
     public override void OnDrop(PointerEventData eventData)
     {
         if (onDrop != null)
-            onDrop(gameObject);
+            onDrop();
     }
 
     public override void OnEndDrag(PointerEventData eventData)
     {
         if (onEndDrag != null)
-            onEndDrag(gameObject);
+            onEndDrag();
     }
 
     public override void OnInitializePotentialDrag(PointerEventData eventData)
     {
         if (onInitializePotentialDrag != null)
-            onInitializePotentialDrag(gameObject);
+            onInitializePotentialDrag();
     }
 
     public override void OnMove(AxisEventData eventData)
     {
         if (onMove != null)
-            onMove(gameObject);
+            onMove();
     }
 
     public override void OnPointerClick(PointerEventData eventData)
     {
         if (onPointerClick != null)
-            onPointerClick(gameObject);
+            onPointerClick();
     }
 
     public override void OnPointerDown(PointerEventData eventData)
     {
         if (onPointerDown != null)
-            onPointerDown(gameObject);
+            onPointerDown();
     }
 
     public override void OnPointerEnter(PointerEventData eventData)
     {
         if (onPointerEnter != null)
-            onPointerEnter(gameObject);
+            onPointerEnter();
     }
 
     public override void OnPointerExit(PointerEventData eventData)
     {
         if (onPointerExit != null)
-            onPointerExit(gameObject);
+            onPointerExit();
     }
 
     public override void OnPointerUp(PointerEventData eventData)
     {
         if (onPointerUp != null)
-            onPointerUp(gameObject);
+            onPointerUp();
     }
 
     public override void OnScroll(PointerEventData eventData)
     {
         if (onScroll != null)
-            onScroll(gameObject);
+            onScroll();
     }
 
     public override void OnSelect(BaseEventData eventData)
     {
         if (onSelect != null)
-            onSelect(gameObject);
+            onSelect();
     }
 
     public override void OnSubmit(BaseEventData eventData)
     {
         if (onSubmit != null)
-            onSubmit(gameObject);
+            onSubmit();
     }
 
     public override void OnUpdateSelected(BaseEventData eventData)
     {
         if (onUpdateSelected != null)
-            onUpdateSelected(gameObject);
+            onUpdateSelected();
     }
 }

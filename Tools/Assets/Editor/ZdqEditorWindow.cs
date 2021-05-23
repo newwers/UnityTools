@@ -24,7 +24,7 @@ namespace TopGame
 
         }
 
-        [MenuItem("zdq/工具window2(可以通过鼠标拖动窗体大小)")]
+        [MenuItem("zdq/工具window2(可以通过鼠标拖动窗体大小) _F3")]
         public static void ShowWindow2()
         {
             EditorWindow.GetWindow(typeof(ZdqEditorWindow));

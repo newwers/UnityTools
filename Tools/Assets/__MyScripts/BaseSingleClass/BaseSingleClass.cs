@@ -6,6 +6,7 @@
 //知识点:静态 static 泛型
 public class BaseSingleClass<T> where T : new()//约束子类必须有无参构造函数,结构体没有无参构造函数
 {
+    #region Single
     private static T mInstance;
 
     public static T Instance
@@ -19,7 +20,37 @@ public class BaseSingleClass<T> where T : new()//约束子类必须有无参构�
             return mInstance;
         }
     }
+    #endregion
 
+
+    #region Logic
+    System.Collections.Generic.Dictionary<int, Logic.AbsLogic> m_Logics = new System.Collections.Generic.Dictionary<int, Logic.AbsLogic>();
+
+    public T AddLogic<T>(Logic.AbsLogic logic) where T : Logic.AbsLogic
+    {
+        m_Logics.Add(logic.GetType().GetHashCode(), logic);
+        return logic as T;
+    }
+
+    public T GetLogic<T>(Logic.AbsLogic logic) where T : Logic.AbsLogic
+    {
+        if (m_Logics.ContainsKey(logic.GetType().GetHashCode()))
+        {
+            return m_Logics[logic.GetType().GetHashCode()] as T;
+        }
+        return AddLogic<T>(logic) as T;
+    }
+
+    public void RemoveLogic(Logic.AbsLogic logic)
+    {
+        if (m_Logics.ContainsKey(logic.GetType().GetHashCode()))
+        {
+            m_Logics[logic.GetType().GetHashCode()].OnDisable();
+            m_Logics[logic.GetType().GetHashCode()].OnDestroy();
+            m_Logics.Remove(logic.GetType().GetHashCode());
+        }
+    }
+    #endregion
 }
 
 /// <summary>
@@ -29,7 +60,14 @@ public class BaseSingleClass<T> where T : new()//约束子类必须有无参构�
 /// <typeparam name="T"></typeparam>
 public class BaseMonoSingleClass<T> : MonoBehaviour  where T:MonoBehaviour
 {
-    private static T mInstance;
+    #region Single
+
+    protected virtual void Awake()
+    {
+        mInstance = this as T;
+    }
+
+    protected static T mInstance;
 
     public static T Instance
     {
@@ -44,6 +82,37 @@ public class BaseMonoSingleClass<T> : MonoBehaviour  where T:MonoBehaviour
             return mInstance;
         }
     }
+    #endregion
+
+    #region Logic
+    System.Collections.Generic.Dictionary<int, Logic.AbsLogic> m_Logics = new System.Collections.Generic.Dictionary<int, Logic.AbsLogic>();
+
+    public T AddLogic<T>(Logic.AbsLogic logic) where T : Logic.AbsLogic
+    {
+        m_Logics.Add(logic.GetType().GetHashCode(), logic);
+        return logic as T;
+    }
+
+    public T GetLogic<T>(Logic.AbsLogic logic) where T : Logic.AbsLogic
+    {
+        if (m_Logics.ContainsKey(logic.GetType().GetHashCode()))
+        {
+            return m_Logics[logic.GetType().GetHashCode()] as T;
+        }
+        return AddLogic<T>(logic) as T;
+    }
+
+    public void RemoveLogic(Logic.AbsLogic logic)
+    {
+        if (m_Logics.ContainsKey(logic.GetType().GetHashCode()))
+        {
+            m_Logics[logic.GetType().GetHashCode()].OnDisable();
+            m_Logics[logic.GetType().GetHashCode()].OnDestroy();
+            m_Logics.Remove(logic.GetType().GetHashCode());
+        }
+    }
+    #endregion
+
 }
 
 
