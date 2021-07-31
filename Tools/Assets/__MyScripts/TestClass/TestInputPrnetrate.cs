@@ -16,7 +16,7 @@ namespace Test
             UIEventListener.Get(gameObject).onPointerClick = OnClick;
         }
 
-        private void OnClick(GameObject go)
+        private void OnClick()
         {
             print("click " + name);
         }
