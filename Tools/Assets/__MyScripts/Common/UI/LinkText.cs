@@ -13,7 +13,7 @@ using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-namespace TopGame.UI
+namespace zdq.UI
 {
     public class LinkText : Text, IPointerClickHandler
     {
@@ -66,6 +66,8 @@ namespace TopGame.UI
         /// <a href=111>xxx</a>
         /// </summary>
         private static readonly Regex s_HrefRegex = new Regex(@"<a href=([^>\n\s]+)>(.*?)(</a>)", RegexOptions.Singleline);
+
+        public Color LinkColor = Color.blue;
 
         //private LinkText mHyperlinkText;
 
@@ -170,7 +172,9 @@ namespace TopGame.UI
                 //Debug.Log("startIndex:" + hrefInfo.startIndex + ",endIndex:" + hrefInfo.endIndex + ",name:" + hrefInfo.name);
                 m_HrefInfos.Add(hrefInfo);
 
-                s_TextBuilder.Append("<color=blue>");  // 超链接颜色
+                s_TextBuilder.Append("<color=#");  // 超链接颜色
+                s_TextBuilder.Append(ColorUtility.ToHtmlStringRGB(LinkColor));
+                s_TextBuilder.Append(">");
                 s_TextBuilder.Append(match.Groups[2].Value);
                 s_TextBuilder.Append("</color>");
                 indexText = match.Index + match.Length;
