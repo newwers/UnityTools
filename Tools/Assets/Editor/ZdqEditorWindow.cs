@@ -263,11 +263,15 @@ namespace TopGame
             EditorGUILayout.EndHorizontal();
         }
 
+        int openLine = 50;
         void GameTest()
         {
             if (GUILayout.Button("游戏测试"))
             {
-                
+                string path = EditorUtility.OpenFilePanel("选择一个文件", Application.dataPath, "*.*");
+                path = path.Replace('/', '\\');
+                Debug.Log("path:" + path);
+                UnityEditorInternal.InternalEditorUtility.OpenFileAtLineExternal(path, openLine,0);
             }
         }
 

@@ -16,7 +16,7 @@ public class DebugCodeLocation
     /// <summary>
     /// log封装的层数
     /// </summary>
-    public static int logEncapsulationCount = 2;
+    public static int logEncapsulationCount = 0;
 
 
 #if UNITY_EDITOR
@@ -55,14 +55,15 @@ public class DebugCodeLocation
                         string fullpath = Application.dataPath.Substring(0, Application.dataPath.LastIndexOf("Assets"));
                         fullpath = fullpath + path;
                         string strPath = fullpath.Replace('/', '\\');
-                        UnityEditorInternal.InternalEditorUtility.OpenFileAtLineExternal(strPath, line);
+                        Debug.Log("open file: " + strPath + " :" + line);
+                        UnityEditorInternal.InternalEditorUtility.OpenFileAtLineExternal(strPath, line,0);//使用没有指定列数的参数,无法打开vs
+                        return true;
                     }
                     else
                     {
                         Debug.LogError("DebugCodeLocation OnOpenAsset, Error StackTrace");
                     }
 
-                    matches = matches.NextMatch();
                 }
                 return true;
             }

@@ -20,7 +20,7 @@ namespace zdq.UI
         /// <summary>
         /// 超链接信息类
         /// </summary>
-        private class HyperlinkInfo
+        public class HyperlinkInfo
         {
             public int startIndex;
 
@@ -61,13 +61,13 @@ namespace zdq.UI
             set { m_OnHrefClick = value; }
         }
 
+        private string m_LinkColor;
+
         /// <summary>
         /// 超链接正则
         /// <a href=111>xxx</a>
         /// </summary>
         private static readonly Regex s_HrefRegex = new Regex(@"<a href=([^>\n\s]+)>(.*?)(</a>)", RegexOptions.Singleline);
-
-        public Color LinkColor = Color.blue;
 
         //private LinkText mHyperlinkText;
 
@@ -123,8 +123,14 @@ namespace zdq.UI
                 }
 
                 // 将超链接里面的文本顶点索引坐标加入到包围框
+                //var characters = cachedTextGenerator.GetCharactersArray();
+                //var lines = cachedTextGenerator.GetLinesArray();
+                //var textChars = text.ToCharArray();
+
                 toFill.PopulateUIVertex(ref vert, hrefInfo.startIndex);
                 var pos = vert.position;
+
+
                 var bounds = new Bounds(pos, Vector3.zero);
                 for (int i = hrefInfo.startIndex, m = hrefInfo.endIndex; i < m; i++)
                 {
@@ -161,20 +167,32 @@ namespace zdq.UI
             foreach (Match match in s_HrefRegex.Matches(outputText))
             {
                 s_TextBuilder.Append(outputText.Substring(indexText, match.Index - indexText));
+                //多行的时候,先添加富文本再计算startIndex
+                if (cachedTextGenerator.GetLinesArray().Length > 1)//todo:这边要计算显示文本是否超过一行,cachedTextGenerator里面是0,有问题
+                {
+                    s_TextBuilder.Append("<color=");  // 超链接颜色
+                    s_TextBuilder.Append(m_LinkColor);
+                    s_TextBuilder.Append(">");
+                }
 
-                var group = match.Groups[1];
+                var linkGroup = match.Groups[1];
+
                 var hrefInfo = new HyperlinkInfo
                 {
                     startIndex = s_TextBuilder.Length * 4, // 超链接里的文本起始顶点索引
                     endIndex = (s_TextBuilder.Length + match.Groups[2].Length - 1) * 4 + 3,
-                    name = group.Value
+                    name = linkGroup.Value,
                 };
+
                 //Debug.Log("startIndex:" + hrefInfo.startIndex + ",endIndex:" + hrefInfo.endIndex + ",name:" + hrefInfo.name);
                 m_HrefInfos.Add(hrefInfo);
 
-                s_TextBuilder.Append("<color=#");  // 超链接颜色
-                s_TextBuilder.Append(ColorUtility.ToHtmlStringRGB(LinkColor));
-                s_TextBuilder.Append(">");
+                if (cachedTextGenerator.GetLinesArray().Length <= 1)//单行的时候,再计算完startIndex后,再进行添加富文本
+                {
+                    s_TextBuilder.Append("<color=");  // 超链接颜色
+                    s_TextBuilder.Append(m_LinkColor);
+                    s_TextBuilder.Append(">");
+                }
                 s_TextBuilder.Append(match.Groups[2].Value);
                 s_TextBuilder.Append("</color>");
                 indexText = match.Index + match.Length;
@@ -195,7 +213,7 @@ namespace zdq.UI
             foreach (var hrefInfo in m_HrefInfos)
             {
                 var boxes = hrefInfo.boxes;
-                //Debug.Log("boxes.Count:" + boxes.Count);
+                Debug.Log("boxes.Count:" + boxes.Count);
                 for (var i = 0; i < boxes.Count; ++i)
                 {
                     if (boxes[i].Contains(lp))
@@ -215,5 +233,24 @@ namespace zdq.UI
         //{
         //    Debug.Log("超链接信息：" + info);
         //}
+        //------------------------------------------------------
+        public void SetLinkColor(string hexColor)
+        {
+            if (string.IsNullOrWhiteSpace(hexColor))
+            {
+                return;
+            }
+            m_LinkColor = hexColor;
+        }
+        //------------------------------------------------------
+        public void SetLinkColor(Color color)
+        {
+            m_LinkColor = ColorUtility.ToHtmlStringRGB(color);
+        }
+        //------------------------------------------------------
+        public List<HyperlinkInfo> GetLinkInfo()
+        {
+            return m_HrefInfos;
+        }
     }
 }
