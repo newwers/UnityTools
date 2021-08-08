@@ -61,7 +61,7 @@ namespace zdq.UI
             set { m_OnHrefClick = value; }
         }
 
-        private string m_LinkColor;
+        private string m_LinkColor = "#FFFF00";
 
         /// <summary>
         /// 超链接正则
@@ -100,17 +100,22 @@ namespace zdq.UI
                 return;
             }
 #endif
-            m_OutputText = GetOutputText(text);
-
+            m_OutputText = GetOutputText(text);//计算显示的文本
         }
         //------------------------------------------------------
         protected override void OnPopulateMesh(VertexHelper toFill)
         {
             var orignText = m_Text;
             m_Text = m_OutputText;
-            base.OnPopulateMesh(toFill);
+            base.OnPopulateMesh(toFill);//这边base中会对文本进行某些操作,所以需要先赋值显示文本,再设置m_Text为初始文本
             m_Text = orignText;
             UIVertex vert = new UIVertex();
+
+            //处理多行问题
+            var lines = cachedTextGenerator.GetLinesArray().Length;
+            Debug.Log("OnPopulateMesh line:" + lines);
+            CalcHrefInfo(orignText,lines);
+
 
             // 处理超链接包围框
             foreach (var hrefInfo in m_HrefInfos)
@@ -124,7 +129,6 @@ namespace zdq.UI
 
                 // 将超链接里面的文本顶点索引坐标加入到包围框
                 //var characters = cachedTextGenerator.GetCharactersArray();
-                //var lines = cachedTextGenerator.GetLinesArray();
                 //var textChars = text.ToCharArray();
 
                 toFill.PopulateUIVertex(ref vert, hrefInfo.startIndex);
@@ -162,13 +166,35 @@ namespace zdq.UI
         protected virtual string GetOutputText(string outputText)
         {
             s_TextBuilder.Length = 0;
-            m_HrefInfos.Clear();
             var indexText = 0;
             foreach (Match match in s_HrefRegex.Matches(outputText))
             {
                 s_TextBuilder.Append(outputText.Substring(indexText, match.Index - indexText));
-                //多行的时候,先添加富文本再计算startIndex
-                if (cachedTextGenerator.GetLinesArray().Length > 1)//todo:这边要计算显示文本是否超过一行,cachedTextGenerator里面是0,有问题
+
+                s_TextBuilder.Append("<color=");  // 超链接颜色
+                s_TextBuilder.Append(m_LinkColor);
+                s_TextBuilder.Append(">");
+
+                s_TextBuilder.Append(match.Groups[2].Value);
+                s_TextBuilder.Append("</color>");
+                indexText = match.Index + match.Length;
+            }
+            s_TextBuilder.Append(outputText.Substring(indexText, outputText.Length - indexText));
+            return s_TextBuilder.ToString();
+        }
+        //------------------------------------------------------
+        string CalcHrefInfo(string originText,int lineCount)
+        {
+            s_TextBuilder.Length = 0;
+            var indexText = 0;
+            m_HrefInfos.Clear();
+
+            foreach (Match match in s_HrefRegex.Matches(originText))
+            {
+                s_TextBuilder.Append(originText.Substring(indexText, match.Index - indexText));
+                Debug.Log("CalcHrefInfo line:" + lineCount);
+
+                if (lineCount > 1)
                 {
                     s_TextBuilder.Append("<color=");  // 超链接颜色
                     s_TextBuilder.Append(m_LinkColor);
@@ -187,7 +213,7 @@ namespace zdq.UI
                 //Debug.Log("startIndex:" + hrefInfo.startIndex + ",endIndex:" + hrefInfo.endIndex + ",name:" + hrefInfo.name);
                 m_HrefInfos.Add(hrefInfo);
 
-                if (cachedTextGenerator.GetLinesArray().Length <= 1)//单行的时候,再计算完startIndex后,再进行添加富文本
+                if (lineCount <= 1)//单行的时候,再计算完startIndex后,再进行添加富文本
                 {
                     s_TextBuilder.Append("<color=");  // 超链接颜色
                     s_TextBuilder.Append(m_LinkColor);
@@ -197,8 +223,8 @@ namespace zdq.UI
                 s_TextBuilder.Append("</color>");
                 indexText = match.Index + match.Length;
             }
-            s_TextBuilder.Append(outputText.Substring(indexText, outputText.Length - indexText));
-            return s_TextBuilder.ToString();
+            s_TextBuilder.Append(originText.Substring(indexText, originText.Length - indexText));
+            return s_TextBuilder.ToString(); ;
         }
         //------------------------------------------------------
         /// <summary>
