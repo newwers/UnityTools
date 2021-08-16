@@ -21,7 +21,7 @@ public class DebugCodeLocation
 
 #if UNITY_EDITOR
     // 处理asset打开的callback函数
-    [UnityEditor.Callbacks.OnOpenAssetAttribute(0)]
+    //[UnityEditor.Callbacks.OnOpenAssetAttribute(0)]
     static bool OnOpenAsset(int instance, int line)
     {
         // 自定义函数，用来获取log中的stacktrace，定义在后面。

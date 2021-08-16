@@ -69,26 +69,6 @@ namespace zdq.UI
         /// </summary>
         private static readonly Regex s_HrefRegex = new Regex(@"<a href=([^>\n\s]+)>(.*?)(</a>)", RegexOptions.Singleline);
 
-        //private LinkText mHyperlinkText;
-
-        //------------------------------------------------------
-        //protected override void Awake()
-        //{
-        //    base.Awake();
-        //    mHyperlinkText = GetComponent<LinkText>();
-        //}
-        //------------------------------------------------------
-        //protected override void OnEnable()
-        //{
-        //    base.OnEnable();
-        //    mHyperlinkText.onHrefClick.AddListener(OnHyperlinkTextInfo);
-        //}
-        //------------------------------------------------------
-        //protected override void OnDisable()
-        //{
-        //    base.OnDisable();
-        //    mHyperlinkText.onHrefClick.RemoveListener(OnHyperlinkTextInfo);
-        //}
         //------------------------------------------------------
         public override void SetVerticesDirty()
         {
@@ -113,7 +93,7 @@ namespace zdq.UI
 
             //处理多行问题
             var lines = cachedTextGenerator.GetLinesArray().Length;
-            Debug.Log("OnPopulateMesh line:" + lines);
+            //Debug.Log("OnPopulateMesh line:" + lines);
             CalcHrefInfo(orignText,lines);
 
 
@@ -128,8 +108,6 @@ namespace zdq.UI
                 }
 
                 // 将超链接里面的文本顶点索引坐标加入到包围框
-                //var characters = cachedTextGenerator.GetCharactersArray();
-                //var textChars = text.ToCharArray();
 
                 toFill.PopulateUIVertex(ref vert, hrefInfo.startIndex);
                 var pos = vert.position;
@@ -192,7 +170,7 @@ namespace zdq.UI
             foreach (Match match in s_HrefRegex.Matches(originText))
             {
                 s_TextBuilder.Append(originText.Substring(indexText, match.Index - indexText));
-                Debug.Log("CalcHrefInfo line:" + lineCount);
+                //Debug.Log("CalcHrefInfo line:" + lineCount);
 
                 if (lineCount > 1)
                 {
@@ -250,15 +228,6 @@ namespace zdq.UI
                 }
             }
         }
-        //------------------------------------------------------
-        /// <summary>
-        /// 当前点击超链接回调
-        /// </summary>
-        /// <param name="info">回调信息</param>
-        //private void OnHyperlinkTextInfo(string info)
-        //{
-        //    Debug.Log("超链接信息：" + info);
-        //}
         //------------------------------------------------------
         public void SetLinkColor(string hexColor)
         {

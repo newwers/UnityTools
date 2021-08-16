@@ -7,7 +7,7 @@ using zdq.UI;
 public class TestLinkText : MonoBehaviour
 {
     public LinkText linkText;
-    public UnityEngine.UI.Image img;
+    public bool IsOpenURl = false;
     // Start is called before the first frame update
     void Start()
     {
@@ -18,8 +18,10 @@ public class TestLinkText : MonoBehaviour
     private void OnClick(string str)
     {
         print(str);
-        //Application.OpenURL(str);
-        print(img.rectTransform.rect);
+        if (IsOpenURl)
+        {
+            Application.OpenURL(str);
+        }
     }
 
 }
