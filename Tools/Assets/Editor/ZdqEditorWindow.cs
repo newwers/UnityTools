@@ -152,10 +152,140 @@ namespace TopGame
 
             GameTest();
 
+            SetRectTransformAnchorEqualSize();
+
+            SetRectTransformAnchorToPos();
+
             if (GUILayout.Button("关闭窗口"))
             {
                 //关闭窗口
                 this.Close();
+            }
+        }
+
+        /// <summary>
+        /// 让当前选中得RectTrasnform的锚点和Size一样大
+        /// </summary>
+        void SetRectTransformAnchorEqualSize()
+        {
+            if (GUILayout.Button("让当前选中得RectTrasnform的锚点和Size一样大"))
+            {
+                GameObject[] gos = Selection.gameObjects;
+
+                List<RectTransform> rects = new List<RectTransform>();
+                foreach (var item in gos)
+                {
+                    if (item == null)
+                    {
+                        continue;
+                    }
+                    rects.Add(item.GetComponent<RectTransform>());
+                }
+
+                foreach (var item in rects)
+                {
+                    if (item)
+                    {
+                        //怎么求出锚点的坐标?
+                        //根据当前屏幕分辨率,计算当前rect大小占屏幕的比例
+                        //左下角为min,右上角为max
+
+                        //要求锚点和轴都是(0.5,0.5)
+                        if (item.anchorMax != new Vector2(0.5f, 0.5f) || item.anchorMin != new Vector2(0.5f, 0.5f) || item.pivot != new Vector2(0.5f, 0.5f))//todo:如果锚点改变了,怎么计算?
+                        {
+                            ShowNotification(new GUIContent("要求锚点和轴都是(0.5, 0.5)"));
+                            return;
+                        }
+                        Vector2 rectSize = item.sizeDelta;
+                        Vector2 resolution = new Vector2(720, 1280);//Screen.Width 有问题,todo:怎么解决屏幕分辨率的问题?如何取到正确的分辨率
+
+                        float heightRatio = rectSize.y / resolution.y;
+                        float heightOffsetRatio = item.localPosition.y / resolution.y;//todo:这边要保证是父物体是全屏,如果不是全屏,能代码解决吗?
+
+                        float minY = 0.5f - (heightRatio / 2f) + heightOffsetRatio;
+
+                        float widthRatio = rectSize.x / resolution.x;
+                        float widthOffsetRatio = item.localPosition.x / resolution.x;
+
+                        float minX = 0.5f - (widthRatio / 2f) + widthOffsetRatio;
+
+
+                        Undo.RecordObject(item, "item");
+                        item.anchorMin = new Vector2(minX, minY);
+                        item.anchorMax = item.anchorMin + new Vector2(widthRatio, heightRatio);
+
+                        item.offsetMin = Vector2.zero;
+                        item.offsetMax = Vector2.zero;
+                    }
+                }
+            }
+            
+        }
+
+        /// <summary>
+        /// 让选择的Recttransform 的anchor到当前的坐标
+        /// </summary>
+        void SetRectTransformAnchorToPos()
+        {
+            if (GUILayout.Button("设置锚点跟坐标一样"))
+            {
+                //查找UI Camera
+                //if (m_UICamera == null)
+                //{
+                //    var cameras = FindObjectsOfType(typeof(Camera)) as Camera[];
+                //    foreach (var camera in cameras)
+                //    {
+                //        if (camera.cullingMask == (1 << LayerMask.NameToLayer("UI")))
+                //        {
+                //            m_UICamera = camera;
+                //            break;
+                //        }
+                //    }
+                //}
+
+                GameObject[] gos = Selection.gameObjects;
+
+                List<RectTransform> rects = new List<RectTransform>();
+                foreach (var item in gos)
+                {
+                    if (item == null)
+                    {
+                        continue;
+                    }
+                    rects.Add(item.GetComponent<RectTransform>());
+                }
+
+                foreach (var item in rects)
+                {
+                    if (item)
+                    {
+                        //要求锚点和轴都是(0.5,0.5)
+                        if (item.pivot != new Vector2(0.5f, 0.5f))
+                        {
+                            ShowNotification(new GUIContent("要求轴是(0.5, 0.5)"));
+                            return;
+                        }
+                        Vector2 rectPos = item.localPosition;
+                        Vector2 resolution = new Vector2(720, 1280);//Screen.Width 有问题
+
+
+                        float heightRatio = 0.5f + (rectPos.y / resolution.y);
+
+                        float minY = heightRatio;
+
+                        float widthRatio = 0.5f + (rectPos.x / resolution.x);
+
+                        float minX = widthRatio;
+
+
+                        Undo.RecordObject(item, "item");
+                        item.anchorMin = new Vector2(minX, minY);
+                        item.anchorMax = item.anchorMin;
+
+                        //这边设置完锚点后，坐标应该为0
+                        item.anchoredPosition = Vector2.zero;
+                    }
+                }
             }
         }
 
