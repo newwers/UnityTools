@@ -26,6 +26,10 @@ public class ListenerResolutionChange : MonoBehaviour
     //------------------------------------------------------
     private void OnGUI()
     {
+        if (m_CanvasScaler == null)
+        {
+            return;
+        }
         if (Screen.width > Screen.height)
         {
             m_CanvasScaler.referenceResolution = new Vector2(1334, 750);
