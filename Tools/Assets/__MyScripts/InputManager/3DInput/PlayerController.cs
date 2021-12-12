@@ -20,6 +20,7 @@ namespace zdq.Zombie
 
         Vector3 m_MouseInput;
         Vector3 m_MoveDir;
+        bool m_IsUpDown;
 
 
         private void Awake()
@@ -41,9 +42,12 @@ namespace zdq.Zombie
             m_MouseInput.z = 0;
             m_MoveDir.x = Input.GetAxis("Horizontal");
             m_MoveDir.z = Input.GetAxis("Vertical");
+            m_IsUpDown = Input.GetKey(KeyCode.Q) || Input.GetKey(KeyCode.E);
+            m_MoveDir.y = m_IsUpDown? (Input.GetKey(KeyCode.Q) ? -1 :Input.GetKey(KeyCode.E) ? 1 : 0): 0;
 
             MoveTarget.position += MoveTarget.forward * m_MoveDir.z * Time.deltaTime * MoveSpeed;//朝着当前方向前后
             MoveTarget.position += MoveTarget.right * m_MoveDir.x * Time.deltaTime * MoveSpeed;//当前方向左右
+            MoveTarget.position += MoveTarget.up * m_MoveDir.y * Time.deltaTime * MoveSpeed;//当前方向上下
 
             RotateTarget.Rotate(Vector3.up, m_MouseInput.x * RotateSpeed * Time.deltaTime);//左右旋转
             RotateTarget.Rotate(Vector3.right, -m_MouseInput.y * RotateSpeed * Time.deltaTime);//上下旋转
