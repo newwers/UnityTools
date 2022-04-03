@@ -45,14 +45,30 @@ namespace TopGame
             }
             else
             {
-                Scene scene = EditorSceneManager.GetSceneByName("Assets/Scenes/Startup.unity");
-                if (scene.buildIndex != -1)
+                Scene scene = EditorSceneManager.GetActiveScene();
+                if (scene.buildIndex != -1 && scene.isDirty)
                 {
-                    UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/Startup.unity");//切换到自己想要的场景
+                    bool result = EditorUtility.DisplayDialog("提示", "是否保存当前场景?", "保存", "取消");
+                    if (result)
+                    {
+                        EditorSceneManager.SaveScene(scene);
+                    }
                 }
                 
                 EditorApplication.isPlaying = true;
             }
+        }
+
+        [MenuItem("zdq/Pause _F6")]
+        public static void Pause()
+        {
+            EditorApplication.isPaused = !EditorApplication.isPaused;
+        }
+
+        [MenuItem("zdq/Step _F7")]
+        public static void Step()
+        {
+            EditorApplication.Step();
         }
 
         //输入文字到内容
