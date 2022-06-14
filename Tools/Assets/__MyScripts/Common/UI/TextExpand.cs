@@ -286,7 +286,7 @@ namespace DCG.UI
             var uv0 = this.GetUnderlineCharUV();
             var charsMaxIndex = this.characterCountVisible - 1;
 
-            var chars = text.text.ToCharArray();
+            //var chars = text.text.ToCharArray();
 
             for (int i = 0; i < this.customLineIndexArray.Length; i++)
             {
@@ -368,7 +368,7 @@ namespace DCG.UI
             // cursorPos是原始大小下的信息,但文本在不同分辨率下会被进一步缩放处理,所以要将比例带入计算
             cursorPos /= this.text.pixelsPerUnit;
 
-            var rtf = (this.transform as RectTransform);
+            //var rtf = (this.transform as RectTransform);
             if (this.useAlign)
             {
                 // 行的第1个字符在DoAlign()中是修正过偏移的,所有后面的所有字符都要相应使用此偏移

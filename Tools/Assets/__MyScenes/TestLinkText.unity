@@ -265,7 +265,6 @@ MonoBehaviour:
   m_Material: {fileID: 2100000, guid: 477672992f6f1d94e86f8caf56792b4b, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
-  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -420,32 +419,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color:
-    r: 0
-    g: 0
-    b: 0
-    a: 1
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
-  <useLegacyMeshGeneration>k__BackingField: 0
-  m_Maskable: 1
-  m_IsMaskingGraphic: 0
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-    m_CallsDirty: 1
-  m_FontData: {m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0},
-    m_FontSize: 39, m_FontStyle: 0, m_BestFit: 0, m_MinSize: 10, m_MaxSize: 40, m_Alignment: 4,
-    m_AlignByGeometry: 0, m_RichText: 1, m_HorizontalOverflow: 0, m_VerticalOverflow: 0,
-    m_LineSpacing: 1}
-  m_LastTrackedFont: {fileID: 0}
+  m_FontData:
+    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_FontSize: 39
+    m_FontStyle: 0
+    m_BestFit: 0
+    m_MinSize: 10
+    m_MaxSize: 40
+    m_Alignment: 4
+    m_AlignByGeometry: 0
+    m_RichText: 1
+    m_HorizontalOverflow: 0
+    m_VerticalOverflow: 0
+    m_LineSpacing: 1
   m_Text: "\u8FD9\u91CC\u662F\u6D4B\u8BD5\u4E0B\u5212\u7EBF"
   UnderLineSpace: -59.2
   UnderLineSize: 10.8
-  UnderLineColor:
-    r: 1
-    g: 0.69803923
-    b: 0
-    a: 1
+  UnderLineColor: {r: 1, g: 0.69803923, b: 0, a: 1}
 --- !u!222 &645230986
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -521,7 +516,6 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.1792453, g: 0.1792453, b: 0.1792453, a: 1}
   m_RaycastTarget: 1
-  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -538,10 +532,11 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u70B9\u51FB<color=>\u8FD9\u91CC</color>\u8FDB\u884C\u8DF3\u8F6C"
+  m_Text: "\u70B9\u51FB<a href=https://www.baidu.com>\u8FD9\u91CC</a>\u8FDB\u884C\u8DF3\u8F6C"
   m_OnHrefClick:
     m_PersistentCalls:
       m_Calls: []
+  LinkColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!222 &1117346582
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -628,7 +623,6 @@ GameObject:
   - component: {fileID: 1454949145}
   - component: {fileID: 1454949144}
   - component: {fileID: 1454949143}
-  - component: {fileID: 1454949146}
   m_Layer: 5
   m_Name: Text (1)
   m_TagString: Untagged
@@ -664,16 +658,37 @@ MonoBehaviour:
   m_GameObject: {fileID: 1454949141}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8bfcf83e1f0d63b43b6fdfe09191f5a5, type: 3}
+  m_Script: {fileID: 11500000, guid: 082f2eadc3257c242889663b0e64e18c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  useGradientColor: 0
+  gradientColor1:
+    serializedVersion: 2
+    rgba: 4294967295
+  gradientColor2:
+    serializedVersion: 2
+    rgba: 4279571943
+  gradientColor3:
+    serializedVersion: 2
+    rgba: 4278228117
+  gradientColor4:
+    serializedVersion: 2
+    rgba: 4278317345
+  useAlign: 0
+  wordSpace: 0
+  lineSpace: 0
+  useUnderline: 1
+  ignoreBreakSign: 1
+  _lineHeight: 2.1
+  lineHeightJustify: 1
+  lineOffset: 0
   lineColor:
     serializedVersion: 2
-    rgba: 4278190080
-  text: {fileID: 1454949144}
-  underLineSpace: 1
-  underLineSize: 5.07
-  linkText: {fileID: 1454949144}
+    rgba: 4294967295
+  lineAlignToMiddle: 0
+  useCustomLineIndexArray: 1
+  customLineIndexArray:
+  - {x: 1, y: 19}
 --- !u!114 &1454949144
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -683,33 +698,29 @@ MonoBehaviour:
   m_GameObject: {fileID: 1454949141}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1e794da978e912e48804ba34ad78184f, type: 3}
+  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 1
-  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 56
+    m_FontSize: 44
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 56
+    m_MaxSize: 44
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 
-  m_OnHrefClick:
-    m_PersistentCalls:
-      m_Calls: []
+  m_Text: "\u8FD9<color=blue>\u91CC\u662F</color>\u6D4B\u8BD5\u4E0B\u5212\u7EBF"
 --- !u!222 &1454949145
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -718,20 +729,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1454949141}
   m_CullTransparentMesh: 0
---- !u!114 &1454949146
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1454949141}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c1bbfe0288a56d246bd32719b8b4b484, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  text: {fileID: 1454949144}
-  str: "\u4E0B\u5212<a href=1>\u7EBF</a>\u6D4B\u8BD5111"
 --- !u!1 &1769414635
 GameObject:
   m_ObjectHideFlags: 0
