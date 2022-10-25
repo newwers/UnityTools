@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -19,9 +20,21 @@ namespace zdq
             /// </summary>
             public int runCount;
             /// <summary>
-            /// unity 启动时间(单位分)
+            /// 启动时长(单位秒?)
             /// </summary>
-            public long runTime;
+            public int runTimeLength;
+
+            public int year;
+            public int month;
+            public int day;
+        }
+        [System.Serializable]
+        class UnityStatisticsSaveData
+        {
+            /// <summary>
+            /// unity 启动次数
+            /// </summary>
+            public List<UnityStatisticsData> datas;
         }
 
         static UnityStatistics m_Instance = null;
@@ -37,7 +50,12 @@ namespace zdq
             }
         }
 
-        UnityStatisticsData m_data;
+        public static Action OnFirstRunUnityAction;
+        public static Action OnRunUnityAction;
+        public static Action OnExitUnityAction;
+
+
+        UnityStatisticsSaveData m_data;
         string m_SaveFilePath;
         string m_SaveFileRoot;
         string m_SaveFileName;
@@ -62,7 +80,7 @@ namespace zdq
         /// </summary>
         static UnityStatistics()
         {
-            Debug.Log("static UnityStatistics");
+            Debug.Log("静态构造函数 static UnityStatistics");
 
         }
 
@@ -79,7 +97,7 @@ namespace zdq
         /// </summary>
         ~UnityStatistics()
         {
-            Debug.Log("~UnityStatistics m_data:" + m_data);
+            Debug.Log("析构函数 ~UnityStatistics m_data:" + m_data);
             OnDestroy();
 
         }
@@ -91,7 +109,10 @@ namespace zdq
             m_SaveFilePath = m_SaveFileRoot + m_SaveFileName;
             Debug.Log("file path:" + m_SaveFilePath);
             //读取数据
-            LoadDatas();
+            if (m_data == null)
+            {
+                LoadDatas();
+            }
 
             //监听启动
             EditorApplication.playModeStateChanged += playModeStateChanged;
@@ -119,10 +140,12 @@ namespace zdq
         {
             if (Tools.FileTool.FileTools.ExistFile(m_SaveFilePath) == false)
             {
-                m_data = new UnityStatisticsData();
+                m_data = new  UnityStatisticsSaveData();
+                m_data.datas = new List<UnityStatisticsData>();
                 return;
             }
-            m_data = JsonUtility.FromJson<UnityStatisticsData>(m_SaveFilePath);
+            var json = Tools.FileTool.FileTools.ReadFile(m_SaveFilePath,System.Text.Encoding.UTF8);
+            m_data = JsonConvert.DeserializeObject<UnityStatisticsSaveData>(json);
         }
 
         void SaveDatas()
@@ -134,9 +157,9 @@ namespace zdq
             }
 
             Tools.FileTool.FileTools.CreateDirectory(m_SaveFileRoot);
-            string json = JsonUtility.ToJson(m_data);
+            string json = JsonConvert.SerializeObject(m_data, Formatting.Indented);
             Tools.FileTool.FileTools.WriteFile(m_SaveFilePath,json,System.Text.Encoding.UTF8);
-            Debug.Log("Save UnityStatisticsData");
+            Debug.Log("保存统计数据! UnityStatisticsData");
         }
 
         /// <summary>
@@ -148,7 +171,7 @@ namespace zdq
             {
                 return;
             }
-            Debug.Log("当前运行unity次数:" + m_data.runCount + ",运行时间:" + m_data.runTime);
+            //Debug.Log("当前运行unity次数:" + m_data.runCount + ",运行时间:" + m_data.runTime);
         }
 
 
@@ -165,10 +188,23 @@ namespace zdq
                     OnRunUnity();
                     break;
                 case PlayModeStateChange.ExitingPlayMode:
+                    OnExitUnity();
                     break;
                 default:
                     break;
             }
+        }
+
+        /// <summary>
+        /// unity 关闭的时候记录运行时间
+        /// </summary>
+        private void OnExitUnity()
+        {
+            var data = GetTodayData();
+            int time = (int)Time.realtimeSinceStartup;
+            data.runTimeLength += time;
+            Debug.Log("本次运行了unity :" + time +" 秒!");
+            OnExitUnityAction?.Invoke();
         }
 
 
@@ -177,7 +213,8 @@ namespace zdq
         /// </summary>
         public void OnRunUnity()
         {
-            m_data.runCount++;
+            Debug.Log("开始运行unity!");
+            AddData();
 
             m_Dirty++;
         }
@@ -192,5 +229,53 @@ namespace zdq
             m_Dirty++;
         }
 
+        void AddData()
+        {
+            if (m_data == null || m_data.datas == null)
+            {
+                Debug.LogError("m_data is null !");
+                return;
+            }
+
+            var data = GetTodayData();
+            if (data != null)
+            {
+                data.runCount++;
+            }
+        }
+
+        UnityStatisticsData GetTodayData()
+        {
+            DateTime dateTime = DateTime.Now;
+
+            bool isExit = false;
+
+            for (int i = 0; i < m_data.datas.Count; i++)
+            {
+                var item = m_data.datas[i];
+                if (item.year == dateTime.Year && item.month == dateTime.Month && item.day == dateTime.Day)
+                {
+                    isExit = true;
+                    OnRunUnityAction?.Invoke();
+                    return item;
+                }
+            }
+
+            if (isExit == false)
+            {
+                var item = new UnityStatisticsData();
+                item.year = dateTime.Year;
+                item.month = dateTime.Month;
+                item.day = dateTime.Day;
+                item.runCount = 0;
+
+                m_data.datas.Add(item);
+
+                OnFirstRunUnityAction?.Invoke();
+                return item;
+            }
+
+            return null;
+        }
     }
 }
