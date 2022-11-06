@@ -12,30 +12,7 @@ namespace zdq
     /// </summary>
     public class UnityStatistics
     {
-        [System.Serializable]
-        class UnityStatisticsData
-        {
-            /// <summary>
-            /// unity 启动次数
-            /// </summary>
-            public int runCount;
-            /// <summary>
-            /// 启动时长(单位秒?)
-            /// </summary>
-            public int runTimeLength;
-
-            public int year;
-            public int month;
-            public int day;
-        }
-        [System.Serializable]
-        class UnityStatisticsSaveData
-        {
-            /// <summary>
-            /// unity 启动次数
-            /// </summary>
-            public List<UnityStatisticsData> datas;
-        }
+        
 
         static UnityStatistics m_Instance = null;
         public static UnityStatistics Instance
@@ -55,10 +32,9 @@ namespace zdq
         public static Action OnExitUnityAction;
 
 
-        UnityStatisticsSaveData m_data;
-        string m_SaveFilePath;
-        string m_SaveFileRoot;
-        string m_SaveFileName;
+        StatisticDataManager.UnityStatisticsSaveData m_data;
+        
+        
 
         /// <summary>
         /// 标记几次操作自动保存
@@ -104,10 +80,7 @@ namespace zdq
 
         public void Init()
         {
-            m_SaveFileName = "UnityStatistics.json";
-            m_SaveFileRoot = Application.dataPath + "/../zdq/";
-            m_SaveFilePath = m_SaveFileRoot + m_SaveFileName;
-            Debug.Log("file path:" + m_SaveFilePath);
+            Debug.Log("file path:" + StatisticDataManager.SaveFilePath);
             //读取数据
             if (m_data == null)
             {
@@ -138,14 +111,13 @@ namespace zdq
 
         private void LoadDatas()
         {
-            if (Tools.FileTool.FileTools.ExistFile(m_SaveFilePath) == false)
+            if (Tools.FileTool.FileTools.ExistFile(StatisticDataManager.SaveFilePath) == false)
             {
-                m_data = new  UnityStatisticsSaveData();
-                m_data.datas = new List<UnityStatisticsData>();
+                m_data = new StatisticDataManager.UnityStatisticsSaveData();
+                m_data.datas = new List<StatisticDataManager.UnityStatisticsData>();
                 return;
             }
-            var json = Tools.FileTool.FileTools.ReadFile(m_SaveFilePath,System.Text.Encoding.UTF8);
-            m_data = JsonConvert.DeserializeObject<UnityStatisticsSaveData>(json);
+            m_data = StatisticDataManager.GetStatisticData();
         }
 
         void SaveDatas()
@@ -156,9 +128,8 @@ namespace zdq
                 return;
             }
 
-            Tools.FileTool.FileTools.CreateDirectory(m_SaveFileRoot);
             string json = JsonConvert.SerializeObject(m_data, Formatting.Indented);
-            Tools.FileTool.FileTools.WriteFile(m_SaveFilePath,json,System.Text.Encoding.UTF8);
+            StatisticDataManager.SaveData(json);
             Debug.Log("保存统计数据! UnityStatisticsData");
         }
 
@@ -200,11 +171,25 @@ namespace zdq
         /// </summary>
         private void OnExitUnity()
         {
-            var data = GetTodayData();
+            var data = StatisticDataManager.GetTodayData();
             int time = (int)Time.realtimeSinceStartup;
             data.runTimeLength += time;
+            var singleStatisticsData = data.GetThisRunData();
+            if (singleStatisticsData != null)
+            {
+                singleStatisticsData.runTime = time;
+                singleStatisticsData.toTime = singleStatisticsData.ConvertDateTimeFormat(DateTime.Now);
+            }
+            else
+            {
+                Debug.LogError("本次运行数据获取异常!请检查");
+            }
+            
             Debug.Log("本次运行了unity :" + time +" 秒!");
+            SaveDatas();
             OnExitUnityAction?.Invoke();
+
+            EditorApplication.playModeStateChanged -= playModeStateChanged;//退出unity的时候,取消事件注册,防止多次注册
         }
 
 
@@ -214,6 +199,7 @@ namespace zdq
         public void OnRunUnity()
         {
             Debug.Log("开始运行unity!");
+            StatisticDataManager.InitData();//统计只有编辑器下进行,所以由这边进行初始化,其他地方使用,要注意初始化调用顺序
             AddData();
 
             m_Dirty++;
@@ -237,45 +223,12 @@ namespace zdq
                 return;
             }
 
-            var data = GetTodayData();
+            var data = StatisticDataManager.GetTodayData();
             if (data != null)
             {
                 data.runCount++;
             }
         }
 
-        UnityStatisticsData GetTodayData()
-        {
-            DateTime dateTime = DateTime.Now;
-
-            bool isExit = false;
-
-            for (int i = 0; i < m_data.datas.Count; i++)
-            {
-                var item = m_data.datas[i];
-                if (item.year == dateTime.Year && item.month == dateTime.Month && item.day == dateTime.Day)
-                {
-                    isExit = true;
-                    OnRunUnityAction?.Invoke();
-                    return item;
-                }
-            }
-
-            if (isExit == false)
-            {
-                var item = new UnityStatisticsData();
-                item.year = dateTime.Year;
-                item.month = dateTime.Month;
-                item.day = dateTime.Day;
-                item.runCount = 0;
-
-                m_data.datas.Add(item);
-
-                OnFirstRunUnityAction?.Invoke();
-                return item;
-            }
-
-            return null;
-        }
     }
 }
