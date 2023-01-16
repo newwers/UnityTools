@@ -1,75 +1,80 @@
-/********************************************************************
-Éú³ÉÈÕÆÚ:	12:28:2020 13:16
-Àà    Ãû: 	CustomHP
-×÷    Õß:	zdq
-Ãè    Êö:	×Ô¶¨ÒåÑªÌõ
+ï»¿/********************************************************************
+ç”Ÿæˆæ—¥æœŸ:	12:28:2020 13:16
+ç±»    å: 	CustomHP
+ä½œ    è€…:	zdq
+æ    è¿°:	è‡ªå®šä¹‰è¡€æ¡
 *********************************************************************/
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using System;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace zdq.UI
+namespace TopGame.UI
 {
+    [UIWidgetExport]
     public class CustomHP : Image
     {
         struct DamageData
         {
             public float damage;
-
             /// <summary>
-            /// Ôì³ÉÉËº¦ºó£¬µ±Ç°ÑªÁ¿
-            /// </summary>
-            public float curHP;
-
-            /// <summary>
-            /// ÑªÌõ¿ªÊ¼Öµ 0µ½1
+            /// å½“å‰è¡€æ¡ç™¾åˆ†æ¯”(0åˆ°1),ä¾‹å¦‚ä»50%æ‰åˆ°20%,é‚£ä¹ˆè¿™å°±æ˜¯0.5f
             /// </summary>
             public float startValue;
             /// <summary>
-            /// ÑªÌõ½áÊøÖµ 0µ½1
+            /// å—ä¼¤å‰,å½“å‰è¡€é‡
+            /// </summary>
+            public float curHP;
+
+            public float time;
+            /// <summary>
+            /// å‰©ä½™ç™¾åˆ†æ¯”(0åˆ°1),ä¾‹å¦‚å‰©ä½™20%è¡€é‡,å°±æ˜¯0.2f
             /// </summary>
             public float endValue;
 
             /// <summary>
-            /// »æÖÆµÄ¶¥µãÆ«ÒÆ
+            /// ç»˜åˆ¶çš„é¡¶ç‚¹åç§»
             /// </summary>
             public float vertexOffsetY;
 
             public Color color;
 
             /// <summary>
-            /// »æÖÆ¾ØĞÎµÄ³¤¶È
+            /// ç»˜åˆ¶çŸ©å½¢çš„é•¿åº¦
             /// </summary>
             public float rectLength
             {
                 get
                 {
-                    return Mathf.Clamp(endValue - startValue,0,1);
+                    return Mathf.Clamp(endValue - startValue, 0, 1);
                 }
             }
 
             /// <summary>
-            /// ²åÖµµÄ½ø¶È 0µ½1
+            /// æ’å€¼çš„è¿›åº¦ 0åˆ°1
             /// </summary>
             public float lerpPer;
 
-            public float time;
-
+            public bool IsShow
+            {
+                get
+                {
+                    return (Time.time - time) < 0.5f;
+                }
+            }
         }
 
-        public Action<int> OnHPChange;
 
         [Range(0f, 1f)]
         public float slider = 1f;
 
+        public bool bReverse = false;
 
-        public float m_offsetX;//xÖáÆ«ÒÆ
-        public float m_offsetY;//yÖáÆ«ÒÆ
+        public float m_offsetX;//xè½´åç§»
+        public float m_offsetY;//yè½´åç§»
 
         public List<Color> m_ColorList;
 
@@ -79,31 +84,25 @@ namespace zdq.UI
         public float SingleValue;
         public int ColorIndex;
         /// <summary>
-        /// ×ÜµÄÑªÌõÊıÁ¿
+        /// æ€»çš„è¡€æ¡æ•°é‡
         /// </summary>
         public int MaxHPCount;
         /// <summary>
-        /// µ±Ç°ÑªÌõÊıÁ¿
+        /// å½“å‰è¡€æ¡æ•°é‡
         /// </summary>
         public int CurHPCount;
 
         public bool bInit = false;
 
-        /// <summary>
-        /// ÉËº¦ÑªÌõ½¥±äÊ±¼ä
-        /// </summary>
         public float FlashingTime = 0.5f;
 
-        
-
         /// <summary>
-        /// Ã¿´Î¹¥»÷ÉËº¦Êı¾İ
+        /// æ¯æ¬¡æ”»å‡»ä¼¤å®³æ•°æ®
         /// </summary>
         DamageData damageData = new DamageData();
 
         List<DamageData> m_vRecords = new List<DamageData>();
-
-        bool m_bVertexChange = false;
+        private bool m_bVertexChange;
 
         protected override void Start()
         {
@@ -130,69 +129,16 @@ namespace zdq.UI
             CurLerpValue = Mathf.Lerp(CurLerpValue, Cur, 0.5f);
             RefreshSlider(CurLerpValue);
         }
-        
-        void VertexLerp()
-        {
-            if (m_vRecords.Count == 0)
-            {
-                return;
-            }
-
-            DamageData data;
-            for (int i = 0; i < m_vRecords.Count; i++)
-            {
-                data = m_vRecords[i];
-
-                //data.endValue = Mathf.Lerp(data.startValue, data.endValue, 0.5f);
-
-                data.lerpPer = 1 - (Time.realtimeSinceStartup - data.time) / FlashingTime;
-
-                m_vRecords[i] = data;
-            }
-
-            m_bVertexChange = true;
-        }
-
-        void ColorLerp()
-        {
-            if (m_vRecords.Count == 0)
-            {
-                return;
-            }
-
-            //Çå³ıÒÑ¾­Í¸Ã÷µÄÊı¾İ
-            DamageData data;
-            for (int i = m_vRecords.Count -1; i >= 0; i--)
-            {
-                data = m_vRecords[i];
-                if (data.color.a <= 0)
-                {
-                    m_vRecords.RemoveAt(i);
-                }
-            }
-
-            //¸üĞÂÑÕÉ«
-            for (int i = 0; i < m_vRecords.Count; i++)
-            {
-                data = m_vRecords[i];
-                data.color.a = data.lerpPer;
-                m_vRecords[i] = data;
-            }
-
-            m_bVertexChange = true;
-
-        }
-
         //------------------------------------------------------
         public void Test()
         {
-            float value = UnityEngine.Random.Range(0, 100);
+            float value = Random.Range(0, 100);
             Debug.Log("Random value:" + value);
-            //SetLerpValue(Cur - value);
+            //SetLerpValue(Cur- value);
             SetValue(Cur - value);
         }
         //------------------------------------------------------
-        public void Init(float cur, float max, int maxHPCount)
+        public void Init(float cur,float max,int maxHPCount)
         {
             Cur = cur;
             CurLerpValue = Cur;
@@ -205,29 +151,29 @@ namespace zdq.UI
             {
                 SingleValue = max / MaxHPCount;
             }
-
+            
             ColorIndex = 0;
             SetValue(Cur);
             m_vRecords.Clear();
             bInit = true;
-            //ÑÕÉ«ÔÚ×é¼şÃæ°åÖĞ×Ô¼ºµ÷Õû
+            //é¢œè‰²åœ¨ç»„ä»¶é¢æ¿ä¸­è‡ªå·±è°ƒæ•´
         }
         //------------------------------------------------------
         /// <summary>
-        /// ²åÖµ±íÏÖÉèÖÃÊıÖµ
+        /// æ’å€¼è¡¨ç°è®¾ç½®æ•°å€¼
         /// </summary>
         /// <param name="cur"></param>
         public void SetLerpValue(float cur)
         {
-
-            if (CurLerpValue <= Cur)//Èç¹û²»´¦ÓÚ¹ı¶ÉÖĞ
+            
+            if (CurLerpValue <= Cur)//å¦‚æœä¸å¤„äºè¿‡æ¸¡ä¸­
             {
-                CurLerpValue = Cur;//¼ÇÂ¼ÉÏÒ»´ÎµÃÊıÖµ
+                CurLerpValue = Cur;//è®°å½•ä¸Šä¸€æ¬¡å¾—æ•°å€¼
             }
 
             //float before = Cur;
 
-            Cur = Mathf.Clamp(cur, 0, Max);//¸üĞÂµ±Ç°ÊıÖµ
+            Cur = Mathf.Clamp(cur, 0, Max);//æ›´æ–°å½“å‰æ•°å€¼
 
             //RefreshDamageData(Cur, before);
 
@@ -235,80 +181,76 @@ namespace zdq.UI
         }
         //------------------------------------------------------
         /// <summary>
-        /// Ö±½ÓÉèÖÃÊıÖµ
+        /// ç›´æ¥è®¾ç½®æ•°å€¼
         /// </summary>
         /// <param name="cur"></param>
         public void SetValue(float cur)
         {
             float before = Cur;
-
-            Cur = Mathf.Clamp(cur, 0, Max);
+            
+            Cur = Mathf.Clamp(cur,0,Max);
 
             CurHPCount = Mathf.FloorToInt(Cur / SingleValue);
 
-            RefreshSlider(Cur);
-
             RefreshDamageData(Cur, before);
 
-            OnHPChange?.Invoke(CurHPCount);
+            RefreshSlider(Cur);
         }
         //------------------------------------------------------
-        void RefreshDamageData(float cur, float before)
+        void RefreshDamageData(float cur,float before)
         {
-            damageData.damage = Mathf.Max(before - cur, 0);//¹ıÂËµô»ØÑªÇé¿ö
-
-            //¼ÇÂ¼Î´µôÑªÇ°µÄ ¿ªÊ¼×ø±ê
-            
+            damageData.damage = Mathf.Max(before - cur, 0);//è¿‡æ»¤æ‰å›è¡€æƒ…å†µ
+            float startValue = before % SingleValue;
+            if (startValue == 0)
+            {
+                startValue = SingleValue;
+            }
+            damageData.startValue = startValue / SingleValue;//è®°å½•æœªæ‰è¡€å‰çš„ å¼€å§‹åæ ‡
+            damageData.curHP = before;
 
             if (damageData.damage > 0)
             {
-                damageData.time = Time.realtimeSinceStartup;
-
-                //¼ÆËãµ±Ç°µÄÑªÌõ±ÈÀı 0µ½1
-                float remainder = cur % SingleValue;//¼ÆËãÓàÊı
-                damageData.startValue = remainder / SingleValue;//¸ù¾İÓàÊı¼ÆËãslider
-
-                //¼ÆËãÉËº¦Ç°µÄÑªÌõ±ÈÀı 0µ½1
-                remainder = before % SingleValue;
-                remainder = remainder == 0 ? SingleValue : remainder;
-                damageData.endValue = remainder / SingleValue;
-
-                damageData.curHP = before;
-
-                damageData.vertexOffsetY = m_offsetY *( m_vRecords.Count + 1);
-
-                damageData.color = Color.white;
-
-                m_vRecords.Add(damageData);
+                damageData.color = color;
+                damageData.time = Time.time;
+                float remainder = Cur % SingleValue;//è®¡ç®—ä½™æ•°
+                //if (remainder == 0)//è¿™è¾¹å¦‚æœä¸€æ¬¡æ€§æ‰£é™¤ä¸€æ¡è¡€,åˆ™éœ€è¦è¡¨ç°
+                //{
+                //    remainder = SingleValue;
+                //}
+                damageData.endValue = remainder / SingleValue;//æ ¹æ®ä½™æ•°è®¡ç®—slider
             }
         }
         //------------------------------------------------------
         void RefreshSlider(float value)
         {
-            //¸ù¾İµ±Ç°Öµ,¼ÆËã³ösliderÖµ,ÑÕÉ«index
-            float remainder = value % SingleValue;//¼ÆËãÓàÊı
+            //æ ¹æ®å½“å‰å€¼,è®¡ç®—å‡ºsliderå€¼,é¢œè‰²index
+            float remainder = value % SingleValue;//è®¡ç®—ä½™æ•°
 
-            slider = remainder / SingleValue;//¸ù¾İÓàÊı¼ÆËãslider
+            slider = remainder / SingleValue;//æ ¹æ®ä½™æ•°è®¡ç®—slider
 
-            if (value == Max)//ÂúÑªÇé¿ö
+            if (value == Max)//æ»¡è¡€æƒ…å†µ
             {
                 slider = 1;
             }
 
+            if (bReverse)//å–å
+            {
+                slider = 1 - slider;
+            }
 
             float reductValue = Max - value;
-            ColorIndex = Mathf.FloorToInt(reductValue / SingleValue);//ÑÕÉ«index = ¼õÈ¥µÄÖµ / µ¥¸öÑÕÉ«µÄÖµ
+            ColorIndex = Mathf.FloorToInt(reductValue / SingleValue);//é¢œè‰²index = å‡å»çš„å€¼ / å•ä¸ªé¢œè‰²çš„å€¼
 
-
+            
 
             SetVerticesDirty();
         }
         //------------------------------------------------------
         Color GetColor(int index)
         {
-            if (m_ColorList.Count == 0)
+            if (m_ColorList == null || m_ColorList.Count == 0)
             {
-                Debug.LogError("ÑªÌõÑÕÉ«Ã»ÓĞÉèÖÃ!");
+                Debug.LogError("è¡€æ¡é¢œè‰²æ²¡æœ‰è®¾ç½®!");
                 return Color.white;
             }
 
@@ -318,15 +260,44 @@ namespace zdq.UI
 
             index = index % m_ColorList.Count;
 
-            Color color = m_ColorList[index];
+            Color color = Color.red;
+            if (index >= 0 && index < m_ColorList.Count)
+            {
+                color = m_ColorList[index];
+            }
 
-            if (isLastColor)//×îºóÒ»Ìõ
+            if (isLastColor)//æœ€åä¸€æ¡
             {
                 color.a = 0;
             }
 
             return color;
         }
+        //------------------------------------------------------
+
+        void VertexLerp()
+        {
+            DamageData data = damageData;
+            if (data.damage > 0 && data.IsShow)
+            {
+                data.lerpPer = 1 - Mathf.Clamp01((Time.time - data.time) / FlashingTime);
+                damageData = data;
+                m_bVertexChange = true;
+            }
+        }
+
+        void ColorLerp()
+        {
+            //æ›´æ–°é¢œè‰²
+            if (damageData.IsShow)
+            {
+                damageData.color.a = damageData.lerpPer;
+
+                m_bVertexChange = true;
+            }
+
+        }
+
         #region Draw
         //------------------------------------------------------
         protected override void OnPopulateMesh(VertexHelper toFill)
@@ -335,49 +306,48 @@ namespace zdq.UI
             toFill.Clear();
             Rect rect = GetPixelAdjustedRect();
             DrawHPRect(toFill);
-
-            DamageData data;
-            for (int i = 0; i < m_vRecords.Count; i++)
-            {
-                data = m_vRecords[i];
-                DrawDamageRect(toFill,data);
-            }
-
+            DrawDamageRect(toFill,damageData);
         }
 
         //------------------------------------------------------
         private void DrawHPRect(VertexHelper vh)
         {
             /*
-             Ë¼Â·:»æÖÆÁ½¸ö¾ØĞÎ,Ò»¸ö×÷Îªµ±Ç°ÑªÌõ,Ò»¸ö×÷ÎªÏÂÒ»¸öÑªÌõ,
-            È»ºó¸ù¾İÒ»¸öslider,½øĞĞ¿ØÖÆÏÔÊ¾±ÈÀı
-            Èç¹ûÖĞ¼äÒª¹ı¶É,ÄÇÃ´ĞèÒªÔÙ¼ÓÒ»¸ö¾ØĞÎ×÷Îª¹ı¶ÉÊ¹ÓÃ,Í¬Ê±¹ı¶ÉĞ§¹û»¹ĞèÒªÊµÏÖ
+             æ€è·¯:ç»˜åˆ¶ä¸¤ä¸ªçŸ©å½¢,ä¸€ä¸ªä½œä¸ºå½“å‰è¡€æ¡,ä¸€ä¸ªä½œä¸ºä¸‹ä¸€ä¸ªè¡€æ¡,
+            ç„¶åæ ¹æ®ä¸€ä¸ªslider,è¿›è¡Œæ§åˆ¶æ˜¾ç¤ºæ¯”ä¾‹
+            å¦‚æœä¸­é—´è¦è¿‡æ¸¡,é‚£ä¹ˆéœ€è¦å†åŠ ä¸€ä¸ªçŸ©å½¢ä½œä¸ºè¿‡æ¸¡ä½¿ç”¨,åŒæ—¶è¿‡æ¸¡æ•ˆæœè¿˜éœ€è¦å®ç°
 
             1---2-5---6
             |   | |   |
             0---3-4---7
              */
-            Rect rect = GetPixelAdjustedRect();//»ñÈ¡µ½ÑªÌõUIµÄ³¤¿í
+            Rect rect = GetPixelAdjustedRect();//è·å–åˆ°è¡€æ¡UIçš„é•¿å®½
 
-            //»ñÈ¡¾ØĞÎ×óÏÂ½Ç×ø±ê
-            float x = /*m_offsetX +*/ rect.xMin;
-            float y =/* m_offsetY +*/ rect.yMin;
+            //è·å–çŸ©å½¢å·¦ä¸‹è§’åæ ‡
+            float x = m_offsetX + rect.xMin;
+            float y = m_offsetY + rect.yMin;
 
 
             Color color1 = GetColor(ColorIndex);
             Color color2 = GetColor(ColorIndex + 1);
 
+            if (bReverse)
+            {
+                color1 = GetColor(ColorIndex +1);
+                color2 = GetColor(ColorIndex);
+            }
 
-            //¹¹½¨µÚÒ»¸ö¾ØĞÎ
+
+            //æ„å»ºç¬¬ä¸€ä¸ªçŸ©å½¢
             vh.AddVert(new Vector3(x, y, 0), color1, Vector2.zero);
-            vh.AddVert(new Vector3(x, y + rect.height, 0), color1, new Vector2(0, 1));
-            vh.AddVert(new Vector3(x + slider * rect.width, y + rect.height, 0), color1, new Vector2(slider, 1));
-            vh.AddVert(new Vector3(x + slider * rect.width, y, 0), color1, new Vector2(slider, 0));
+            vh.AddVert(new Vector3(x, y + rect.height, 0), color1, new Vector2(0,1));
+            vh.AddVert(new Vector3(x  + slider * rect.width, y + rect.height, 0), color1, new Vector2(slider, 1));
+            vh.AddVert(new Vector3(x  + slider * rect.width, y, 0), color1, new Vector2(slider, 0));
 
             vh.AddTriangle(0, 1, 2);
             vh.AddTriangle(0, 2, 3);
 
-            //¹¹½¨µÚ¶ş¸ö¾ØĞÎ
+            //æ„å»ºç¬¬äºŒä¸ªçŸ©å½¢
 
             vh.AddVert(new Vector3(x + slider * rect.width, y, 0), color2, new Vector2(slider, 0));
             vh.AddVert(new Vector3(x + slider * rect.width, y + rect.height, 0), color2, new Vector2(slider, 1));
@@ -389,36 +359,36 @@ namespace zdq.UI
         }
         //------------------------------------------------------
         /// <summary>
-        /// »æÖÆµ±Ç°µÄÉËº¦ÑªÌõ
+        /// ç»˜åˆ¶å½“å‰çš„ä¼¤å®³è¡€æ¡
         /// </summary>
         void DrawDamageRect(VertexHelper vh, DamageData data)
         {
-            if (data.damage <= 0)//ÎŞÉËº¦¹ıÂË
+            if (data.damage <= 0)//æ— ä¼¤å®³è¿‡æ»¤
             {
                 return;
             }
-            //¸ù¾İ DamageData »æÖÆ¶ÔÓ¦µÄ¾ØĞÎ
-            //´ÓÆğµã¿ªÊ¼»æÖÆ,¸ù¾İÉËº¦¼ÆËã³ö¾ØĞÎ³¤¶È,
-            //³¤¶È = ÉËº¦ / µ¥¸öÑªÌõÊıÖµ  Õâ±ßÒª¿¼ÂÇ¶àÌõÇé¿ö,²¢ÇÒ»¹Òª¿¼ÂÇµ±Ç°ÌõÊ£ÓàÊıµÄÇé¿ö
+            //æ ¹æ® DamageData ç»˜åˆ¶å¯¹åº”çš„çŸ©å½¢
+            //ä»èµ·ç‚¹å¼€å§‹ç»˜åˆ¶,æ ¹æ®ä¼¤å®³è®¡ç®—å‡ºçŸ©å½¢é•¿åº¦,
+            //é•¿åº¦ = ä¼¤å®³ / å•ä¸ªè¡€æ¡æ•°å€¼  è¿™è¾¹è¦è€ƒè™‘å¤šæ¡æƒ…å†µ,å¹¶ä¸”è¿˜è¦è€ƒè™‘å½“å‰æ¡å‰©ä½™æ•°çš„æƒ…å†µ
 
-            Rect rect = GetPixelAdjustedRect();//»ñÈ¡µ½ÑªÌõUIµÄ³¤¿í
+            Rect rect = GetPixelAdjustedRect();//è·å–åˆ°è¡€æ¡UIçš„é•¿å®½
 
             Color color = data.color;
 
 
-            float remainder = data.curHP % SingleValue;//¼ÆËãµ±Ç°ÑªÌõÓàÊı
+            float remainder = data.curHP % SingleValue;//è®¡ç®—å½“å‰è¡€æ¡ä½™æ•°
             remainder = remainder == 0 ? SingleValue : remainder;
-            if (data.damage <= remainder)//µ±Ç°ÑªÌõÄÚµÄÇé¿ö
+            if (data.damage <= remainder)//å½“å‰è¡€æ¡å†…çš„æƒ…å†µ
             {
-                float length = (data.damage / SingleValue) * data.lerpPer;//±¾´ÎÉËº¦ÔÚÑªÌõÖĞµÄ³¤¶È±ÈÀı
+                float length = (data.damage / SingleValue) * data.lerpPer;//æœ¬æ¬¡ä¼¤å®³åœ¨è¡€æ¡ä¸­çš„é•¿åº¦æ¯”ä¾‹
 
-                //¼ÆËã¿ªÊ¼µÄ¾ØĞÎ×óÏÂ½Ç×ø±ê = ÆğÊ¼×óÏÂ½Ç×ø±ê + (¿ªÊ¼×ø±ê - ÉËº¦³¤¶È) * ¾ØĞÎ¿í¶È
-                float x = rect.xMin + (data.startValue) * rect.width;
+                //è®¡ç®—å¼€å§‹çš„çŸ©å½¢å·¦ä¸‹è§’åæ ‡ = èµ·å§‹å·¦ä¸‹è§’åæ ‡ + (å¼€å§‹åæ ‡ - ä¼¤å®³é•¿åº¦) * çŸ©å½¢å®½åº¦
+                float x = rect.xMin + (data.endValue) * rect.width;
                 float y = rect.yMin + data.vertexOffsetY;
 
                 int vertCount = vh.currentVertCount;
 
-                //¹¹½¨¾ØĞÎ
+                //æ„å»ºçŸ©å½¢
                 vh.AddVert(new Vector3(x, y, 0), color, new Vector2(0.5f, 0.5f));
                 vh.AddVert(new Vector3(x, y + rect.height, 0), color, new Vector2(0.5f, 0.5f));
                 vh.AddVert(new Vector3(x + length * rect.width, y + rect.height, 0), color, new Vector2(0.5f, 0.5f));
@@ -428,28 +398,28 @@ namespace zdq.UI
                 vh.AddTriangle(vertCount, vertCount + 1, vertCount + 2);
                 vh.AddTriangle(vertCount, vertCount + 2, vertCount + 3);
             }
-            else//³¬³öµ±Ç°ÑªÌõÇé¿ö,
+            else//è¶…å‡ºå½“å‰è¡€æ¡æƒ…å†µ,
             {
                 bool isOverNext = (data.damage - remainder) > SingleValue;
-                //ÏÈ¹¹½¨Ò»Ìõµ±Ç°ÑªÌõµÄ¾ØĞÎ,¸ù¾İÊÇ·ñ³¬¹ıÁ½ÌõÑªÌõ,Ê¹ÓÃ²»Í¬µÄ¶¥µãÎ»ÖÃ»æÖÆ¾ØĞÎ
-                float length = (isOverNext? data.startValue : data.endValue) * data.lerpPer;
-                //¼ÆËã¿ªÊ¼µÄ¾ØĞÎ×óÏÂ½Ç×ø±ê = ÆğÊ¼×óÏÂ½Ç×ø±ê 
+                //å…ˆæ„å»ºä¸€æ¡å½“å‰è¡€æ¡çš„çŸ©å½¢,æ ¹æ®æ˜¯å¦è¶…è¿‡ä¸¤æ¡è¡€æ¡,ä½¿ç”¨ä¸åŒçš„é¡¶ç‚¹ä½ç½®ç»˜åˆ¶çŸ©å½¢
+                float length = (isOverNext ? data.startValue : data.endValue) * data.lerpPer;
+                //è®¡ç®—å¼€å§‹çš„çŸ©å½¢å·¦ä¸‹è§’åæ ‡ = èµ·å§‹å·¦ä¸‹è§’åæ ‡ 
                 float x = rect.xMin;
                 float y = rect.yMin + data.vertexOffsetY;
 
                 int vertCount = vh.currentVertCount;
 
-                vh.AddVert(new Vector3(x, y, 0), color, new Vector2(0.5f, 0.5f));
-                vh.AddVert(new Vector3(x, y + rect.height, 0), color, new Vector2(0.5f, 0.5f));
-                vh.AddVert(new Vector3(x + length * rect.width, y + rect.height, 0), color, new Vector2(0.5f, 0.5f));
-                vh.AddVert(new Vector3(x + length * rect.width, y, 0), color, new Vector2(0.5f, 0.5f));
+                //vh.AddVert(new Vector3(x, y, 0), color, new Vector2(0.5f, 0.5f));
+                //vh.AddVert(new Vector3(x, y + rect.height, 0), color, new Vector2(0.5f, 0.5f));
+                //vh.AddVert(new Vector3(x + length * rect.width, y + rect.height, 0), color, new Vector2(0.5f, 0.5f));
+                //vh.AddVert(new Vector3(x + length * rect.width, y, 0), color, new Vector2(0.5f, 0.5f));
 
 
-                vh.AddTriangle(vertCount, vertCount + 1, vertCount + 2);
-                vh.AddTriangle(vertCount, vertCount + 2, vertCount + 3);
+                //vh.AddTriangle(vertCount, vertCount + 1, vertCount + 2);
+                //vh.AddTriangle(vertCount, vertCount + 2, vertCount + 3);
 
-                //È»ºóÔÙ¸ù¾İÊ£ÓàÑªÁ¿¹¹½¨ÏÂÒ»Ìõ
-                //Èç¹ûÏÂÒ»Ìõ³¬¹ıÒ»ÕûÌõ,ÔòÔÙ¹¹½¨Ò»Ìõ´Ó¿ªÍ·,µ½µ±Ç°Î»ÖÃµÄ¾ØĞÎ¼´¿É,Ò²¾ÍÊÇËµÒ»´ÎÉËº¦×î¶à¹¹½¨Èı¸ö¾ØĞÎ
+                //ç„¶åå†æ ¹æ®å‰©ä½™è¡€é‡æ„å»ºä¸‹ä¸€æ¡
+                //å¦‚æœä¸‹ä¸€æ¡è¶…è¿‡ä¸€æ•´æ¡,åˆ™å†æ„å»ºä¸€æ¡ä»å¼€å¤´,åˆ°å½“å‰ä½ç½®çš„çŸ©å½¢å³å¯,ä¹Ÿå°±æ˜¯è¯´ä¸€æ¬¡ä¼¤å®³æœ€å¤šæ„å»ºä¸‰ä¸ªçŸ©å½¢
                 if (isOverNext)
                 {
                     vertCount = vh.currentVertCount;
@@ -465,13 +435,13 @@ namespace zdq.UI
                 }
 
 
-                //¹¹½¨´ÓÑªÌõÍ·¿ªÊ¼µ½µ±Ç°½ø¶ÈµÄ¾ØĞÎ
+                //æ„å»ºä»è¡€æ¡å¤´å¼€å§‹åˆ°å½“å‰è¿›åº¦çš„çŸ©å½¢
                 vertCount = vh.currentVertCount;
 
-                vh.AddVert(new Vector3(x + data.startValue * rect.width, y, 0), color, new Vector2(0.5f, 0.5f));
-                vh.AddVert(new Vector3(x + data.startValue * rect.width, y + rect.height, 0), color, new Vector2(0.5f, 0.5f));
-                vh.AddVert(new Vector3(x + Mathf.Lerp(data.startValue, 1, data.lerpPer)* rect.width, y + rect.height, 0), color, new Vector2(0.5f, 0.5f));
-                vh.AddVert(new Vector3(x + Mathf.Lerp(data.startValue, 1, data.lerpPer) * rect.width, y, 0), color, new Vector2(0.5f, 0.5f));
+                vh.AddVert(new Vector3(x + data.endValue * rect.width, y, 0), color, new Vector2(0.5f, 0.5f));
+                vh.AddVert(new Vector3(x + data.endValue * rect.width, y + rect.height, 0), color, new Vector2(0.5f, 0.5f));
+                vh.AddVert(new Vector3(x + Mathf.Lerp(data.endValue, 1, data.lerpPer) * rect.width, y + rect.height, 0), color, new Vector2(0.5f, 0.5f));
+                vh.AddVert(new Vector3(x + Mathf.Lerp(data.endValue, 1, data.lerpPer) * rect.width, y, 0), color, new Vector2(0.5f, 0.5f));
 
 
                 vh.AddTriangle(vertCount, vertCount + 1, vertCount + 2);
@@ -495,9 +465,9 @@ namespace zdq.UI
         private SerializedProperty m_Max;
         private SerializedProperty m_Cur;
         private SerializedProperty m_SingleValue;
+        private SerializedProperty m_bReverse;
         private SerializedProperty m_MaxHPCount;
         private SerializedProperty m_CurHPCount;
-        private SerializedProperty m_FlashingTime;
         private SerializedProperty m_ColorIndex;
         CustomHP m_hp;
 
@@ -514,9 +484,9 @@ namespace zdq.UI
             m_Max = serializedObject.FindProperty("Max");
             m_Cur = serializedObject.FindProperty("Cur");
             m_SingleValue = serializedObject.FindProperty("SingleValue");
+            m_bReverse = serializedObject.FindProperty("bReverse");
             m_MaxHPCount = serializedObject.FindProperty("MaxHPCount");
             m_CurHPCount = serializedObject.FindProperty("CurHPCount");
-            m_FlashingTime = serializedObject.FindProperty("FlashingTime");
 
         }
         //------------------------------------------------------
@@ -529,8 +499,9 @@ namespace zdq.UI
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-
+            
             EditorGUILayout.PropertyField(m_Slider);
+            EditorGUILayout.PropertyField(m_bReverse);
             EditorGUILayout.PropertyField(m_offsetX);
             EditorGUILayout.PropertyField(m_offsetY);
             EditorGUILayout.PropertyField(m_ColorIndex);
@@ -540,19 +511,18 @@ namespace zdq.UI
             EditorGUILayout.PropertyField(m_SingleValue);
             EditorGUILayout.PropertyField(m_MaxHPCount);
             EditorGUILayout.PropertyField(m_CurHPCount);
-            EditorGUILayout.PropertyField(m_FlashingTime);
 
             serializedObject.ApplyModifiedProperties();
             base.OnInspectorGUI();
 
-            if (GUILayout.Button("²âÊÔ³õÊ¼»¯²ÎÊı"))
+            if (GUILayout.Button("æµ‹è¯•åˆå§‹åŒ–å‚æ•°"))
             {
                 if (m_hp != null)
                 {
-                    m_hp.Init(5000, 5000, 20);
+                    m_hp.Init(500, 500, 5);
                 }
             }
-            if (GUILayout.Button("²âÊÔ"))
+            if (GUILayout.Button("æµ‹è¯•"))
             {
                 if (m_hp != null)
                 {
