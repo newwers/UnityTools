@@ -1,13 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using TopGame.ED;
-using TopGame.UI;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using zdq.UI;
 
-namespace TopGame
+namespace zdq.UIEditor
 {
 
 
@@ -45,13 +44,11 @@ namespace TopGame
             SetUIName();
             CopyGameObject();
             IsAddReferencesToggle();
-            AddSelectToUISerialized();
             EditorGUILayout.BeginHorizontal();
             CreateImage();
             CreateText();
             CreateBtn();
             EditorGUILayout.EndHorizontal();
-            TextReplaceWithHexText();
             ImageConvertImageEX();
             ConvertSelectEmptyImage();
             SetParticleOrder();
@@ -289,150 +286,7 @@ namespace TopGame
                 }
             }
         }
-        #region UIReferences
-        UISerialized FindReferences<T>(Component component,out int index) where T : Component
-        {
-            index = -1;
-            if (Selection.activeGameObject == null)
-            {
-                ShowNotification(new GUIContent("请选择一个物体"));
-                return null;
-            }
-
-            var uis = GameObject.FindObjectsOfType<UISerialized>();
-            if (uis != null)
-            {
-                foreach (var ui in uis)
-                {
-                    if (ui.IsExist<T>(component))
-                    {
-                        index = ui.GetIndex<T>(component);
-                        return ui;
-                    }
-                }
-            }
-
-            return null;
-        }
-        //------------------------------------------------------
-        /// <summary>
-        /// 查找最近的一个 UISerialized 组件是否引用改组件
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="component"></param>
-        /// <returns></returns>
-        UISerialized FindUISerializedReferences()
-        {
-            if (Selection.activeTransform == null)
-            {
-                ShowNotification(new GUIContent("请选择一个父物体"));
-                return null;
-            }
-
-            UISerialized ui = null;
-            Transform trs = Selection.activeTransform;
-            while (ui == null && trs.parent != null)//获取到距离当前组件最近的一个 UISerialized
-            {
-                if (trs.GetComponent<UISerialized>())
-                {
-                    ui = trs.GetComponent<UISerialized>();
-                }
-                else
-                {
-                    trs = trs.parent;
-                }
-            }
-            return ui;
-        }
-        //------------------------------------------------------
-        void AddSelectToUISerialized()
-        {
-            if (GUILayout.Button("添加选中物体到uiSerialized"))
-            {
-                var selectList = Selection.gameObjects;
-
-                if (selectList.Length <= 0)
-                {
-                    this.ShowNotification(new GUIContent("当前没有选择物体!!"));
-                    return;
-                }
-
-                UISerialized uISerialized = FindUISerializedReferences();
-                if (uISerialized == null)
-                {
-                    return;
-                }
-                Undo.RecordObject(uISerialized, "AddSelectToUISerialized");
-                foreach (var item in selectList)
-                {
-                    AddGameObjectToUISerialized(uISerialized, item);
-                }
-                ShowNotification(new GUIContent("添加完成!!"));
-            }
-        }
-        //------------------------------------------------------
-        void AddComponentToUISerialized<T>(UISerialized ui, Component component) where T : Graphic
-        {
-            if (m_IsAddReferencesToggle == false)
-            {
-                return;
-            }
-            if (component == null || ui == null)
-            {
-                ShowNotification(new GUIContent("添加到 UISerialized 组件失败"));
-                return;
-            }
-
-            //先判断是否存在
-            if (ui.IsExist<T>(component))//已存在应该就不用添加了
-            {
-                //int index = ui.GetIndex<T>(component);
-                //ui.SetWidget<T>(index, component);
-                ShowNotification(new GUIContent(" UISerialized 中已存在"));
-                return;
-            }
-
-            //再判断是否长度为0需要创建
-            if (ui.Widgets == null)
-            {
-                ui.Widgets = new UISerialized.Widget[1];
-                ui.Widgets[0].widget = component;
-            }
-            else
-            {
-                int length = ui.Widgets.Length;
-                Array.Resize<TopGame.UI.UISerialized.Widget>(ref ui.Widgets, length + 1);
-                ui.Widgets[length] = new UISerialized.Widget();
-                ui.Widgets[length].widget = component;
-            }
-        }
-        //------------------------------------------------------
-        void AddGameObjectToUISerialized(UISerialized ui, GameObject go)
-        {
-            if (m_IsAddReferencesToggle == false)
-            {
-                return;
-            }
-            if (go == null || ui == null)
-            {
-                ShowNotification(new GUIContent("添加到 UISerialized 组件失败"));
-                return;
-            }
-
-            //再判断是否长度为0需要创建
-            if (ui.Elements == null)
-            {
-                ui.Elements = new GameObject[1]; ;
-                ui.Elements[0] = go;
-            }
-            else
-            {
-                int length = ui.Elements.Length;
-                Array.Resize<GameObject>(ref ui.Elements, length + 1);
-                ui.Elements[length] = go;
-            }
-        }
-        #endregion
+        
         //------------------------------------------------------
         #region CreatUI
         bool m_IsAddReferencesToggle = true;
@@ -452,8 +306,6 @@ namespace TopGame
                     Image img = go.GetComponent<Image>();
                     img.raycastTarget = false;
                     go.transform.SetParent(Selection.activeTransform, false);
-                    UISerialized ui = FindUISerializedReferences();
-                    AddComponentToUISerialized<Image>(ui,img);
                     Selection.activeGameObject = go;
                 }
             }
@@ -481,8 +333,6 @@ namespace TopGame
                     //text.rectTransform.sizeDelta = Vector2.zero;
 
                     go.transform.SetParent(Selection.activeTransform, false);
-                    UISerialized ui = FindUISerializedReferences();
-                    AddComponentToUISerialized<Text>(ui, text);
                     Selection.activeGameObject = go;
                 }
             }
@@ -494,7 +344,7 @@ namespace TopGame
             {
                 if (Selection.activeTransform && Selection.activeTransform.GetComponentInParent<Canvas>())
                 {
-                    GameObject go = new GameObject("Btn", typeof(EmptyImage),typeof(EventTriggerListener));
+                    GameObject go = new GameObject("Btn", typeof(EmptyImage),typeof(UIEventListener));
                     GameObject icon = new GameObject("icon", typeof(Image));
 
                     go.transform.SetParent(Selection.activeTransform, false);
@@ -515,238 +365,165 @@ namespace TopGame
         #endregion
         //------------------------------------------------------
 #region ReplaceComponent
-        void TextReplaceWithHexText()
-        {
-            if (GUILayout.Button("Text替换成HexText"))
-            {
-                var selectList = Selection.gameObjects;
-
-                if (selectList.Length <= 0)
-                {
-                    this.ShowNotification(new GUIContent("当前没有选择物体!!"));
-                    return;
-                }
-
-                Undo.RecordObjects(selectList, "TextReplaceWithHexText");
-
-                List<Text> texts = new List<Text>();
-                foreach (var item in selectList)
-                {
-                    var items = item.GetComponentsInChildren<Text>(true);
-                    foreach (var img in items)
-                    {
-                        texts.Add(img);
-                    }
-                }
-
-                foreach (var item in texts)
-                {
-                    Text text = item;
-                    if (text == null)
-                    {
-                        continue;
-                    }
-
-                    var ui = FindReferences<Text>(text,out int index);
-
-                    var font = text.font;
-                    var fontStyle = text.fontStyle;
-                    var fontSize = text.fontSize;
-                    var lineSpacing = text.lineSpacing;
-                    var supportRichText = text.supportRichText;
-                    var alignment = text.alignment;
-                    //var horizontalOverflow = text.horizontalOverflow;//在HexText.Awake中进行设置成Wrap
-                    //var verticalOverflow = text.verticalOverflow;//在HexText.Awake中进行设置成Truncate
-                    //var resizeTextForBestFit = text.resizeTextForBestFit;
-                    var color = text.color;
-                    var material = text.material;
-                    //var raycast = text.raycastTarget;
-                    var txt = text.text;
-
-                    GameObject go = item.gameObject;
-                    DestroyImmediate(text);
-                    HexText hexText = Undo.AddComponent<HexText>(go);// go.AddComponent<HexText>();
-                    hexText.font = font;
-                    hexText.fontSize = fontSize;
-                    hexText.resizeTextMaxSize = fontSize;
-                    hexText.fontStyle = fontStyle;
-                    hexText.lineSpacing = lineSpacing;
-                    hexText.supportRichText = supportRichText;
-                    hexText.alignment = alignment;
-                    hexText.color = color;
-                    hexText.material = material;
-                    hexText.text = txt;
-
-                    if (ui && index >= 0)
-                    {
-                        ui.SetWidget<HexText>(index, hexText);
-                        Debug.Log("替换了:" + ui.name + ",的ui引用组件中的:" + go.name +",为HexText");
-                    }
-
-                    UnityEditor.EditorUtility.SetDirty(go);
-                }
-                ShowNotification(new GUIContent("替换完成"));
-            }
-        }
         //------------------------------------------------------
         void ImageConvertImageEX()
         {
-            if (GUILayout.Button("Image互转ImageEX"))
-            {
-                var selectList = Selection.gameObjects;
+            //if (GUILayout.Button("Image互转ImageEX"))
+            //{
+            //    var selectList = Selection.gameObjects;
 
-                if (selectList.Length <= 0)
-                {
-                    this.ShowNotification(new GUIContent("当前没有选择物体!!"));
-                    return;
-                }
+            //    if (selectList.Length <= 0)
+            //    {
+            //        this.ShowNotification(new GUIContent("当前没有选择物体!!"));
+            //        return;
+            //    }
 
-                Undo.RecordObjects(selectList, "selectList5");
+            //    Undo.RecordObjects(selectList, "selectList5");
 
-                List<Image> images = new List<Image>();
-                foreach (var item in selectList)
-                {
-                    var items = item.GetComponentsInChildren<Image>(true);
-                    foreach (var img in items)
-                    {
-                        if (img.GetType() == typeof(Image))
-                        {
-                            images.Add(img);
-                        }
-                    }
-                }
+            //    List<Image> images = new List<Image>();
+            //    foreach (var item in selectList)
+            //    {
+            //        var items = item.GetComponentsInChildren<Image>(true);
+            //        foreach (var img in items)
+            //        {
+            //            if (img.GetType() == typeof(Image))
+            //            {
+            //                images.Add(img);
+            //            }
+            //        }
+            //    }
 
-                List<ImageEx> imagesEx = new List<ImageEx>();
-                foreach (var item in selectList)
-                {
-                    var items = item.GetComponentsInChildren<ImageEx>(true);
-                    foreach (var img in items)
-                    {
-                        if (img.GetType() == typeof(ImageEx))
-                        {
-                            imagesEx.Add(img);
-                        }
-                    }
-                }
-
-
+                //List<ImageEx> imagesEx = new List<ImageEx>();
+                //foreach (var item in selectList)
+                //{
+                //    var items = item.GetComponentsInChildren<ImageEx>(true);
+                //    foreach (var img in items)
+                //    {
+                //        if (img.GetType() == typeof(ImageEx))
+                //        {
+                //            imagesEx.Add(img);
+                //        }
+                //    }
+                //}
 
 
-                foreach (var item in images)
-                {
-                    Image image = item;
-                    if (image == null)
-                    {
-                        continue;
-                    }
-
-                    var ui = FindReferences<Image>(image,out int index);
-
-                    Texture2D texture = null;
-                    if (image.sprite)
-                    {
-                        texture = image.sprite.texture;
-                    }
-                    string path = "";
-                    if (texture != null)
-                    {
-                        path = AssetDatabase.GetAssetPath(texture.GetInstanceID());
-                    }
-
-                    var color = image.color;
-                    var material = image.material;
-                    var raycast = image.raycastTarget;
-                    var maskable = image.maskable;
-
-                    GameObject go = item.gameObject;
-                    DestroyImmediate(image);
-
-                    ImageEx imageEX = go.AddComponent<ImageEx>();
-                    //image.sprite = Sprite.Create((Texture2D)texture, new Rect(Vector2.zero, texture.texelSize), new Vector2(0.5f,0.5f));
-                    if (string.IsNullOrWhiteSpace(path))
-                    {
-                        imageEX.sprite = null;
-                    }
-                    else
-                    {
-                        imageEX.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-                    }
-
-                    imageEX.color = color;
-                    imageEX.material = material;
-                    imageEX.raycastTarget = raycast;
-                    imageEX.maskable = maskable;
-
-                    if (ui != null && index != -1)
-                    {
-                        ui.SetWidget<ImageEx>(index, imageEX);
-                        Debug.Log("ui:" + ui.name + ",设置组件:" + imageEX.name);
-                    }
-
-                    UnityEditor.EditorUtility.SetDirty(go);
-
-                    this.ShowNotification(new GUIContent(go.name + " 转换成功!"));
-                }
-
-                foreach (var item in imagesEx)
-                {
-                    ImageEx imageEx = item;
-                    if (imageEx == null)
-                    {
-                        continue;
-                    }
-
-                    var ui = FindReferences<ImageEx>(imageEx,out int index);
-
-                    Texture2D texture = null;
-                    if (imageEx.overrideSprite)
-                    {
-                        texture = imageEx.overrideSprite.texture;
-                    }
-                    string path = "";
-                    if (texture)
-                    {
-                        path = AssetDatabase.GetAssetPath(texture.GetInstanceID());
-                    }
-
-                    var color = imageEx.color;
-                    var material = imageEx.material;
-                    var raycast = imageEx.raycastTarget;
-                    var maskable = imageEx.maskable;
-
-                    GameObject go = item.gameObject;
-                    DestroyImmediate(imageEx);
-
-                    Image image = go.AddComponent<Image>();
-                    //image.sprite = Sprite.Create((Texture2D)texture, new Rect(Vector2.zero, texture.texelSize), new Vector2(0.5f,0.5f));
-                    if (string.IsNullOrWhiteSpace(path))
-                    {
-                        image.sprite = null;
-                    }
-                    else
-                    {
-                        image.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-                    }
-                    image.color = color;
-                    image.material = material;
-                    image.raycastTarget = raycast;
-                    image.maskable = maskable;
-
-                    if (ui != null && index != -1)
-                    {
-                        ui.SetWidget<Image>(index, image);
-                        Debug.Log("ui:" + ui.name + ",设置组件:" + image.name);
-                    }
-
-                    UnityEditor.EditorUtility.SetDirty(go);
-
-                    this.ShowNotification(new GUIContent(go.name + " 转换成功!"));
-                }
 
 
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-            }
+            //    foreach (var item in images)
+            //    {
+            //        Image image = item;
+            //        if (image == null)
+            //        {
+            //            continue;
+            //        }
+
+            //        var ui = FindReferences<Image>(image,out int index);
+
+            //        Texture2D texture = null;
+            //        if (image.sprite)
+            //        {
+            //            texture = image.sprite.texture;
+            //        }
+            //        string path = "";
+            //        if (texture != null)
+            //        {
+            //            path = AssetDatabase.GetAssetPath(texture.GetInstanceID());
+            //        }
+
+            //        var color = image.color;
+            //        var material = image.material;
+            //        var raycast = image.raycastTarget;
+            //        var maskable = image.maskable;
+
+            //        GameObject go = item.gameObject;
+            //        DestroyImmediate(image);
+
+            //        ImageEx imageEX = go.AddComponent<ImageEx>();
+            //        //image.sprite = Sprite.Create((Texture2D)texture, new Rect(Vector2.zero, texture.texelSize), new Vector2(0.5f,0.5f));
+            //        if (string.IsNullOrWhiteSpace(path))
+            //        {
+            //            imageEX.sprite = null;
+            //        }
+            //        else
+            //        {
+            //            imageEX.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            //        }
+
+            //        imageEX.color = color;
+            //        imageEX.material = material;
+            //        imageEX.raycastTarget = raycast;
+            //        imageEX.maskable = maskable;
+
+            //        if (ui != null && index != -1)
+            //        {
+            //            ui.SetWidget<ImageEx>(index, imageEX);
+            //            Debug.Log("ui:" + ui.name + ",设置组件:" + imageEX.name);
+            //        }
+
+            //        UnityEditor.EditorUtility.SetDirty(go);
+
+            //        this.ShowNotification(new GUIContent(go.name + " 转换成功!"));
+            //    }
+
+            //    foreach (var item in imagesEx)
+            //    {
+            //        ImageEx imageEx = item;
+            //        if (imageEx == null)
+            //        {
+            //            continue;
+            //        }
+
+            //        var ui = FindReferences<ImageEx>(imageEx,out int index);
+
+            //        Texture2D texture = null;
+            //        if (imageEx.overrideSprite)
+            //        {
+            //            texture = imageEx.overrideSprite.texture;
+            //        }
+            //        string path = "";
+            //        if (texture)
+            //        {
+            //            path = AssetDatabase.GetAssetPath(texture.GetInstanceID());
+            //        }
+
+            //        var color = imageEx.color;
+            //        var material = imageEx.material;
+            //        var raycast = imageEx.raycastTarget;
+            //        var maskable = imageEx.maskable;
+
+            //        GameObject go = item.gameObject;
+            //        DestroyImmediate(imageEx);
+
+            //        Image image = go.AddComponent<Image>();
+            //        //image.sprite = Sprite.Create((Texture2D)texture, new Rect(Vector2.zero, texture.texelSize), new Vector2(0.5f,0.5f));
+            //        if (string.IsNullOrWhiteSpace(path))
+            //        {
+            //            image.sprite = null;
+            //        }
+            //        else
+            //        {
+            //            image.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            //        }
+            //        image.color = color;
+            //        image.material = material;
+            //        image.raycastTarget = raycast;
+            //        image.maskable = maskable;
+
+            //        if (ui != null && index != -1)
+            //        {
+            //            ui.SetWidget<Image>(index, image);
+            //            Debug.Log("ui:" + ui.name + ",设置组件:" + image.name);
+            //        }
+
+            //        UnityEditor.EditorUtility.SetDirty(go);
+
+            //        this.ShowNotification(new GUIContent(go.name + " 转换成功!"));
+            //    }
+
+
+            //    AssetDatabase.SaveAssets();
+            //    AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            //}
 
         }
         //------------------------------------------------------
