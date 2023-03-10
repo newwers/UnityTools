@@ -1,4 +1,4 @@
-﻿/********************************************************************
+/********************************************************************
 生成日期:	1:11:2020 10:06
 类    名: 	SliderLerp
 作    者:	zdq
@@ -11,11 +11,13 @@ using UnityEngine.UI;
 
 namespace TopGame.UI
 {
+    [UI.UIWidgetExport]
     public class SliderLerp : MonoBehaviour
     {
 
         public Image BackSlider;
         public Component FrontSlider;//兼容 Image 类型 和 Scrollbar 类型
+        public Image ShieldSlider;
 
         [Header("插值速度,单位秒")]
         public float LerpSpeed = 1f;
@@ -32,6 +34,10 @@ namespace TopGame.UI
         Image m_Front_Image;
         Scrollbar m_Front_Scrollbar;
 
+        /// <summary>
+        /// 血条数值
+        /// 0到1
+        /// </summary>
         float m_SliderValue = 1f;
 
         bool m_IsActive = false;
@@ -39,6 +45,20 @@ namespace TopGame.UI
         Image.Type m_BackImageType = Image.Type.Filled;
         float m_MaxWidth = 0;
 
+        [Header("是否开启颜色切换")]
+        public bool IsColorChange;
+
+        [Header("第一阶段颜色临界值")]
+        public float ChangeValue1 = 0.7f;
+        [Header("第二阶段颜色临界值")]
+        public float ChangeValue2 = 0.4f;
+
+        [Header("第一阶段颜色")]
+        public Color ColorValue1 = new Color(0.27f, 0.81f, 0.27f);
+        [Header("第二阶段颜色")]
+        public Color ColorValue2 = new Color(0.99f, 0.83f, 0.21f);
+        [Header("第三阶段颜色")]
+        public Color ColorValue3 = new Color(1f, 0.29f, 0.18f);
 
         /// <summary>
         /// 设置数值
@@ -56,7 +76,7 @@ namespace TopGame.UI
 
             if (BackSlider == null || FrontSlider == null)
             {
-                Debug.LogError("UI组件缺少,不进行过渡;BackSlider:" + BackSlider + ",FrontSlider:" + FrontSlider);
+                Framework.Plugin.Logger.Error("UI组件缺少,不进行过渡;BackSlider:" + BackSlider + ",FrontSlider:" + FrontSlider);
                 return;
             }
 
@@ -78,22 +98,25 @@ namespace TopGame.UI
             m_SliderValue = oldValue;
             if (isSetDefaultValue)
             {
-                SetDefaultValue();
+                SetDefaultValue(newValue, oldValue);
             }
             ValueLerp(m_SliderValue, newValue);
             m_SliderValue = newValue;
             m_IsActive = true;
         }
         //------------------------------------------------------
-        void SetDefaultValue()
+        void SetDefaultValue(float newValue, float oldValue)
         {
-            SetBackSliderValue(m_SliderValue);
-            m_CurBackValue = m_SliderValue;
+            SetFrontSliderValue(oldValue);
+            SetBackSliderValue(oldValue);
+            m_CurBackValue = oldValue;
+            m_CurFrontValue = oldValue;
         }
         //------------------------------------------------------
         void ValueLerp(float oldValue,float newValue)
         {
             WaitForSeconds wait = new WaitForSeconds(LerpSpeed / (float)LerpCount);
+            if (!gameObject.activeInHierarchy) return;
 
             if (oldValue > newValue)
             {
@@ -106,16 +129,7 @@ namespace TopGame.UI
             else
             {
                 //数值相等情况,直接赋值
-                if (FrontSlider is Image)
-                {
-                    m_Front_Image = FrontSlider as Image;
-                    m_Front_Image.fillAmount = newValue;
-                }
-                else if (FrontSlider is Scrollbar)
-                {
-                    m_Front_Scrollbar = FrontSlider as Scrollbar;
-                    m_Front_Scrollbar.size = newValue;
-                }
+                SetFrontSliderValue(newValue);
 
                 SetBackSliderValue(newValue);
 
@@ -133,16 +147,8 @@ namespace TopGame.UI
             //再过渡前置血条
             for (int i = 1; i <= LerpCount; i++)
             {
-                if (m_Front_Image)
-                {
-                    m_CurFrontValue = Mathf.Lerp(oldValue, newValue, (float)i/LerpCount);
-                    m_Front_Image.fillAmount = m_CurFrontValue;
-                }
-                if (m_Front_Scrollbar)
-                {
-                    m_CurFrontValue = Mathf.Lerp(oldValue, newValue, (float)i / LerpCount);
-                    m_Front_Scrollbar.size = m_CurFrontValue;
-                }
+                m_CurFrontValue = Mathf.Lerp(oldValue, newValue, (float)i / LerpCount);
+                SetFrontSliderValue(m_CurFrontValue);
                 yield return wait;
             }
         }
@@ -150,14 +156,7 @@ namespace TopGame.UI
         IEnumerator SubValue(float oldValue, float newValue,WaitForSeconds wait)
         {
             //先让前置血条过渡到最终值
-            if (m_Front_Image)
-            {
-                m_Front_Image.fillAmount = newValue;
-            }
-            if (m_Front_Scrollbar)
-            {
-                m_Front_Scrollbar.size = newValue;
-            }
+            SetFrontSliderValue(newValue);
             m_CurFrontValue = newValue;
             //再过渡后置血条
             for (int i = 1; i <= LerpCount; i++)
@@ -182,6 +181,23 @@ namespace TopGame.UI
             else
             {
                 SetSlicedValue(m_MaxWidth, value, BackSlider);
+            }
+        }
+        //------------------------------------------------------
+        void SetFrontSliderValue(float value)
+        {
+            if (m_Front_Image)
+            {
+                m_Front_Image.fillAmount = value;
+            }
+            if (m_Front_Scrollbar)
+            {
+                m_Front_Scrollbar.size = value;
+                m_Front_Scrollbar.value = 0;//防止血条出现中间过渡的问题
+            }
+            if (IsColorChange)
+            {
+                ChangeHpColor(value);
             }
         }
         //------------------------------------------------------
@@ -215,6 +231,7 @@ namespace TopGame.UI
             if (m_Front_Scrollbar)
             {
                 m_Front_Scrollbar.size = m_CurFrontValue;
+                m_Front_Scrollbar.value = 0;
             }
             SetBackSliderValue(m_CurBackValue);
 
@@ -242,6 +259,53 @@ namespace TopGame.UI
         public bool GetIsActive()
         {
             return m_IsActive;
+        }
+        void ChangeHpColor(float value)
+        {
+            Color color = ColorValue1;
+            if (value >= ChangeValue1)
+            {
+                
+            }
+            else if (value >= ChangeValue2)
+            {
+                color = ColorValue2;
+            }
+            else
+            {
+                color = ColorValue3;
+            }
+            if (m_Front_Image)
+            {
+                m_Front_Image.color = color;
+            }
+        }
+        //------------------------------------------------------
+        public void SetShieldValue(float shieldScale,bool isFull)
+        {
+            if (ShieldSlider == null)
+            {
+                return;
+            }
+            if (shieldScale <= 0)
+            {
+                ShieldSlider.rectTransform.sizeDelta = new Vector2(0, ShieldSlider.rectTransform.sizeDelta.y);
+                return;
+            }
+
+            //根据比例计算长度
+            float width = m_MaxWidth* shieldScale;
+
+            //根据比例,设置护盾长度
+            ShieldSlider.rectTransform.sizeDelta = new Vector2(width, ShieldSlider.rectTransform.sizeDelta.y);
+
+            //获取当前血量比例,转化成护盾起始点
+            float posX = m_SliderValue * m_MaxWidth;
+            if (isFull)//护盾溢出情况,从前面往后设置
+            {
+                posX = m_MaxWidth - width;
+            }
+            ShieldSlider.rectTransform.anchoredPosition = new Vector2(posX, ShieldSlider.rectTransform.anchoredPosition.y);
         }
     }
 }
