@@ -75,9 +75,18 @@ public class BaseMonoSingleClass<T> : MonoBehaviour  where T:MonoBehaviour
         {
             if (mInstance == null)
             {
-                GameObject go = new GameObject(typeof(T).ToString());
-                UnityEngine.Object.DontDestroyOnLoad(go);
-                mInstance = go.AddComponent<T>();
+                var t = GameObject.FindObjectOfType<T>();
+                if (t != null)
+                {
+                    mInstance = t;
+                    UnityEngine.Object.DontDestroyOnLoad(t);
+                }
+                else
+                {
+                    GameObject go = new GameObject(typeof(T).ToString());
+                    UnityEngine.Object.DontDestroyOnLoad(go);
+                    mInstance = go.AddComponent<T>();
+                }
             }
             return mInstance;
         }
