@@ -28,10 +28,12 @@ public class ResourceLoadManager : BaseMonoSingleClass<ResourceLoadManager> {
 
     public LoadAssetType assetType = LoadAssetType.Assets;
 
-    
 
-    private void Awake()
+
+    protected override void Awake()
     {
+        base.Awake();
+
         DontDestroyOnLoad(this);
 
         AssetBundleManager.Instance.Init();

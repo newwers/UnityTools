@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using LitJson;
 
 public class UIManager : MonoBehaviour
 {
@@ -10,11 +9,13 @@ public class UIManager : MonoBehaviour
     /// <summary>
     /// 存放所有注册的界面
     /// </summary>
-    private List<UIInstanceIDEnum> m_AllRegisterUI;
+    private List<EUIInstanceID> m_AllRegisterUI;
     /// <summary>
     /// 存放所有生成出来的界面
     /// </summary>
-    public Dictionary<UIInstanceIDEnum,BaseUIController> m_AllInstantiateUI;
+    public Dictionary<EUIInstanceID,BaseUIController> m_AllInstantiateUI;
+
+    public UIScriptable pUIConfig;
 
 
     private void Awake()
@@ -22,8 +23,8 @@ public class UIManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            m_AllRegisterUI = new List<UIInstanceIDEnum>();
-            m_AllInstantiateUI = new Dictionary<UIInstanceIDEnum, BaseUIController>();
+            m_AllRegisterUI = new List<EUIInstanceID>();
+            m_AllInstantiateUI = new Dictionary<EUIInstanceID, BaseUIController>();
         }
 
 
@@ -37,19 +38,15 @@ public class UIManager : MonoBehaviour
     /// </summary>
     private void StartRegionUI()
     {
-        RegisterUI(UIInstanceIDEnum.PlantInfoPanel);
-        RegisterUI(UIInstanceIDEnum.Bag);
-        RegisterUI(UIInstanceIDEnum.MainUIPanel);
-        RegisterUI(UIInstanceIDEnum.Builder);
-        RegisterUI(UIInstanceIDEnum.Plant);
-        RegisterUI(UIInstanceIDEnum.Shop);
-        RegisterUI(UIInstanceIDEnum.MainMenu);
+        RegisterUI(EUIInstanceID.Bag);
+        RegisterUI(EUIInstanceID.MainUIPanel);
+        RegisterUI(EUIInstanceID.MainMenu);
     }
 
     /// <summary>
     /// 注册UI界面
     /// </summary>
-    public void RegisterUI(UIInstanceIDEnum uIInstanceID)
+    public void RegisterUI(EUIInstanceID uIInstanceID)
     {
         if (!m_AllRegisterUI.Contains(uIInstanceID))
         {
@@ -68,14 +65,14 @@ public class UIManager : MonoBehaviour
     /// <param name="ui"></param>
     public void UnRegisterUI(BaseUIView ui)
     {
-        if (!m_AllRegisterUI.Contains((UIInstanceIDEnum)ui.UIInstanceID))
+        if (!m_AllRegisterUI.Contains((EUIInstanceID)ui.UIInstanceID))
         {
             LogManager.LogError("移除不存在的界面:" + ui.UIInstanceID);
         }
         else
         {
-            m_AllRegisterUI.Remove((UIInstanceIDEnum)ui.UIInstanceID);
-            m_AllInstantiateUI.Remove((UIInstanceIDEnum)ui.UIInstanceID);
+            m_AllRegisterUI.Remove((EUIInstanceID)ui.UIInstanceID);
+            m_AllInstantiateUI.Remove((EUIInstanceID)ui.UIInstanceID);
         }
     }
 
@@ -85,11 +82,11 @@ public class UIManager : MonoBehaviour
     /// <param name="uiInstanceID">UI唯一实例ID</param>
     /// <param name="uiGameObject">UI界面游戏物体</param>
     /// <param name="args">传递参数</param>
-    public void ShowUI(UIInstanceIDEnum uiInstanceID, object args = null)
+    public void ShowUI(EUIInstanceID uiInstanceID, object args = null)
     {
         if (m_AllRegisterUI.Contains(uiInstanceID))//如果界面有注册
         {
-            if (!m_AllInstantiateUI.ContainsKey((UIInstanceIDEnum)uiInstanceID))//如果界面没有生成过
+            if (!m_AllInstantiateUI.ContainsKey((EUIInstanceID)uiInstanceID))//如果界面没有生成过
             {
                 //根据界面枚举找到对应加载预制体的路径
                 //todo:这边应该是配置单独的模块进行配置加载和读取,而不是和其他关联
@@ -139,7 +136,7 @@ public class UIManager : MonoBehaviour
     /// 隐藏UI界面
     /// </summary>
     /// <param name="ui"></param>
-    public void Hide(UIInstanceIDEnum uiInstanceID)
+    public void Hide(EUIInstanceID uiInstanceID)
     {
         if (m_AllRegisterUI.Contains(uiInstanceID))//如果界面有注册
         {
@@ -162,7 +159,7 @@ public class UIManager : MonoBehaviour
     /// 隐藏并且摧毁界面,同时会清除缓存的记录
     /// </summary>
     /// <param name="uiInstanceID"></param>
-    public void HideAndDestroy(UIInstanceIDEnum uiInstanceID)
+    public void HideAndDestroy(EUIInstanceID uiInstanceID)
     {
         if (m_AllRegisterUI.Contains(uiInstanceID))//如果界面有注册
         {
@@ -187,7 +184,7 @@ public class UIManager : MonoBehaviour
     /// </summary>
     /// <param name="ui">ui的对象</param>
     /// <returns></returns>
-    public bool IsShowUI(UIInstanceIDEnum uiInstanceID)
+    public bool IsShowUI(EUIInstanceID uiInstanceID)
     {
         if (m_AllInstantiateUI.ContainsKey(uiInstanceID))
         {
@@ -204,9 +201,9 @@ public class UIManager : MonoBehaviour
     /// <returns></returns>
     public bool IsShowUI(int uiInstanceID)
     {
-        if (m_AllInstantiateUI.ContainsKey((UIInstanceIDEnum)uiInstanceID))
+        if (m_AllInstantiateUI.ContainsKey((EUIInstanceID)uiInstanceID))
         {
-            return m_AllInstantiateUI[(UIInstanceIDEnum)uiInstanceID].View.isShowState;
+            return m_AllInstantiateUI[(EUIInstanceID)uiInstanceID].View.isShowState;
         }
         LogManager.LogError("没有找到对应UI界面的ID");
         return false;
@@ -217,7 +214,7 @@ public class UIManager : MonoBehaviour
     /// </summary>
     /// <param name="uiInstanceID"></param>
     /// <returns></returns>
-    public BaseUIController GetUIController(UIInstanceIDEnum uiInstanceID)
+    public BaseUIController GetUIController(EUIInstanceID uiInstanceID)
     {
         if (m_AllInstantiateUI.ContainsKey(uiInstanceID))
         {
