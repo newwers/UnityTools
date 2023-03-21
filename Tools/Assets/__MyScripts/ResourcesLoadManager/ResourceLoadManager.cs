@@ -36,7 +36,10 @@ public class ResourceLoadManager : BaseMonoSingleClass<ResourceLoadManager> {
 
         DontDestroyOnLoad(this);
 
-        AssetBundleManager.Instance.Init();
+        if (assetType == LoadAssetType.AssetBundle)
+        {
+            AssetBundleManager.Instance.Init();
+        }
     }
 
     public T Load<T>(string path) where T : UnityEngine.Object

@@ -7,6 +7,7 @@ using UnityEngine;
 /// </summary>
 public enum EUIInstanceID 
 {
+    None = 0,
     /// <summary>
     /// 主界面菜单
     /// </summary>

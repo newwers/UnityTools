@@ -20,11 +20,13 @@ public class BaseUIView : MonoBehaviour
     /// <summary>
     /// 每个界面都有一个唯一界面ID
     /// </summary>
-    public int UIInstanceID = 0;
+    public EUIInstanceID UIInstanceID = EUIInstanceID.None;
     /// <summary>
     /// 界面显示状态
     /// </summary>
     public bool isShowState = false;
+
+    public Canvas panelCanvas;
 
     public Dictionary<string, List<UIBehaviour>> m_componentDic = new Dictionary<string, List<UIBehaviour>>();
 

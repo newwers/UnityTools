@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(BaseUIView))]
 public class BaseUIController : MonoBehaviour
 {
     public BaseUIView View;

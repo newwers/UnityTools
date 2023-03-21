@@ -3,13 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class UIManager : MonoBehaviour
+public class UIManager : BaseMonoSingleClass<UIManager>
 {
-    public static UIManager Instance;
-    /// <summary>
-    /// 存放所有注册的界面
-    /// </summary>
-    private List<EUIInstanceID> m_AllRegisterUI;
     /// <summary>
     /// 存放所有生成出来的界面
     /// </summary>
@@ -18,64 +13,22 @@ public class UIManager : MonoBehaviour
     public UIScriptable pUIConfig;
 
 
-    private void Awake()
+    protected override void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            m_AllRegisterUI = new List<EUIInstanceID>();
-            m_AllInstantiateUI = new Dictionary<EUIInstanceID, BaseUIController>();
-        }
-
-
-        //注册界面
-        StartRegionUI();
+        base.Awake();
     }
-
-
-    /// <summary>
-    /// 界面注册,有注册的界面才会被显示
-    /// </summary>
-    private void StartRegionUI()
+    //------------------------------------------------------
+    public void Init()
     {
-        RegisterUI(EUIInstanceID.Bag);
-        RegisterUI(EUIInstanceID.MainUIPanel);
-        RegisterUI(EUIInstanceID.MainMenu);
+        m_AllInstantiateUI = new Dictionary<EUIInstanceID, BaseUIController>();
     }
-
-    /// <summary>
-    /// 注册UI界面
-    /// </summary>
-    public void RegisterUI(EUIInstanceID uIInstanceID)
+    //------------------------------------------------------
+    private void OnDestroy()
     {
-        if (!m_AllRegisterUI.Contains(uIInstanceID))
-        {
-            m_AllRegisterUI.Add(uIInstanceID);
-        }
-        else
-        {
-            LogManager.LogError("重复注册界面:" + uIInstanceID);
-        }
+        //todo:销毁所有UI界面
+        m_AllInstantiateUI.Clear();
     }
-
-
-    /// <summary>
-    /// 界面取消注册
-    /// </summary>
-    /// <param name="ui"></param>
-    public void UnRegisterUI(BaseUIView ui)
-    {
-        if (!m_AllRegisterUI.Contains((EUIInstanceID)ui.UIInstanceID))
-        {
-            LogManager.LogError("移除不存在的界面:" + ui.UIInstanceID);
-        }
-        else
-        {
-            m_AllRegisterUI.Remove((EUIInstanceID)ui.UIInstanceID);
-            m_AllInstantiateUI.Remove((EUIInstanceID)ui.UIInstanceID);
-        }
-    }
-
+    //------------------------------------------------------
     /// <summary>
     /// 显示UI
     /// </summary>
@@ -84,49 +37,42 @@ public class UIManager : MonoBehaviour
     /// <param name="args">传递参数</param>
     public void ShowUI(EUIInstanceID uiInstanceID, object args = null)
     {
-        if (m_AllRegisterUI.Contains(uiInstanceID))//如果界面有注册
+        if (!m_AllInstantiateUI.ContainsKey((EUIInstanceID)uiInstanceID))//如果界面没有生成过
         {
-            if (!m_AllInstantiateUI.ContainsKey((EUIInstanceID)uiInstanceID))//如果界面没有生成过
-            {
-                //根据界面枚举找到对应加载预制体的路径
-                //todo:这边应该是配置单独的模块进行配置加载和读取,而不是和其他关联
-                //if (FarmGameManager.Instance.m_UIPathConfig == null)
-                //{
-                //    LogManager.LogError("没有读取到界面配置");
-                //    return;
-                //}
-                //foreach (var item in FarmGameManager.Instance.m_UIPathConfig.allUIPath)
-                //{
-                //    if (item.id == (int)uiInstanceID)
-                //    {
-                //        LogManager.Log("path=" + item.path);
-                //        GameObject uiGameObject = ResourceLoadManager.Instance.Load(item.path) as GameObject;
-                //        BaseUIView view = Instantiate(uiGameObject).GetComponent<BaseUIView>();
-                //        view.UIInstanceID = (int)uiInstanceID;
-                //        view.OnCreated(args);
-                //        view.OnShow(args);
-                //        BaseUIController controller = view.GetComponent<BaseUIController>();
-                //        controller.OnCreated(args);
-                //        controller.OnShow(args);
-                //todo:在这边也进行model层的初始化
-                //        m_AllInstantiateUI.Add((UIInstanceIDEnum)view.UIInstanceID, controller);
-                //    }
-                //}
+            //根据界面枚举找到对应加载预制体的路径
 
-                
-                
-            }
-            else//已经生成过界面
+            if (pUIConfig == null)
             {
-                BaseUIView view = m_AllInstantiateUI[uiInstanceID].View;
-                view.OnShow(args);
-                BaseUIController controller = view.GetComponent<BaseUIController>();
-                controller.OnShow(args);
+                LogManager.LogError("没有读取到界面配置");
+                return;
             }
+
+            foreach (var item in pUIConfig.vUIConfigs)
+            {
+                if (item.eUIInstanceID == uiInstanceID)
+                {
+                    GameObject uiGameObject = ResourceLoadManager.Instance.Load<GameObject>(item.PrefabPath);
+                    BaseUIView view = Instantiate(uiGameObject,transform,false).GetComponent<BaseUIView>();
+                    view.UIInstanceID = uiInstanceID;
+                    view.OnCreated(args);
+                    view.OnShow(args);
+                    BaseUIController controller = view.GetComponent<BaseUIController>();
+                    controller.OnCreated(args);
+                    controller.OnShow(args);
+                    //todo: 在这边也进行model层的初始化,不一定所有界面都有model(数据层)
+                    m_AllInstantiateUI.Add(view.UIInstanceID, controller);
+                }
+            }
+
+
+
         }
-        else
+        else//已经生成过界面
         {
-            LogManager.LogError("显示没有注册的界面:" + uiInstanceID);
+            BaseUIView view = m_AllInstantiateUI[uiInstanceID].View;
+            view.OnShow(args);
+            BaseUIController controller = view.GetComponent<BaseUIController>();
+            controller.OnShow(args);
         }
     }
 
@@ -138,20 +84,13 @@ public class UIManager : MonoBehaviour
     /// <param name="ui"></param>
     public void Hide(EUIInstanceID uiInstanceID)
     {
-        if (m_AllRegisterUI.Contains(uiInstanceID))//如果界面有注册
+        if (m_AllInstantiateUI.ContainsKey(uiInstanceID))//如果界面生成过
         {
-            if (m_AllInstantiateUI.ContainsKey(uiInstanceID))//如果界面生成过
-            {
-                BaseUIView view = m_AllInstantiateUI[uiInstanceID].View;
-                view.OnHide();
-                BaseUIController controller = view.GetComponent<BaseUIController>();
-                controller.OnHide();
-                view.gameObject.SetActive(false);
-            }
-        }
-        else
-        {
-            LogManager.LogError("显示没有注册的界面:" + uiInstanceID);
+            BaseUIView view = m_AllInstantiateUI[uiInstanceID].View;
+            view.OnHide();
+            BaseUIController controller = view.GetComponent<BaseUIController>();
+            controller.OnHide();
+            view.gameObject.SetActive(false);
         }
     }
 
@@ -161,21 +100,14 @@ public class UIManager : MonoBehaviour
     /// <param name="uiInstanceID"></param>
     public void HideAndDestroy(EUIInstanceID uiInstanceID)
     {
-        if (m_AllRegisterUI.Contains(uiInstanceID))//如果界面有注册
+        if (m_AllInstantiateUI.ContainsKey(uiInstanceID))//如果界面生成过
         {
-            if (m_AllInstantiateUI.ContainsKey(uiInstanceID))//如果界面生成过
-            {
-                BaseUIView view = m_AllInstantiateUI[uiInstanceID].View;
-                view.OnHide();
-                BaseUIController controller = view.GetComponent<BaseUIController>();
-                controller.OnHide();
-                Destroy(view.gameObject);
-                m_AllInstantiateUI.Remove(uiInstanceID);
-            }
-        }
-        else
-        {
-            LogManager.LogError("显示没有注册的界面:" + uiInstanceID);
+            BaseUIView view = m_AllInstantiateUI[uiInstanceID].View;
+            view.OnHide();
+            BaseUIController controller = view.GetComponent<BaseUIController>();
+            controller.OnHide();
+            Destroy(view.gameObject);
+            m_AllInstantiateUI.Remove(uiInstanceID);
         }
     }
 
