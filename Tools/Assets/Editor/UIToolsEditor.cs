@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UI;
 using zdq.UI;
@@ -19,6 +20,29 @@ namespace zdq.UIEditor
             EditorWindow window = EditorWindow.GetWindow(typeof(UIToolsEditor));
             window.titleContent = new GUIContent("ui编辑工具面板");
             m_Window = window;
+        }
+
+        [MenuItem("Tools/UI/CreatePanelScript")]
+        public static void CreatePanelScript()
+        {
+            string path = EditorUtility.SaveFolderPanel("选择创建路径", "Assets/Scripts/UI","");
+
+            if (string.IsNullOrEmpty(path))
+            {
+                return;
+            }
+
+            var strs = path.Split('/');
+            string fileName = strs[strs.Length - 1];
+
+            Tools.FileTool.FileTools.WriteFile( $"{path}/{fileName}.cs", $"using Project001.Core;\r\nusing System.Collections;\r\nusing System.Collections.Generic;\r\nusing UnityEngine;\r\n\r\nnamespace Project001.UI\r\n{{\r\n\r\n\r\n    public class {fileName} : BaseUIController\r\n    {{\r\n        \r\n    }}\r\n}}", System.Text.Encoding.UTF8);
+
+
+
+            AssetDatabase.Refresh(ImportAssetOptions.Default);
+
+            EditorUtility.DisplayDialog("title", $"创建路径{path}/{fileName}.cs完成!", "ok");
+
         }
 
         [MenuItem("Assets/复制文件路径")]
