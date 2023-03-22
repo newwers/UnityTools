@@ -12,6 +12,9 @@ public class UIManager : BaseMonoSingleClass<UIManager>
 
     public UIScriptable pUIConfig;
 
+    Vector3 m_HidePos = new Vector3(9999f, 9999f, 9999f);
+    Vector3 m_ShowPos = new Vector3(0,0,0);
+
 
     protected override void Awake()
     {
@@ -67,14 +70,19 @@ public class UIManager : BaseMonoSingleClass<UIManager>
             {
                 if (item.eUIInstanceID == uiInstanceID)
                 {
-                    GameObject uiGameObject = ResourceLoadManager.Instance.Load<GameObject>(item.PrefabPath);
-                    BaseUIView view = Instantiate(uiGameObject,transform,false).GetComponent<BaseUIView>();
+                    BaseUIController uiGameObject = ResourceLoadManager.Instance.Load<BaseUIController>(item.PrefabPath);
+                    BaseUIController controller = Instantiate<BaseUIController>(uiGameObject, transform, false);
+
+                    controller.OnCreated();
+                    controller.isShowState = true;
+                    controller.OnShow();
+
+                    var view = controller.View;
                     view.UIInstanceID = uiInstanceID;
                     view.OnCreated(item);
+                    view.SetAnchoredPosition(m_ShowPos);
                     view.OnShow();
-                    BaseUIController controller = view.GetComponent<BaseUIController>();
-                    controller.OnCreated();
-                    controller.OnShow();
+
                     //todo: 在这边也进行model层的初始化,不一定所有界面都有model(数据层)
                     m_AllInstantiateUI.Add(view.UIInstanceID, controller);
                 }
@@ -85,10 +93,14 @@ public class UIManager : BaseMonoSingleClass<UIManager>
         }
         else//已经生成过界面
         {
-            BaseUIView view = m_AllInstantiateUI[uiInstanceID].View;
-            view.OnShow();
-            BaseUIController controller = view.GetComponent<BaseUIController>();
+            
+            BaseUIController controller = m_AllInstantiateUI[uiInstanceID];
+            controller.isShowState = true;
             controller.OnShow();
+
+            BaseUIView view = m_AllInstantiateUI[uiInstanceID].View;
+            view.SetAnchoredPosition(m_ShowPos);
+            view.OnShow();
         }
     }
 
@@ -102,11 +114,15 @@ public class UIManager : BaseMonoSingleClass<UIManager>
     {
         if (m_AllInstantiateUI.ContainsKey(uiInstanceID))//如果界面生成过
         {
-            BaseUIView view = m_AllInstantiateUI[uiInstanceID].View;
-            view.OnHide();
-            BaseUIController controller = view.GetComponent<BaseUIController>();
+            
+            BaseUIController controller = m_AllInstantiateUI[uiInstanceID];
+            controller.isShowState= false;
+            controller.transform.localPosition = m_HidePos;
             controller.OnHide();
-            view.gameObject.SetActive(false);//todo:隐藏方式修改为移动位置
+
+            BaseUIView view = m_AllInstantiateUI[uiInstanceID].View;
+            view.SetAnchoredPosition(m_HidePos);
+            view.OnHide();
         }
     }
 
@@ -118,10 +134,17 @@ public class UIManager : BaseMonoSingleClass<UIManager>
     {
         if (m_AllInstantiateUI.ContainsKey(uiInstanceID))//如果界面生成过
         {
-            BaseUIView view = m_AllInstantiateUI[uiInstanceID].View;
-            view.OnHide();
-            BaseUIController controller = view.GetComponent<BaseUIController>();
+            BaseUIController controller = m_AllInstantiateUI[uiInstanceID];
+            controller.isShowState = false;
+            controller.transform.localPosition = m_HidePos;
             controller.OnHide();
+
+            BaseUIView view = m_AllInstantiateUI[uiInstanceID].View;
+            view.SetAnchoredPosition(m_HidePos);
+            view.OnHide();
+
+
+
             Destroy(view.gameObject);
             m_AllInstantiateUI.Remove(uiInstanceID);
         }
@@ -136,7 +159,7 @@ public class UIManager : BaseMonoSingleClass<UIManager>
     {
         if (m_AllInstantiateUI.ContainsKey(uiInstanceID))
         {
-            return m_AllInstantiateUI[uiInstanceID].View.isShowState;
+            return m_AllInstantiateUI[uiInstanceID].isShowState;
         }
 
         LogManager.LogError("没有找到对应UI界面的ID:" + (int)uiInstanceID);
@@ -151,7 +174,7 @@ public class UIManager : BaseMonoSingleClass<UIManager>
     {
         if (m_AllInstantiateUI.ContainsKey((EUIInstanceID)uiInstanceID))
         {
-            return m_AllInstantiateUI[(EUIInstanceID)uiInstanceID].View.isShowState;
+            return m_AllInstantiateUI[(EUIInstanceID)uiInstanceID].isShowState;
         }
         LogManager.LogError("没有找到对应UI界面的ID");
         return false;

@@ -21,14 +21,12 @@ public class BaseUIView : MonoBehaviour
     /// 每个界面都有一个唯一界面ID
     /// </summary>
     public EUIInstanceID UIInstanceID = EUIInstanceID.None;
-    /// <summary>
-    /// 界面显示状态
-    /// </summary>
-    public bool isShowState = false;
 
     public Canvas panelCanvas;
 
     public Dictionary<string, List<UIBehaviour>> m_componentDic = new Dictionary<string, List<UIBehaviour>>();
+
+    private RectTransform m_pRectTrans;
 
     private void Awake()
     {
@@ -38,7 +36,7 @@ public class BaseUIView : MonoBehaviour
         FindChildrenControl<Slider>();
         FindChildrenControl<ScrollRect>();
     }
-
+    //------------------------------------------------------
     private void FindChildrenControl<T>()where T: UIBehaviour
     {
         T[] components = GetComponentsInChildren<T>();
@@ -54,7 +52,7 @@ public class BaseUIView : MonoBehaviour
             }
         }
     }
-
+    //------------------------------------------------------
     /// <summary>
     /// 通过组件名字获取对应组件
     /// </summary>
@@ -77,7 +75,7 @@ public class BaseUIView : MonoBehaviour
     }
 
 
-
+    //------------------------------------------------------
     /// <summary>
     /// 当创建完界面时,调用一次
     /// </summary>
@@ -89,27 +87,39 @@ public class BaseUIView : MonoBehaviour
             panelCanvas.sortingOrder = item.order;
         }
     }
+    //------------------------------------------------------
     /// <summary>
     /// 当界面显示时调用,如果第一次创建,那么在OnCreated后面调用
     /// </summary>
     public virtual void OnShow()
     {
-        this.gameObject.SetActive(true);//在每次打开界面的时候保证界面是显示激活状态
-        isShowState = true;
     }
+    //------------------------------------------------------
     /// <summary>
     /// 当界面被关闭隐藏时调用
     /// </summary>
     public virtual void OnHide()
     {
-        isShowState = false;
+        
     }
-
+    //------------------------------------------------------
     /// <summary>
     /// 当界面被销毁时调用
     /// </summary>
     public virtual void OnHideAndDestroy()
     {
-        isShowState = false;
+        
+    }
+    //------------------------------------------------------
+    public void SetAnchoredPosition(Vector2 poz)
+    {
+        if (m_pRectTrans == null)
+        {
+            m_pRectTrans = transform as RectTransform;
+        }
+        if (m_pRectTrans)
+        {
+            m_pRectTrans.anchoredPosition= poz;
+        }
     }
 }

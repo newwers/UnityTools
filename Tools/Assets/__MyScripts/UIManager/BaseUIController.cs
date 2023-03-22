@@ -7,6 +7,12 @@ public class BaseUIController : MonoBehaviour
 {
     public BaseUIView View;
 
+
+    /// <summary>
+    /// 界面显示状态
+    /// </summary>
+    public bool isShowState = false;
+
     /// <summary>
     /// 当创建完界面时,调用一次
     /// </summary>
@@ -36,6 +42,7 @@ public class BaseUIController : MonoBehaviour
     public virtual void OnShow()
     {
 
+        isShowState = true;
     }
 
     /// <summary>
@@ -44,6 +51,7 @@ public class BaseUIController : MonoBehaviour
     public virtual void OnHide()
     {
 
+        isShowState = false;
     }
 
     /// <summary>
@@ -51,7 +59,7 @@ public class BaseUIController : MonoBehaviour
     /// </summary>
     public virtual void OnHideAndDestroy()
     {
-
+        isShowState = false;
     }
 
 
