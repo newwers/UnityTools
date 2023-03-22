@@ -11,7 +11,7 @@ public class BaseUIController : MonoBehaviour
     /// 当创建完界面时,调用一次
     /// </summary>
     /// <param name="args">打开界面时,传递的参数</param>
-    public virtual void OnCreated(object args)
+    public virtual void OnCreated()
     {
         if (View == null)
         {
@@ -33,7 +33,7 @@ public class BaseUIController : MonoBehaviour
     /// 当界面显示时调用,如果第一次创建,那么在OnCreated后面调用
     /// </summary>
     /// <param name="args">打开界面时,传递的参数</param>
-    public virtual void OnShow(object args)
+    public virtual void OnShow()
     {
 
     }

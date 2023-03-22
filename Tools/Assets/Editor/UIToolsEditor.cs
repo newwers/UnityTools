@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -71,6 +72,7 @@ namespace zdq.UIEditor
             EditorGUILayout.BeginHorizontal();
             CreateImage();
             CreateText();
+            CreateTextMeshPro();
             CreateBtn();
             EditorGUILayout.EndHorizontal();
             ImageConvertImageEX();
@@ -351,6 +353,32 @@ namespace zdq.UIEditor
                     text.fontSize = 20;
                     text.alignment = TextAnchor.MiddleCenter;
                     text.rectTransform.sizeDelta = new Vector2(100,100);//必要时,可暴露出来给外部面板填写参数
+                    text.text = "Hi";
+                    //text.rectTransform.anchorMin = Vector2.zero;
+                    //text.rectTransform.anchorMax = Vector2.one;
+                    //text.rectTransform.sizeDelta = Vector2.zero;
+
+                    go.transform.SetParent(Selection.activeTransform, false);
+                    Selection.activeGameObject = go;
+                }
+            }
+        }
+        //------------------------------------------------------
+        void CreateTextMeshPro()
+        {
+            if (GUILayout.Button("创建TextMeshPro", new GUILayoutOption[] { GUILayout.Height(30) }))
+            {
+                if (Selection.activeTransform && Selection.activeTransform.GetComponentInParent<Canvas>())
+                {
+                    GameObject go = new GameObject(Selection.activeGameObject.name + "Text", typeof(TextMeshProUGUI));
+                    TextMeshProUGUI text = go.GetComponent<TextMeshProUGUI>();
+
+                    text.raycastTarget = false;
+                    text.font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Fonts/SIMHEI SDF.asset");
+                    text.richText = false;
+                    text.fontSize = 20;
+                    text.alignment =  TextAlignmentOptions.Center;
+                    text.rectTransform.sizeDelta = new Vector2(100, 100);//必要时,可暴露出来给外部面板填写参数
                     text.text = "Hi";
                     //text.rectTransform.anchorMin = Vector2.zero;
                     //text.rectTransform.anchorMax = Vector2.one;

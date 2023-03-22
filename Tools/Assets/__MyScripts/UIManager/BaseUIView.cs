@@ -82,15 +82,17 @@ public class BaseUIView : MonoBehaviour
     /// 当创建完界面时,调用一次
     /// </summary>
     /// <param name="args">打开界面时,传递的参数</param>
-    public virtual void OnCreated(object args)
+    public virtual void OnCreated(UIScriptable.UIConfig item)
     {
-
+        if (panelCanvas && item != null)
+        {
+            panelCanvas.sortingOrder = item.order;
+        }
     }
     /// <summary>
     /// 当界面显示时调用,如果第一次创建,那么在OnCreated后面调用
     /// </summary>
-    /// <param name="args">打开界面时,传递的参数</param>
-    public virtual void OnShow(object args)
+    public virtual void OnShow()
     {
         this.gameObject.SetActive(true);//在每次打开界面的时候保证界面是显示激活状态
         isShowState = true;

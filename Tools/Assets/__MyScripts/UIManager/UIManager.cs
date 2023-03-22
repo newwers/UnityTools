@@ -29,15 +29,31 @@ public class UIManager : BaseMonoSingleClass<UIManager>
         m_AllInstantiateUI.Clear();
     }
     //------------------------------------------------------
+    public static void Show(EUIInstanceID uiInstanceID)
+    {
+        if (Instance != null)
+        {
+            Instance.ShowUI(uiInstanceID);
+        }
+    }
+    //------------------------------------------------------
+    public static void Hide(EUIInstanceID uiInstanceID)
+    {
+        if (Instance != null)
+        {
+            Instance.HideUI(uiInstanceID);
+        }
+    }
+    //------------------------------------------------------
     /// <summary>
     /// 显示UI
     /// </summary>
     /// <param name="uiInstanceID">UI唯一实例ID</param>
     /// <param name="uiGameObject">UI界面游戏物体</param>
     /// <param name="args">传递参数</param>
-    public void ShowUI(EUIInstanceID uiInstanceID, object args = null)
+    public void ShowUI(EUIInstanceID uiInstanceID)
     {
-        if (!m_AllInstantiateUI.ContainsKey((EUIInstanceID)uiInstanceID))//如果界面没有生成过
+        if (!m_AllInstantiateUI.ContainsKey(uiInstanceID))//如果界面没有生成过
         {
             //根据界面枚举找到对应加载预制体的路径
 
@@ -54,11 +70,11 @@ public class UIManager : BaseMonoSingleClass<UIManager>
                     GameObject uiGameObject = ResourceLoadManager.Instance.Load<GameObject>(item.PrefabPath);
                     BaseUIView view = Instantiate(uiGameObject,transform,false).GetComponent<BaseUIView>();
                     view.UIInstanceID = uiInstanceID;
-                    view.OnCreated(args);
-                    view.OnShow(args);
+                    view.OnCreated(item);
+                    view.OnShow();
                     BaseUIController controller = view.GetComponent<BaseUIController>();
-                    controller.OnCreated(args);
-                    controller.OnShow(args);
+                    controller.OnCreated();
+                    controller.OnShow();
                     //todo: 在这边也进行model层的初始化,不一定所有界面都有model(数据层)
                     m_AllInstantiateUI.Add(view.UIInstanceID, controller);
                 }
@@ -70,9 +86,9 @@ public class UIManager : BaseMonoSingleClass<UIManager>
         else//已经生成过界面
         {
             BaseUIView view = m_AllInstantiateUI[uiInstanceID].View;
-            view.OnShow(args);
+            view.OnShow();
             BaseUIController controller = view.GetComponent<BaseUIController>();
-            controller.OnShow(args);
+            controller.OnShow();
         }
     }
 
@@ -82,7 +98,7 @@ public class UIManager : BaseMonoSingleClass<UIManager>
     /// 隐藏UI界面
     /// </summary>
     /// <param name="ui"></param>
-    public void Hide(EUIInstanceID uiInstanceID)
+    public void HideUI(EUIInstanceID uiInstanceID)
     {
         if (m_AllInstantiateUI.ContainsKey(uiInstanceID))//如果界面生成过
         {
@@ -90,7 +106,7 @@ public class UIManager : BaseMonoSingleClass<UIManager>
             view.OnHide();
             BaseUIController controller = view.GetComponent<BaseUIController>();
             controller.OnHide();
-            view.gameObject.SetActive(false);
+            view.gameObject.SetActive(false);//todo:隐藏方式修改为移动位置
         }
     }
 
