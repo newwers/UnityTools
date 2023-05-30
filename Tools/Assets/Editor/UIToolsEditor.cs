@@ -79,9 +79,124 @@ namespace zdq.UIEditor
             ConvertSelectEmptyImage();
             SetParticleOrder();
             SetParticleMasking();
+            SetRaycast();
+            SetAnchor();
             EditorGUILayout.EndScrollView();
         }
+        //------------------------------------------------------
+        void SetAnchor()
+        {
+            EditorGUILayout.BeginHorizontal();
 
+            if (GUILayout.Button("设置UI锚点按比例拉伸大小"))
+            {
+                var selectList = Selection.gameObjects;
+
+                if (selectList.Length <= 0)
+                {
+                    this.ShowNotification(new GUIContent("当前没有选择物体!!"));
+                    return;
+                }
+                
+                for (int i = 0; i < selectList.Length; i++)
+                {
+                    var ui= selectList[i];
+                    Undo.RecordObject(ui.transform, "setAnchors");
+                    if (ui.transform is RectTransform && ui.transform.parent && ui.transform.parent is RectTransform)
+                    {
+                        var parentRect = ui.transform.parent as RectTransform;
+                        var rect = ui.transform as RectTransform;
+                        //rect.anchorMax
+                        //rect.anchorMin
+                        //用当前大小,除父类大小,计算出锚点
+                        float xMin = (rect.rect.xMin + parentRect.rect.width /2 + rect.anchoredPosition.x) / parentRect.rect.width;
+                        float yMin = (rect.rect.yMin + parentRect.rect.height / 2 + rect.anchoredPosition.y) / parentRect.rect.height;
+
+                        float xMax = (rect.rect.xMax + parentRect.rect.width / 2 + rect.anchoredPosition.x) / parentRect.rect.width;
+                        float yMax = (rect.rect.yMax + parentRect.rect.height / 2 + rect.anchoredPosition.y) / parentRect.rect.height;
+
+                        rect.anchorMin = new Vector2(xMin, yMin);
+                        rect.anchorMax = new Vector2(xMax, yMax);
+                        rect.anchoredPosition = Vector2.zero;
+                        rect.sizeDelta = Vector2.zero;
+                    }
+                }
+
+                this.ShowNotification(new GUIContent("设置完成!!"));
+            }
+
+            if (GUILayout.Button("设置UI锚点到当前UI位置"))
+            {
+                var selectList = Selection.gameObjects;
+
+                if (selectList.Length <= 0)
+                {
+                    this.ShowNotification(new GUIContent("当前没有选择物体!!"));
+                    return;
+                }
+
+                for (int i = 0; i < selectList.Length; i++)
+                {
+                    var ui = selectList[i];
+                    Undo.RecordObject(ui.transform, "setAnchors2");
+                    if (ui.transform is RectTransform && ui.transform.parent && ui.transform.parent is RectTransform)
+                    {
+                        var parentRect = ui.transform.parent as RectTransform;
+                        var rect = ui.transform as RectTransform;
+
+                        //先锚点重置到中心点
+                        //rect.anchorMin = new Vector2(0.5f, 0.5f);
+                        //rect.anchorMax = new Vector2(0.5f, 0.5f);
+
+                        Vector2 anchorPosition = rect.anchoredPosition;
+
+                        //rect.point
+
+                        //用当前大小,除父类大小,计算出锚点
+                        float x = (rect.rect.center.x + parentRect.rect.width / 2 + anchorPosition.x) / parentRect.rect.width;
+                        float y = (rect.rect.center.y + parentRect.rect.height / 2 + anchorPosition.y) / parentRect.rect.height;
+
+                        rect.anchorMin = new Vector2(x, y);
+                        rect.anchorMax = new Vector2(x, y);
+                        rect.anchoredPosition = Vector2.zero;
+                    }
+                }
+
+                this.ShowNotification(new GUIContent("设置完成!!"));
+            }
+
+
+
+            EditorGUILayout.EndHorizontal();
+        }
+        //------------------------------------------------------
+        bool m_RaycastToggle = false;
+        private void SetRaycast()
+        {
+            
+            EditorGUILayout.BeginHorizontal();
+            m_RaycastToggle = EditorGUILayout.Toggle("射线检测:",m_RaycastToggle);
+            if (GUILayout.Button("设置"))
+            {
+                var gos = Selection.gameObjects;
+                if (gos == null || gos.Length == 0)
+                {
+                    ShowNotification(new GUIContent("请选择一个UI"));
+                    return;
+                }
+
+                foreach (var item in gos)
+                {
+                    var graphic = item.GetComponent<Graphic>();
+                    if (graphic)
+                    {
+                        graphic.raycastTarget = m_RaycastToggle;
+                    }
+                }
+                ShowNotification(new GUIContent("设置完成!"));
+            }
+            EditorGUILayout.EndHorizontal();
+        }
         Vector3 m_SetSelectPos;
         private void SetSelectGameobjectPos()
         {
@@ -114,6 +229,44 @@ namespace zdq.UIEditor
                 }
 
                 m_SetSelectPos = gos[0].transform.position;
+            }
+            if (GUILayout.Button("读取选择的物体View坐标"))
+            {
+                var gos = Selection.gameObjects;
+                if (gos == null || gos.Length == 0)
+                {
+                    ShowNotification(new GUIContent("请选择一个UI"));
+                    return;
+                }
+
+                var pos = gos[0].transform.position;
+                var cam = UIManager.GetInstance().GetUICamera();
+                if (cam == null)
+                {
+                    return;
+                }
+
+
+                m_SetSelectPos = cam.WorldToViewportPoint(pos);
+            }
+            if (GUILayout.Button("读取选择的物体Screen坐标"))
+            {
+                var gos = Selection.gameObjects;
+                if (gos == null || gos.Length == 0)
+                {
+                    ShowNotification(new GUIContent("请选择一个UI"));
+                    return;
+                }
+
+                var pos = gos[0].transform.position;
+                var cam = UIManager.GetInstance().GetUICamera();
+                if (cam == null)
+                {
+                    return;
+                }
+
+
+                m_SetSelectPos = cam.WorldToScreenPoint(pos);
             }
             EditorGUILayout.EndHorizontal();
         }
