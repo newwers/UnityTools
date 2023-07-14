@@ -4,11 +4,12 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace TopGame
+namespace InputSimulation
 {
     public class InputRecorder 
     {
-        struct Info
+        [System.Serializable]
+        public struct Info
         {
             public double time;
             public EMouseButton button;
@@ -21,13 +22,15 @@ namespace TopGame
             }
         }
 
-        enum EMouseButton
+        public enum EMouseButton
         {
             Left=0,
             Right=1
         }
 
-        public static event Action OnStop;
+        public static event Action OnStopPlay;
+        public static event Action OnStartRecord;
+        public static event Action OnEndRecord;
 
         static InputRecorder m_sInstance = null;
 
@@ -37,6 +40,12 @@ namespace TopGame
         double m_nRecordTime;
         double m_nTimer = 0;
 
+        public InputRecorder()
+        {
+            m_sInstance = this;
+            Debug.Log("InputRecorder 构造函数调用");
+        }
+
         public void StartRecord()
         {
             MouseHook.ButtonClick += MouseHook_ButtonDown;
@@ -45,8 +54,7 @@ namespace TopGame
             m_nPlayIndex = 0;
             m_nRecordTime = 0;
             m_nTimer = 0;
-
-            m_sInstance = this;
+            OnStartRecord?.Invoke();
         }
 
         public void EndRecord()
@@ -61,6 +69,7 @@ namespace TopGame
                 m_vRecordInfo.RemoveAt(m_vRecordInfo.Count - 1);
                 m_vRecordInfo.RemoveAt(m_vRecordInfo.Count - 1);
             }
+            OnEndRecord?.Invoke();
         }
 
         private void MouseHook_ButtonDown(int button,bool isDown, MouseHook.POINT point)
@@ -111,7 +120,7 @@ namespace TopGame
             m_nRecordTime = 0;
             m_nTimer = 0;
             UnityEngine.Debug.Log("InputRecorder Stop");
-            OnStop?.Invoke();
+            OnStopPlay?.Invoke();
         }
 
         public static void SStop()
@@ -119,6 +128,22 @@ namespace TopGame
             if (m_sInstance != null)
             {
                 m_sInstance.Stop();
+            }
+        }
+
+        public static void SStartRecord()
+        {
+            if (m_sInstance != null)
+            {
+                m_sInstance.StartRecord();
+            }
+        }
+
+        public static void SEndRecord()
+        {
+            if (m_sInstance != null)
+            {
+                m_sInstance.EndRecord();
             }
         }
 
@@ -180,6 +205,20 @@ namespace TopGame
                     }
                     break;
             }
+        }
+        //------------------------------------------------------
+        public List<Info> GetInfos()
+        {
+            return m_vRecordInfo;
+        }
+        //------------------------------------------------------
+        public void Load(List<Info> infos)
+        {
+            EndRecord();
+            Stop();
+
+            //根据本地文件,加载数据到内存中
+            m_vRecordInfo = infos;
         }
     }
 }

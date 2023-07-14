@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace TopGame
+namespace InputSimulation
 {
 
     public class MouseHook
@@ -209,6 +209,7 @@ namespace TopGame
             Absolute = 0x8000
         }
 
+        [System.Serializable]
         public struct POINT
         {
             public int X;
