@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using TopGame;
 using UnityEditor;
 using UnityEngine;
 
@@ -23,14 +22,14 @@ namespace InputSimulation
 
         }
 
-        [MenuItem("Tools/停止鼠标录制播放 %6")]
+        [MenuItem("Tools/停止鼠标录制播放 %#q")]
         public static void StopInputPlay()
         {
             InputRecorder.SStop();
             Debug.Log("停止鼠标录制播放");
         }
 
-        [MenuItem("Tools/开始鼠标录制 %4")]
+        [MenuItem("Tools/开始鼠标录制 %#4")]
         public static void RecordInput()
         {
             InputRecorder.SStartRecord();
@@ -38,7 +37,7 @@ namespace InputSimulation
             Debug.Log("开始鼠标录制");
         }
 
-        [MenuItem("Tools/结束鼠标录制 %5")]
+        [MenuItem("Tools/结束鼠标录制 %#5")]
         public static void StopRecordInput()
         {
             InputRecorder.SEndRecord();
@@ -124,6 +123,7 @@ namespace InputSimulation
         int m_nSelectIndex;
         List<string> m_vShowItems = new List<string>();
         string m_Name;
+        float m_nPlayTimeOffset;
         void InputListen()
         {
             var color = GUI.color;
@@ -131,7 +131,7 @@ namespace InputSimulation
             if (m_bIsInputListener)
             {
                 GUI.color = Color.yellow;
-                if (GUILayout.Button("停止录制鼠标点击操作", new GUILayoutOption[] { GUILayout.Height(50) }))
+                if (GUILayout.Button("停止录制鼠标点击操作(ctrl+shift+5)", new GUILayoutOption[] { GUILayout.Height(50) }))
                 {
                     m_InputRecorder.EndRecord();
                     MouseHook.Stop();
@@ -142,7 +142,7 @@ namespace InputSimulation
             else
             {
                 GUI.color = Color.white;
-                if (GUILayout.Button("开始录制鼠标点击操作", new GUILayoutOption[] { GUILayout.Height(50) }))
+                if (GUILayout.Button("开始录制鼠标点击操作(ctrl+shift+4)", new GUILayoutOption[] { GUILayout.Height(50) }))
                 {
                     m_InputRecorder.StartRecord();
                     MouseHook.Start();
@@ -153,7 +153,7 @@ namespace InputSimulation
             if (m_bIsPlayRecord)
             {
                 GUI.color = Color.yellow;
-                if (GUILayout.Button("停止播放鼠标操作", new GUILayoutOption[] { GUILayout.Height(50) }))
+                if (GUILayout.Button("停止播放鼠标操作(ctrl+shift+q)", new GUILayoutOption[] { GUILayout.Height(50) }))
                 {
                     MouseHook.Stop();
                     m_bIsInputListener = false;
@@ -228,6 +228,16 @@ namespace InputSimulation
             }
 
             EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            
+            m_nPlayTimeOffset = EditorGUILayout.Slider(new GUIContent("播放偏移"),m_nPlayTimeOffset, -2f, 2f);
+            EditorGUILayout.EndHorizontal();
+            if (GUILayout.Button("设置播放偏移", new GUILayoutOption[] { GUILayout.Height(50) }))
+            {
+                m_InputRecorder.SetPlayTimeOffset(m_nPlayTimeOffset);
+                ShowNotification(new GUIContent("设置播放偏移成功:" + m_nPlayTimeOffset));
+            }
         }
 
 
@@ -274,6 +284,7 @@ namespace InputSimulation
             if (!Directory.Exists(folderPath))
             {
                 Debug.LogError("Folder does not exist: " + folderPath);
+                ShowNotification(new GUIContent("加载失败,没有改路径文件夹:" + folderPath));
                 return;
             }
 
@@ -293,6 +304,8 @@ namespace InputSimulation
                 m_vInfos[index] = dataObject.list;
                 m_vShowItems.Add(dataObject.name);
             }
+
+            ShowNotification(new GUIContent($"加载成功,本次加载{m_vInfos.Count}个!"));
         }
 
         void Delete(string fileName)

@@ -39,6 +39,7 @@ namespace InputSimulation
         int m_nPlayIndex = 0;
         double m_nRecordTime;
         double m_nTimer = 0;
+        float m_nPlayTimeOffset = 0;
 
         public InputRecorder()
         {
@@ -146,7 +147,7 @@ namespace InputSimulation
                 m_sInstance.EndRecord();
             }
         }
-
+        int index = 0;
         public void Update()
         {
             if (!m_bPlay || m_vRecordInfo.Count == 0 || m_nPlayIndex>= m_vRecordInfo.Count)
@@ -161,7 +162,7 @@ namespace InputSimulation
             }
             
 
-            if (EditorApplication.timeSinceStartup < m_nTimer)
+            if (EditorApplication.timeSinceStartup + m_nPlayTimeOffset < m_nTimer)
             {
                 return;
             }
@@ -219,6 +220,11 @@ namespace InputSimulation
 
             //根据本地文件,加载数据到内存中
             m_vRecordInfo = infos;
+        }
+        //------------------------------------------------------
+        public void SetPlayTimeOffset(float timeOffset)
+        {
+            m_nPlayTimeOffset=timeOffset;
         }
     }
 }
