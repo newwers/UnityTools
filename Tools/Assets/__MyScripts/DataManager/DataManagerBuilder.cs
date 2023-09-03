@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,15 +13,17 @@ namespace Z.Data
 
         DataConfig m_Configs;
         string m_FileName;
+        string m_FilePath;
         int m_nTabNum;
         StringBuilder m_pStringBuilder;
 
-        public DataManagerBuilder(DataConfig configs, string name="DataManager_Auto")
+        public DataManagerBuilder(DataConfig configs,string filePath, string name="DataManager_Auto")
         {
             m_Configs = configs;
             m_FileName = name;
             m_nTabNum = 0;
             m_pStringBuilder = new StringBuilder();
+            m_FilePath = filePath;
         }
         //------------------------------------------------------
         public void Parse()
@@ -31,7 +33,7 @@ namespace Z.Data
                 return;
             }
 
-            //Éú³ÉÎÄ¼ş
+            //ç”Ÿæˆæ–‡ä»¶
             var fs = BuilderFile(m_FileName);
 
             BuilderAutoCode(m_FileName);
@@ -49,12 +51,13 @@ namespace Z.Data
         //------------------------------------------------------
         FileStream BuilderFile(string fileName)
         {
-            //ÅĞ¶ÏÊÇ·ñ´æÔÚÎÄ¼ş
-            var filePath = Path.Combine(Application.dataPath + "/test/DataManager/AutoCode/", fileName + ".cs");//Assets/test/DataManager/CsvBuilder.cs
-            //Ã»ÓĞÔò´´½¨,
+            //åˆ¤æ–­æ˜¯å¦å­˜åœ¨æ–‡ä»¶
+            var filePath = Path.Combine(m_FilePath, fileName + ".cs");//Assets/test/DataManager/CsvBuilder.cs
+            //var filePath = Path.Combine(Application.dataPath + "/DataManager/AutoCode/", fileName + ".cs");//Assets/test/DataManager/CsvBuilder.cs
+            //æ²¡æœ‰åˆ™åˆ›å»º,
             if (!Directory.Exists(filePath))
             {
-                Directory.CreateDirectory(Application.dataPath + "/test/DataManager/AutoCode/");
+                Directory.CreateDirectory(m_FilePath);
             }
             FileStream fs = File.OpenWrite(filePath);
 
@@ -75,7 +78,7 @@ namespace Z.Data
 
             m_nTabNum++;
             
-            //¸ù¾İÅäÖÃÎÄ¼şÉú³ÉÃ¿¸öÅäÖÃµÄ×Ö¶Î
+            //æ ¹æ®é…ç½®æ–‡ä»¶ç”Ÿæˆæ¯ä¸ªé…ç½®çš„å­—æ®µ
             for (int i = 0; i < m_Configs.vConfigs.Count; i++)
             {
                 var cfg = m_Configs.vConfigs[i];
@@ -92,7 +95,7 @@ namespace Z.Data
                 AddString("}");
             }
 
-            //µ÷ÓÃ½âÎöº¯Êı
+            //è°ƒç”¨è§£æå‡½æ•°
             AddString("protected override ConfigDataBase Parser(CsvParser csvParser, DataConfig.DataInfo data)");
             AddString("{");
             m_nTabNum++;

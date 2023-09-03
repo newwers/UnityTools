@@ -31,13 +31,15 @@ namespace Z.Data
         string m_FileName;
         int m_nTabNum;
         StringBuilder m_pStringBuilder;
+        private string m_FilePath;
 
-        public CsvBuilder(string str, string name) 
+        public CsvBuilder(string str, string name, string filePath) 
         {
             m_Content = str;
             m_FileName = name.First().ToString().ToUpper() + name.Substring(1);
             m_nTabNum = 0;
             m_pStringBuilder = new StringBuilder();
+            m_FilePath = filePath;
         }
 
         public void Parse()
@@ -68,11 +70,12 @@ namespace Z.Data
         void BuilderFile(List<SingleField> fields,string fileName)
         {
             //判断是否存在文件
-            var filePath = Path.Combine(Application.dataPath + "/test/DataManager/AutoCode/", fileName + ".cs");//Assets/test/DataManager/CsvBuilder.cs
+            var filePath = Path.Combine(m_FilePath, fileName + ".cs");
+            //var filePath = Path.Combine(Application.dataPath + "/DataManager/AutoCode/", fileName + ".cs");
             //没有则创建,
             if (!Directory.Exists(filePath))
             {
-                Directory.CreateDirectory(Application.dataPath + "/test/DataManager/AutoCode/");
+                Directory.CreateDirectory(Application.dataPath + "/DataManager/AutoCode/");
             }
             FileStream fs = File.OpenWrite(filePath);
 

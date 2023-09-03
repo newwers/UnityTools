@@ -3,21 +3,21 @@ namespace Z.Data
 {
 	public partial class DataManager : ADataManager
 	{
-		private CsvData_SystemConfig m_pSystemConfig;
-		public CsvData_SystemConfig SystemConfig
+		private CsvData_Text m_pText;
+		public CsvData_Text Text
 		{
-			get{ return m_pSystemConfig; }
-			private set {m_pSystemConfig=value; }
+			get{ return m_pText; }
+			private set {m_pText=value; }
 		}
 		protected override ConfigDataBase Parser(CsvParser csvParser, DataConfig.DataInfo data)
 		{
 			ConfigDataBase csv = null;
 			switch(data.guid)
 			{
-				case 55504:
+				case 24998:
 				{
-					SystemConfig = new CsvData_SystemConfig();
-					csv = SystemConfig;
+					Text = new CsvData_Text();
+					csv = Text;
 					break;
 				}
 			}

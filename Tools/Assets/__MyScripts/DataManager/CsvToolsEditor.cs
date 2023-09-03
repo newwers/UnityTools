@@ -24,6 +24,9 @@ namespace Z.Data
 
         [NonReorderable]
         public List<DataInfo> vConfigs = new List<DataInfo>();
+
+        public string BuildFilePath;
+
 #if UNITY_EDITOR
         private void OnValidate()
         {
@@ -44,17 +47,30 @@ namespace Z.Data
 
         DataConfig m_Target;
         private SerializedProperty m_vConfigs;
+        private string m_FilePath;
 
         private void OnEnable()
         {
             m_Target = (DataConfig)target;
+            m_FilePath = m_Target.BuildFilePath;
+
+            m_vConfigs = serializedObject.FindProperty("vConfigs");
         }
 
         public override void OnInspectorGUI()
         {
-            m_vConfigs = serializedObject.FindProperty("vConfigs");
+            m_FilePath = EditorGUILayout.TextField("生成文件夹路径:", m_FilePath);
+            if (GUILayout.Button("选择路径"))
+            {
+                m_FilePath = EditorUtility.OpenFolderPanel("选择导出文件夹路径", Application.dataPath, "");
+                m_Target.BuildFilePath = m_FilePath;
+            }
 
-            base.OnInspectorGUI();
+            EditorGUILayout.PropertyField(m_vConfigs);
+
+
+
+            //base.OnInspectorGUI();
 
             if (GUILayout.Button("添加"))
             {
@@ -86,7 +102,7 @@ namespace Z.Data
                 Debug.Log($"id:{data.datas[1].id}");
 
                 DataManager.Instance.Init();
-                var datas = DataManager.Instance.SystemConfig.datas;
+                var datas = DataManager.Instance.Text.datas;
                 Debug.Log($"id:{datas[1].id}");
             }
         }
@@ -94,7 +110,7 @@ namespace Z.Data
         private void BuilderManager(DataConfig config)
         {
             //编译manager
-            DataManagerBuilder builder = new DataManagerBuilder(config);
+            DataManagerBuilder builder = new DataManagerBuilder(config, m_FilePath);
             builder.Parse();
             Debug.Log("生成 manager 代码完成");
         }
@@ -105,7 +121,7 @@ namespace Z.Data
             Debug.Log("cfg name:" + data.data.name);
             Debug.Log(data.data.text);
             //代码中根据每一项字段.读取填充数据
-            CsvBuilder csvBuilder = new CsvBuilder(data.data.text, data.data.name);
+            CsvBuilder csvBuilder = new CsvBuilder(data.data.text, data.data.name, m_FilePath);
             csvBuilder.Parse();
         }
         
