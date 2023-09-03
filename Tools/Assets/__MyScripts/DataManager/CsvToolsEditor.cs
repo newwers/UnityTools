@@ -56,6 +56,11 @@ namespace Z.Data
 
             base.OnInspectorGUI();
 
+            if (GUILayout.Button("添加"))
+            {
+                m_Target.vConfigs.Add(null);
+            }
+
             if (GUILayout.Button("生成代码"))
             {
                 var config = target as DataConfig;

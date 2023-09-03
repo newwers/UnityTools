@@ -1,0 +1,62 @@
+文本ID,中文文本,备注,英文文本
+uint,string,,string
+,,,
+id,textCN,,textEN
+10001000,打断,战斗中文字,Interrupt
+10001001,闪避,战斗中文字,Dodge
+10001002,吸收,战斗中文字,Absorb
+10001003,免疫,战斗中文字,Immunity
+10001004,击飞,战斗中文字,Knock
+10001005,眩晕,战斗中文字,Daze
+10001006,束缚,战斗中文字,Bondage
+10001007,冰冻,战斗中文字,Frozen
+10001008,放逐,战斗中文字,Banishment
+10001009,缴械,战斗中文字,Disarm
+10001010,沉默,战斗中文字,Silencer
+10001011,中毒,战斗中文字,Poisoned
+10001012,流血,战斗中文字,Bleeding
+10001013,灼伤,战斗中文字,Burning
+10001014,狂暴,战斗中文字,Berserk
+10001015,加速,战斗中文字,Quicken
+10001016,破甲,战斗中文字,Armor Exposure
+10001017,诅咒,战斗中文字,Curse
+10001018,穿透,战斗中文字,Penet
+10001019,攻击提升,战斗中文字,ATK UP
+10001020,防御提升,战斗中文字,DEF UP
+10001021,生命提升,战斗中文字,HP UP
+10002000,暂无排名,,
+10002001,全服第{0}名,,
+10002002,可领取,,
+10002003,Unlock,,
+10002004,准备,,
+10002005,开始游戏,,
+10002006,所有人准备才能开始!,,
+10002007,匹配,,
+10002008,未解锁,,
+10014005,"是否清理本地缓存的游戏资源及账号信息？
+当游戏运行有问题时，也可通过此操作解决部分异常问题，但需要重新下载补丁包及游戏扩展资源。",,"Are you sure you wish to delete the local cached game data and account info?
+If the game could not run normally in your device, you can do so to fix some problems, but you will have to redownload the latest updates and the corresponding expansion sets."
+10014006,输入字符已超出上限,,Too many characters
+10014007,您的昵称字符数已超出上限，请修改昵称后进入游戏；,,The name is too long
+10014008,您的昵称中包含特殊字符，请修改昵称后进入游戏；,,The name contains special characters. Please enter a new one
+10014009,您的昵称中包含非法字符，请修改昵称后进入游戏；,,The name contains invalid characters. Please enter a new one
+10014010,昵称包含特殊字符，请修改后再尝试；,,The name contains special characters. Please enter a new one
+10014011,昵称包含非法字符，请修改后再尝试；,,The name contains invalid characters. Please enter a new one
+10014012,名字重复，请换一个试试呢~,,The name is unavailable. . Please enter a new one
+10014013,请修改昵称后再次尝试~,,Change the name and try again
+10014014,输入昵称为空，请输入文本后尝试~,,Please enter a name first
+10014101,暂时无法匹配到合适的广告，请稍后再次尝试~,,No suitable advertisement was found. Please try again later.
+10015900,与所要求元素属性不符,,"No,No,No~"
+10016000,敬请期待！,（找不到关卡ID时调用）,Upcoming!
+10016100,活动获取,,
+10017001,"<size=30>健康游戏忠告</size>
+抵制不良游戏，拒绝盗版游戏。
+注意自我保护，谨防受骗上当。
+适度游戏益脑，沉迷游戏伤身。
+合理安排时间，享受健康生活。",,"抵制不良游戏，拒绝盗版游戏。
+注意自我保护，谨防受骗上当。
+适度游戏益脑，沉迷游戏伤身。
+合理安排时间，享受健康生活。"
+10017002,"抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。
+适度游戏益脑，沉迷游戏伤身。合理安排时间，享受健康生活。",,"抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。
+适度游戏益脑，沉迷游戏伤身。合理安排时间，享受健康生活。"
