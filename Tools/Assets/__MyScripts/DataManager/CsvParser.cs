@@ -1,6 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using static Z.Data.CsvParser;
 
 namespace Z.Data
 {
@@ -80,12 +83,23 @@ namespace Z.Data
             public void SetContent(string row,string[] keys)
             {
                 //将行解析成字典存储
-                var fields = row.Split(',');
-                for (int i = 0; i < fields.Length; i++)
+
+                var fields = CsvParser.SplitData(row,',');//todo:这边分割时,如果字符串里面存在多个"时,会出现问题,需要优化
+                for (int i = 0; i < fields.Count; i++)
                 {
+                    
+                    if (i >= keys.Length || string.IsNullOrWhiteSpace(keys[i]))
+                    {
+                        continue;
+                    }
+
+                    //UnityEngine.Debug.Log($"key:{keys[i]},value:{fields[i]}");
+
                     m_vDatas[keys[i]] =new Cell(fields[i].Trim());
                 }
             }
+
+            
         }
 
         string m_Content;
@@ -119,11 +133,11 @@ namespace Z.Data
             m_vRows.Clear();
 
             //解析内容
-            var rows = m_Content.Split('\n');
+            var rows = CsvParser.SplitData(m_Content, '\n');
             var fieldRow = rows[m_nTitleLine-1].Split(',');
 
             //获取每一行数据
-            for (int i = m_nTitleLine; i < rows.Length; i++)//4表示剔除前面几行标题
+            for (int i = m_nTitleLine; i < rows.Count; i++)//4表示剔除前面几行标题
             {
                 if (string.IsNullOrWhiteSpace(rows[i]))
                 {
@@ -148,6 +162,39 @@ namespace Z.Data
         public int GetTitleLine()
         {
             return m_nTitleLine;
+        }
+        /// <summary>
+        /// 根据逗号进行隔开,如果数据是字符串,忽略字符串里面的逗号
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static List<string> SplitData(string data, char separator)
+        {
+            List<string> dataList = new List<string>();
+            bool inQuotes = false;
+            string currentData = "";
+
+            foreach (char c in data)
+            {
+                if (c == '\"')
+                {
+                    inQuotes = !inQuotes;
+                    currentData += c;
+                }
+                else if (c == separator && !inQuotes)
+                {
+                    dataList.Add(currentData);
+                    currentData = "";
+                }
+                else
+                {
+                    currentData += c;
+                }
+            }
+
+            dataList.Add(currentData);
+
+            return dataList;
         }
     }
 }

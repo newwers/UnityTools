@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: DataConfig
   m_EditorClassIdentifier: Assembly-CSharp:Z.Data:DataConfig
   vConfigs: []
+  BuildFilePath: 

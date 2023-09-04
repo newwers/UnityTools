@@ -70,7 +70,7 @@ namespace Z.Data
         void BuilderFile(List<SingleField> fields,string fileName)
         {
             //判断是否存在文件
-            var filePath = Path.Combine(m_FilePath, fileName + ".cs");
+            var filePath = Path.Combine(m_FilePath, "CsvData_" + fileName + ".cs");
             //var filePath = Path.Combine(Application.dataPath + "/DataManager/AutoCode/", fileName + ".cs");
             //没有则创建,
             if (!Directory.Exists(filePath))

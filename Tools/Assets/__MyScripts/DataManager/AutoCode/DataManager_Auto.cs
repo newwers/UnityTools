@@ -14,7 +14,7 @@ namespace Z.Data
 			ConfigDataBase csv = null;
 			switch(data.guid)
 			{
-				case 24998:
+				case 24946:
 				{
 					Text = new CsvData_Text();
 					csv = Text;

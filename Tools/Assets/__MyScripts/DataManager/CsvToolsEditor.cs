@@ -25,7 +25,18 @@ namespace Z.Data
         [NonReorderable]
         public List<DataInfo> vConfigs = new List<DataInfo>();
 
-        public string BuildFilePath;
+        private string m_BuildFilePath;
+        public string BuildFilePath
+        {
+            get
+            {
+                return m_BuildFilePath;
+            }
+            set
+            {
+                m_BuildFilePath = value;
+            }
+        }
 
 #if UNITY_EDITOR
         private void OnValidate()
@@ -66,19 +77,25 @@ namespace Z.Data
                 m_Target.BuildFilePath = m_FilePath;
             }
 
-            EditorGUILayout.PropertyField(m_vConfigs);
+            //EditorGUILayout.PropertyField(m_vConfigs);
 
 
 
-            //base.OnInspectorGUI();
+            base.OnInspectorGUI();
 
             if (GUILayout.Button("添加"))
             {
                 m_Target.vConfigs.Add(null);
+                //EditorUtility.SetDirty(m_Target);
             }
 
             if (GUILayout.Button("生成代码"))
             {
+                if (string.IsNullOrWhiteSpace(m_FilePath))
+                {
+                    Debug.Log("请选择生成路径!");
+                    return;
+                }
                 var config = target as DataConfig;
                 for (int i = 0; i < config.vConfigs.Count; i++)
                 {
@@ -94,14 +111,15 @@ namespace Z.Data
             }
             if (GUILayout.Button("测试"))
             {
+                var filePath = AssetDatabase.GetAssetPath(m_Target);
                 //加载数据
-                var text = m_Target.vConfigs[0].data;
-                CsvData_SystemConfig data = new CsvData_SystemConfig();
-                data.LoadData(text.text);
+                //var text = m_Target.vConfigs[0].data;
+                //CsvData_SystemConfig data = new CsvData_SystemConfig();
+                //data.LoadData(text.text);
+                //Debug.Log($"id:{data.datas[1].id}");
                 //打印数据
-                Debug.Log($"id:{data.datas[1].id}");
 
-                DataManager.Instance.Init();
+                DataManager.Instance.Init(filePath);
                 var datas = DataManager.Instance.Text.datas;
                 Debug.Log($"id:{datas[1].id}");
             }

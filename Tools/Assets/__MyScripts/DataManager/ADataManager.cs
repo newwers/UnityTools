@@ -35,7 +35,7 @@ namespace Z.Data
             bInited = false;
         }
 
-        public bool Init(string dataFile = "Assets/test/DataManager/DataConfig.asset")
+        public bool Init(string dataFile = "Assets/DataManager/DataConfig.asset")
         {
             //╪стьнд╪Ч
 
