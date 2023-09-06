@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using TopGame.UI;
 using UnityEngine;
+using Z.UI;
 
 namespace AutoCode
 {
@@ -12,9 +12,9 @@ namespace AutoCode
     /// </summary>
     public class AutoCodeViewBuilder : AutoCodeBuilderBase
     {
-        public UISerialized m_ui;
+        public UIReferenceComponent m_ui;
 
-        public AutoCodeViewBuilder(string name, string filePath,UISerialized ui) : base(name, filePath)
+        public AutoCodeViewBuilder(string name, string filePath, UIReferenceComponent ui) : base(name, filePath)
         {
             m_ui = ui;
         }
@@ -38,34 +38,25 @@ namespace AutoCode
 
 
             //设置控件变量名
-            for (int i = 0; i < m_ui.Widgets.Length; i++)
+            for (int i = 0; i < m_ui.Datas.Count; i++)
             {
-                var widget = m_ui.Widgets[i];
-                if (widget.widget == null)
+                var widget = m_ui.Datas[i];
+                if (widget == null)
                 {
                     continue;
                 }
-                string name = widget.widget.name;
-                if (!string.IsNullOrWhiteSpace(widget.fastName))
+                string name = widget.name;
+                if (!string.IsNullOrWhiteSpace(widget.name))
                 {
-                    name= widget.fastName;
+                    name= widget.name;
                 }
 
-                AddString($"private {widget.widget.GetType().ToString()} m_{name};");
+                AddString($"private {widget.GetType().ToString()} m_{name};");
 
                 //Debug.Log($"widget type:{widget.widget.GetType()},type:{widget.assignType}");
             }
 
-            for (int i = 0; i < m_ui.Elements.Length; i++)
-            {
-                var element = m_ui.Elements[i];
-                if (element == null)
-                {
-                    continue;
-                }
-
-                AddString($"private GameObject m_{element.name};");
-            }
+            
 
             AddString("//------------------------------------------------------");
             AddString("public void AwakeUI(UIBase pBase)");
@@ -76,52 +67,43 @@ namespace AutoCode
             AddString("if (pBase == null || pBase.ui == null) return;");
 
             //设置控件获取
-            for (int i = 0; i < m_ui.Widgets.Length; i++)
+            for (int i = 0; i < m_ui.Datas.Count; i++)
             {
-                var widget = m_ui.Widgets[i];
-                if (widget.widget == null)
+                var widget = m_ui.Datas[i];
+                if (widget == null)
                 {
                     continue;
                 }
-                string name = widget.widget.name;
-                if (!string.IsNullOrWhiteSpace(widget.fastName))
+                string name = widget.name;
+                if (!string.IsNullOrWhiteSpace(widget.name))
                 {
-                    name = widget.fastName;
+                    name = widget.name;
                 }
 
-                AddString($"m_{name} = pBase.ui.GetWidget<{widget.widget.GetType().ToString()}>(\"{name}\");");
+                AddString($"m_{name} = pBase.ui.GetWidget<{widget.GetType().ToString()}>(\"{name}\");");
 
             }
 
-            for (int i = 0; i < m_ui.Elements.Length; i++)
-            {
-                var element = m_ui.Elements[i];
-                if (element == null)
-                {
-                    continue;
-                }
-
-                AddString($"m_{element.name} = pBase.ui.Find(\"{element.name}\");");
-            }
+            
 
             SubTabNum();
             AddString("}");
 
             //设置控件调用函数和点击事件 Text EventTriggerListener ListView 
-            for (int i = 0; i < m_ui.Widgets.Length; i++)
+            for (int i = 0; i < m_ui.Datas.Count; i++)
             {
-                var widget = m_ui.Widgets[i];
-                if (widget.widget == null)
+                var widget = m_ui.Datas[i];
+                if (widget == null)
                 {
                     continue;
                 }
-                string name = widget.widget.name;
-                if (!string.IsNullOrWhiteSpace(widget.fastName))
+                string name = widget.name;
+                if (!string.IsNullOrWhiteSpace(widget.name))
                 {
-                    name = widget.fastName;
+                    name = widget.name;
                 }
 
-                switch (widget.widget.GetType().FullName)
+                switch (widget.GetType().FullName)
                 {
                     case "UnityEngine.UI.Text":
                         AddString("//------------------------------------------------------");
@@ -172,25 +154,7 @@ namespace AutoCode
 
             }
 
-            for (int i = 0; i < m_ui.Elements.Length; i++)
-            {
-                var element = m_ui.Elements[i];
-                if (element == null)
-                {
-                    continue;
-                }
-
-                AddString("//------------------------------------------------------");
-                AddString($"public void Set{element.name}Active(bool active)");
-                AddString("{");
-                AddTabNum();
-
-                AddString($"UIUtil.SetActive(m_{element.name}, active);");
-
-
-                SubTabNum();
-                AddString("}");
-            }
+            
 
             SubTabNum();
             AddString("}");

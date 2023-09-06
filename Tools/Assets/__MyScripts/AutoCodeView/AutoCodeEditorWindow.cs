@@ -1,15 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using TopGame.UI;
 using UnityEditor;
 using UnityEngine;
+using Z.UI;
 
 namespace AutoCode
 {
     public class AutoCodeEditorWindow : EditorWindow
     {
-        UISerialized m_Ui;
+        UIReferenceComponent m_Ui;
         string m_FileName;
         string m_FilePath;
 
@@ -22,7 +22,7 @@ namespace AutoCode
 
         private void OnGUI()
         {
-            m_Ui =  EditorGUILayout.ObjectField(m_Ui, typeof(UISerialized),true) as UISerialized;
+            m_Ui =  EditorGUILayout.ObjectField(m_Ui, typeof(UIReferenceComponent),true) as UIReferenceComponent;
             m_FileName = EditorGUILayout.TextField("文件名", m_FileName);
             m_FilePath = EditorGUILayout.TextField("文件路径", m_FilePath);
             if (GUILayout.Button("选择生成路径"))
