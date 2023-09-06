@@ -28,7 +28,8 @@ namespace AutoCode
 
             AddString("using UnityEngine;");
             AddString("using UnityEngine.UI;");
-            AddString("namespace TopGame.UI");
+            AddString("using Z.UI;");
+            AddString("namespace Z.UI");
             AddString("{");
             AddTabNum();
 
@@ -51,7 +52,7 @@ namespace AutoCode
                     name= widget.name;
                 }
 
-                AddString($"private {widget.GetType().ToString()} m_{name};");
+                AddString($"private {widget.component.GetType().ToString()} m_{name};");
 
                 //Debug.Log($"widget type:{widget.widget.GetType()},type:{widget.assignType}");
             }
@@ -59,12 +60,12 @@ namespace AutoCode
             
 
             AddString("//------------------------------------------------------");
-            AddString("public void AwakeUI(UIBase pBase)");
+            AddString("public void AwakeUI(UIReferenceComponent ui)");
 
             AddString("{");
             AddTabNum();
 
-            AddString("if (pBase == null || pBase.ui == null) return;");
+            AddString("if (ui == null) return;");
 
             //设置控件获取
             for (int i = 0; i < m_ui.Datas.Count; i++)
@@ -80,7 +81,7 @@ namespace AutoCode
                     name = widget.name;
                 }
 
-                AddString($"m_{name} = pBase.ui.GetWidget<{widget.GetType().ToString()}>(\"{name}\");");
+                AddString($"m_{name} = ui.GetUI<{widget.component.GetType().ToString()}>(\"{name}\");");
 
             }
 
@@ -103,8 +104,20 @@ namespace AutoCode
                     name = widget.name;
                 }
 
-                switch (widget.GetType().FullName)
+                switch (widget.component.GetType().FullName)
                 {
+                    case "UnityEngine.UI.RawImage":
+                        AddString("//------------------------------------------------------");
+                        AddString($"public void Set{name}RawImage(bool active)");
+                        AddString("{");
+                        AddTabNum();
+
+                        AddString($"m_{name}.gameObject.SetActive(active);");
+
+
+                        SubTabNum();
+                        AddString("}");
+                        break;
                     case "UnityEngine.UI.Text":
                         AddString("//------------------------------------------------------");
                         AddString($"public void Set{name}Label(uint key)");
