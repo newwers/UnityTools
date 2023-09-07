@@ -27,7 +27,7 @@ namespace AutoCode
             m_FilePath = EditorGUILayout.TextField("文件路径", m_FilePath);
             if (GUILayout.Button("选择生成路径"))
             {
-                m_FilePath = EditorUtility.OpenFolderPanel("选择文件路径", Application.dataPath, "");
+                m_FilePath = EditorUtility.OpenFolderPanel("选择文件夹路径", Application.dataPath, "");
 
                 
             }

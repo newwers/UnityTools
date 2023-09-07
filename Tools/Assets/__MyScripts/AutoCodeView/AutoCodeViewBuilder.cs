@@ -42,7 +42,7 @@ namespace AutoCode
             for (int i = 0; i < m_ui.Datas.Count; i++)
             {
                 var widget = m_ui.Datas[i];
-                if (widget == null)
+                if (widget.component == null)
                 {
                     continue;
                 }
@@ -71,7 +71,7 @@ namespace AutoCode
             for (int i = 0; i < m_ui.Datas.Count; i++)
             {
                 var widget = m_ui.Datas[i];
-                if (widget == null)
+                if (widget.component == null)
                 {
                     continue;
                 }
@@ -112,7 +112,7 @@ namespace AutoCode
                         AddString("{");
                         AddTabNum();
 
-                        AddString($"m_{name}.gameObject.SetActive(active);");
+                        AddString($"m_{name}?.gameObject.SetActive(active);");
 
 
                         SubTabNum();

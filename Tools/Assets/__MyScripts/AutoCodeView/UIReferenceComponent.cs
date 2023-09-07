@@ -8,7 +8,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using static UnityEditor.Progress;
 using static Z.UI.UIReferenceComponent;
 
 #if UNITY_EDITOR
@@ -26,8 +25,8 @@ namespace Z.UI
             public Component component;
         }
 
-        public List<UIReferenceData> Datas { get; private set; }
-        Dictionary<string,UIReferenceData> m_vuiReferences = new Dictionary<string, UIReferenceData>();
+        public List<UIReferenceData> Datas = new List<UIReferenceData>();
+        Dictionary<string,UIReferenceData> m_vUiReferences = new Dictionary<string, UIReferenceData>();
 
         private void Awake()
         {
@@ -45,17 +44,17 @@ namespace Z.UI
                     key = item.name;
                 }
 
-                m_vuiReferences[key] = item;
+                m_vUiReferences[key] = item;
             }
         }
 
         public T GetUI<T>(string name) where T : Component
         {
-            if (m_vuiReferences.Count == 0 && Datas.Count > 0)//未初始化判断,初始隐藏状态不执行awake函数
+            if (m_vUiReferences.Count == 0 && Datas.Count > 0)//未初始化判断,初始隐藏状态不执行awake函数
             {
                 Awake();
             }
-            if (m_vuiReferences.TryGetValue(name,out var value))
+            if (m_vUiReferences.TryGetValue(name,out var value))
             {
                 return value.component as T;
             }
@@ -94,6 +93,7 @@ namespace Z.UI
         {
             if (m_ui == null || m_ui.Datas == null)
             {
+                base.OnInspectorGUI();
                 return;
             }
 
@@ -156,26 +156,8 @@ namespace Z.UI
 
                 UnityEditor.EditorUtility.SetDirty(target);
             }
-            if (GUILayout.Button("设置所有元素名字和物体名字一致"))
-            {
-                for (int i = 0; i < m_ui.Datas.Count; i++)
-                {
-                    var item = m_ui.Datas[i];
-                    if (item.component == null)
-                    {
-                        continue;
-                    }
-                    string key = item.name;
-                    if (string.IsNullOrWhiteSpace(item.name))
-                    {
-                        item.name = item.component.name;
-                        key = item.name;
-                    }
-                }
-            }
 
-            serializedObject.ApplyModifiedProperties();
-            base.OnInspectorGUI();
+            
 
             if (Event.current.type == EventType.DragExited) // 只有在拖拽操作完成后才显示GenericMenu
             {
@@ -195,7 +177,7 @@ namespace Z.UI
                     {
                         menu.AddItem(new GUIContent(comp.GetType().Name), false, () => {
                             item.component = comp;
-                            item.name = $"{comp.name}_{comp.GetType().Name}";
+                            item.name = $"{comp.name.Replace(' ','_')}_{comp.GetType().Name}";
                         });
                     }
 
@@ -203,6 +185,9 @@ namespace Z.UI
 
                 }
             }
+
+            serializedObject.ApplyModifiedProperties();
+            base.OnInspectorGUI();
         }
 
     }
