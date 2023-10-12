@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEditor;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UI;
 using zdq.UI;
@@ -21,29 +20,6 @@ namespace zdq.UIEditor
             EditorWindow window = EditorWindow.GetWindow(typeof(UIToolsEditor));
             window.titleContent = new GUIContent("ui编辑工具面板");
             m_Window = window;
-        }
-
-        [MenuItem("Tools/UI/CreatePanelScript")]
-        public static void CreatePanelScript()
-        {
-            string path = EditorUtility.SaveFolderPanel("选择创建路径", "Assets/Scripts/UI","");
-
-            if (string.IsNullOrEmpty(path))
-            {
-                return;
-            }
-
-            var strs = path.Split('/');
-            string fileName = strs[strs.Length - 1];
-
-            Tools.FileTool.FileTools.WriteFile( $"{path}/{fileName}.cs", $"using Project001.Core;\r\nusing System.Collections;\r\nusing System.Collections.Generic;\r\nusing UnityEngine;\r\n\r\nnamespace Project001.UI\r\n{{\r\n\r\n\r\n    public class {fileName} : BaseUIController\r\n    {{\r\n        \r\n    }}\r\n}}", System.Text.Encoding.UTF8);
-
-
-
-            AssetDatabase.Refresh(ImportAssetOptions.Default);
-
-            EditorUtility.DisplayDialog("title", $"创建路径{path}/{fileName}.cs完成!", "ok");
-
         }
 
         [MenuItem("Assets/复制文件路径")]
@@ -72,131 +48,15 @@ namespace zdq.UIEditor
             EditorGUILayout.BeginHorizontal();
             CreateImage();
             CreateText();
-            CreateTextMeshPro();
             CreateBtn();
             EditorGUILayout.EndHorizontal();
             ImageConvertImageEX();
             ConvertSelectEmptyImage();
             SetParticleOrder();
             SetParticleMasking();
-            SetRaycast();
-            SetAnchor();
             EditorGUILayout.EndScrollView();
         }
-        //------------------------------------------------------
-        void SetAnchor()
-        {
-            EditorGUILayout.BeginHorizontal();
 
-            if (GUILayout.Button("设置UI锚点按比例拉伸大小"))
-            {
-                var selectList = Selection.gameObjects;
-
-                if (selectList.Length <= 0)
-                {
-                    this.ShowNotification(new GUIContent("当前没有选择物体!!"));
-                    return;
-                }
-                
-                for (int i = 0; i < selectList.Length; i++)
-                {
-                    var ui= selectList[i];
-                    Undo.RecordObject(ui.transform, "setAnchors");
-                    if (ui.transform is RectTransform && ui.transform.parent && ui.transform.parent is RectTransform)
-                    {
-                        var parentRect = ui.transform.parent as RectTransform;
-                        var rect = ui.transform as RectTransform;
-                        //rect.anchorMax
-                        //rect.anchorMin
-                        //用当前大小,除父类大小,计算出锚点
-                        float xMin = (rect.rect.xMin + parentRect.rect.width /2 + rect.anchoredPosition.x) / parentRect.rect.width;
-                        float yMin = (rect.rect.yMin + parentRect.rect.height / 2 + rect.anchoredPosition.y) / parentRect.rect.height;
-
-                        float xMax = (rect.rect.xMax + parentRect.rect.width / 2 + rect.anchoredPosition.x) / parentRect.rect.width;
-                        float yMax = (rect.rect.yMax + parentRect.rect.height / 2 + rect.anchoredPosition.y) / parentRect.rect.height;
-
-                        rect.anchorMin = new Vector2(xMin, yMin);
-                        rect.anchorMax = new Vector2(xMax, yMax);
-                        rect.anchoredPosition = Vector2.zero;
-                        rect.sizeDelta = Vector2.zero;
-                    }
-                }
-
-                this.ShowNotification(new GUIContent("设置完成!!"));
-            }
-
-            if (GUILayout.Button("设置UI锚点到当前UI位置"))
-            {
-                var selectList = Selection.gameObjects;
-
-                if (selectList.Length <= 0)
-                {
-                    this.ShowNotification(new GUIContent("当前没有选择物体!!"));
-                    return;
-                }
-
-                for (int i = 0; i < selectList.Length; i++)
-                {
-                    var ui = selectList[i];
-                    Undo.RecordObject(ui.transform, "setAnchors2");
-                    if (ui.transform is RectTransform && ui.transform.parent && ui.transform.parent is RectTransform)
-                    {
-                        var parentRect = ui.transform.parent as RectTransform;
-                        var rect = ui.transform as RectTransform;
-
-                        //先锚点重置到中心点
-                        //rect.anchorMin = new Vector2(0.5f, 0.5f);
-                        //rect.anchorMax = new Vector2(0.5f, 0.5f);
-
-                        Vector2 anchorPosition = rect.anchoredPosition;
-
-                        //rect.point
-
-                        //用当前大小,除父类大小,计算出锚点
-                        float x = (rect.rect.center.x + parentRect.rect.width / 2 + anchorPosition.x) / parentRect.rect.width;
-                        float y = (rect.rect.center.y + parentRect.rect.height / 2 + anchorPosition.y) / parentRect.rect.height;
-
-                        rect.anchorMin = new Vector2(x, y);
-                        rect.anchorMax = new Vector2(x, y);
-                        rect.anchoredPosition = Vector2.zero;
-                    }
-                }
-
-                this.ShowNotification(new GUIContent("设置完成!!"));
-            }
-
-
-
-            EditorGUILayout.EndHorizontal();
-        }
-        //------------------------------------------------------
-        bool m_RaycastToggle = false;
-        private void SetRaycast()
-        {
-            
-            EditorGUILayout.BeginHorizontal();
-            m_RaycastToggle = EditorGUILayout.Toggle("射线检测:",m_RaycastToggle);
-            if (GUILayout.Button("设置"))
-            {
-                var gos = Selection.gameObjects;
-                if (gos == null || gos.Length == 0)
-                {
-                    ShowNotification(new GUIContent("请选择一个UI"));
-                    return;
-                }
-
-                foreach (var item in gos)
-                {
-                    var graphic = item.GetComponent<Graphic>();
-                    if (graphic)
-                    {
-                        graphic.raycastTarget = m_RaycastToggle;
-                    }
-                }
-                ShowNotification(new GUIContent("设置完成!"));
-            }
-            EditorGUILayout.EndHorizontal();
-        }
         Vector3 m_SetSelectPos;
         private void SetSelectGameobjectPos()
         {
@@ -229,44 +89,6 @@ namespace zdq.UIEditor
                 }
 
                 m_SetSelectPos = gos[0].transform.position;
-            }
-            if (GUILayout.Button("读取选择的物体View坐标"))
-            {
-                var gos = Selection.gameObjects;
-                if (gos == null || gos.Length == 0)
-                {
-                    ShowNotification(new GUIContent("请选择一个UI"));
-                    return;
-                }
-
-                var pos = gos[0].transform.position;
-                var cam = UIManager.GetInstance().GetUICamera();
-                if (cam == null)
-                {
-                    return;
-                }
-
-
-                m_SetSelectPos = cam.WorldToViewportPoint(pos);
-            }
-            if (GUILayout.Button("读取选择的物体Screen坐标"))
-            {
-                var gos = Selection.gameObjects;
-                if (gos == null || gos.Length == 0)
-                {
-                    ShowNotification(new GUIContent("请选择一个UI"));
-                    return;
-                }
-
-                var pos = gos[0].transform.position;
-                var cam = UIManager.GetInstance().GetUICamera();
-                if (cam == null)
-                {
-                    return;
-                }
-
-
-                m_SetSelectPos = cam.WorldToScreenPoint(pos);
             }
             EditorGUILayout.EndHorizontal();
         }
@@ -515,24 +337,23 @@ namespace zdq.UIEditor
                     Selection.activeGameObject = go;
                 }
             }
-        }
-        //------------------------------------------------------
-        void CreateTextMeshPro()
-        {
-            if (GUILayout.Button("创建TextMeshPro", new GUILayoutOption[] { GUILayout.Height(30) }))
+            if (GUILayout.Button("创建Text Mesh Pro", new GUILayoutOption[] { GUILayout.Height(30) }))
             {
                 if (Selection.activeTransform && Selection.activeTransform.GetComponentInParent<Canvas>())
                 {
                     GameObject go = new GameObject(Selection.activeGameObject.name + "Text", typeof(TextMeshProUGUI));
-                    TextMeshProUGUI text = go.GetComponent<TextMeshProUGUI>();
+                    var text = go.GetComponent<TextMeshProUGUI>();
 
                     text.raycastTarget = false;
-                    text.font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Fonts/SIMHEI SDF.asset");
+                    text.font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Datas/Fonts/default.ttf");
                     text.richText = false;
-                    text.fontSize = 20;
-                    text.alignment =  TextAlignmentOptions.Center;
+                    text.fontSize = 50;
                     text.rectTransform.sizeDelta = new Vector2(100, 100);//必要时,可暴露出来给外部面板填写参数
                     text.text = "Hi";
+                    //text.alignment =  TextAlignmentOptions.Center | TextAlignmentOptions.Midline;
+                    text.horizontalAlignment = HorizontalAlignmentOptions.Center;
+                    text.verticalAlignment = VerticalAlignmentOptions.Middle;
+                    //text.SetAllDirty();
                     //text.rectTransform.anchorMin = Vector2.zero;
                     //text.rectTransform.anchorMax = Vector2.one;
                     //text.rectTransform.sizeDelta = Vector2.zero;
@@ -549,21 +370,21 @@ namespace zdq.UIEditor
             {
                 if (Selection.activeTransform && Selection.activeTransform.GetComponentInParent<Canvas>())
                 {
-                    GameObject go = new GameObject("Btn", typeof(EmptyImage),typeof(UIEventListener));
-                    GameObject icon = new GameObject("icon", typeof(Image));
+                    //GameObject go = new GameObject("Btn", typeof(EmptyImage),typeof(UIEventListener));
+                    //GameObject icon = new GameObject("icon", typeof(Image));
 
-                    go.transform.SetParent(Selection.activeTransform, false);
-                    var goRect = go.transform as RectTransform;
-                    goRect.sizeDelta = new Vector2(220,100);
+                    //go.transform.SetParent(Selection.activeTransform, false);
+                    //var goRect = go.transform as RectTransform;
+                    //goRect.sizeDelta = new Vector2(220,100);
 
-                    icon.GetComponent<Image>().raycastTarget = false;
-                    icon.transform.SetParent(go.transform, false);
-                    var iconRect = icon.transform as RectTransform;
-                    iconRect.sizeDelta = new Vector2(220, 79);
-                    icon.GetComponent<Image>().sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/DatasRef/UI/Textures/common/buttons/button_general_21.png");
-                    //UISerialized ui = FindUISerializedReferences();
-                    //AddComponentToUISerialized<Text>(ui, text);//按钮不需要添加到UISerialized中
-                    Selection.activeGameObject = go;
+                    //icon.GetComponent<Image>().raycastTarget = false;
+                    //icon.transform.SetParent(go.transform, false);
+                    //var iconRect = icon.transform as RectTransform;
+                    //iconRect.sizeDelta = new Vector2(220, 79);
+                    //icon.GetComponent<Image>().sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/DatasRef/UI/Textures/common/buttons/button_general_21.png");
+                    ////UISerialized ui = FindUISerializedReferences();
+                    ////AddComponentToUISerialized<Text>(ui, text);//按钮不需要添加到UISerialized中
+                    //Selection.activeGameObject = go;
                 }
             }
         }
@@ -736,41 +557,41 @@ namespace zdq.UIEditor
         {
             if (GUILayout.Button("选择的转EmptyImage"))
             {
-                var selectList = Selection.gameObjects;
+                //var selectList = Selection.gameObjects;
 
-                if (selectList.Length <= 0)
-                {
-                    this.ShowNotification(new GUIContent("当前没有选择物体!!"));
-                    return;
-                }
+                //if (selectList.Length <= 0)
+                //{
+                //    this.ShowNotification(new GUIContent("当前没有选择物体!!"));
+                //    return;
+                //}
 
-                Undo.RecordObjects(selectList, "selectList4");
+                //Undo.RecordObjects(selectList, "selectList4");
 
-                List<MaskableGraphic> components = new List<MaskableGraphic>();
-                foreach (var item in selectList)
-                {
-                    var images = item.GetComponent<Image>();
-                    var rawImages = item.GetComponent<RawImage>();
-                    if (images != null)
-                    {
-                        components.Add(images);
-                    }
-                    if (rawImages != null)
-                    {
-                        components.Add(rawImages);
-                    }
-                }
+                //List<MaskableGraphic> components = new List<MaskableGraphic>();
+                //foreach (var item in selectList)
+                //{
+                //    var images = item.GetComponent<Image>();
+                //    var rawImages = item.GetComponent<RawImage>();
+                //    if (images != null)
+                //    {
+                //        components.Add(images);
+                //    }
+                //    if (rawImages != null)
+                //    {
+                //        components.Add(rawImages);
+                //    }
+                //}
 
-                foreach (var item in components)
-                {
-                    var raycast = item.raycastTarget;
-                    GameObject go = item.gameObject;
-                    DestroyImmediate(item);
-                    EmptyImage rawImage = go.AddComponent<EmptyImage>();
-                    rawImage.raycastTarget = raycast;
+                //foreach (var item in components)
+                //{
+                //    var raycast = item.raycastTarget;
+                //    GameObject go = item.gameObject;
+                //    DestroyImmediate(item);
+                //    EmptyImage rawImage = go.AddComponent<EmptyImage>();
+                //    rawImage.raycastTarget = raycast;
 
-                    UnityEditor.EditorUtility.SetDirty(go);
-                }
+                //    UnityEditor.EditorUtility.SetDirty(go);
+                //}
                 ShowNotification(new GUIContent("替换完成"));
             }
         }
