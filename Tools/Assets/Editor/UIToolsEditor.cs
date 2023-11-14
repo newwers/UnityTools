@@ -45,11 +45,9 @@ namespace zdq.UIEditor
             SetUIName();
             CopyGameObject();
             IsAddReferencesToggle();
-            EditorGUILayout.BeginHorizontal();
             CreateImage();
             CreateText();
             CreateBtn();
-            EditorGUILayout.EndHorizontal();
             ImageConvertImageEX();
             ConvertSelectEmptyImage();
             SetParticleOrder();
@@ -297,96 +295,144 @@ namespace zdq.UIEditor
         }
 
         //------------------------------------------------------
+        UnityEngine.Object m_CreateImageObj;
         void CreateImage()
         {
+            GUILayout.BeginHorizontal();
+            
+            m_CreateImageObj = EditorGUILayout.ObjectField("图片预制体:", m_CreateImageObj, typeof(Image), true);
             if (GUILayout.Button("创建Image", new GUILayoutOption[] { GUILayout.Height(30) }))
             {
                 if (Selection.activeTransform && Selection.activeTransform.GetComponentInParent<Canvas>())
                 {
-                    GameObject go = new GameObject(Selection.activeGameObject.name + "Image", typeof(Image));
-                    Image img = go.GetComponent<Image>();
-                    img.raycastTarget = false;
-                    go.transform.SetParent(Selection.activeTransform, false);
-                    Selection.activeGameObject = go;
+                    if (m_CreateImageObj != null)
+                    {
+                        var image = Instantiate<Image>((Image)m_CreateImageObj, Selection.activeTransform);
+                        Selection.activeGameObject = image.gameObject;
+                    }
+                    else
+                    {
+                        GameObject go = new GameObject(Selection.activeGameObject.name + "Image", typeof(Image));
+                        Image img = go.GetComponent<Image>();
+                        img.raycastTarget = false;
+                        go.transform.SetParent(Selection.activeTransform, false);
+                        Selection.activeGameObject = go;
+                    }
                 }
             }
+            GUILayout.EndHorizontal();
         }
         //------------------------------------------------------
         //------------------------------------------------------
+        UnityEngine.Object m_CreateTextObj;
         void CreateText()
         {
+            GUILayout.BeginHorizontal();
+            m_CreateTextObj = EditorGUILayout.ObjectField("文本预制体:", m_CreateTextObj, typeof(Graphic), true);
             if (GUILayout.Button("创建Text", new GUILayoutOption[] { GUILayout.Height(30) }))
             {
                 if (Selection.activeTransform && Selection.activeTransform.GetComponentInParent<Canvas>())
                 {
-                    GameObject go = new GameObject(Selection.activeGameObject.name + "Text", typeof(Text));
-                    Text text = go.GetComponent<Text>();
+                    if (m_CreateTextObj != null)
+                    {
+                        var text = Instantiate<Text>((Text)m_CreateTextObj, Selection.activeTransform);
+                        Selection.activeGameObject = text.gameObject;
+                    }
+                    else
+                    {
+                        GameObject go = new GameObject(Selection.activeGameObject.name + "Text", typeof(Text));
+                        Text text = go.GetComponent<Text>();
 
-                    text.raycastTarget = false;
-                    text.font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Datas/Fonts/default.ttf");
-                    text.supportRichText = false;
-                    text.fontSize = 20;
-                    text.alignment = TextAnchor.MiddleCenter;
-                    text.rectTransform.sizeDelta = new Vector2(100,100);//必要时,可暴露出来给外部面板填写参数
-                    text.text = "Hi";
-                    //text.rectTransform.anchorMin = Vector2.zero;
-                    //text.rectTransform.anchorMax = Vector2.one;
-                    //text.rectTransform.sizeDelta = Vector2.zero;
+                        text.raycastTarget = false;
+                        text.font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Datas/Fonts/default.ttf");
+                        text.supportRichText = false;
+                        text.fontSize = 20;
+                        text.alignment = TextAnchor.MiddleCenter;
+                        text.rectTransform.sizeDelta = new Vector2(100, 100);//必要时,可暴露出来给外部面板填写参数
+                        text.text = "Hi";
+                        //text.rectTransform.anchorMin = Vector2.zero;
+                        //text.rectTransform.anchorMax = Vector2.one;
+                        //text.rectTransform.sizeDelta = Vector2.zero;
 
-                    go.transform.SetParent(Selection.activeTransform, false);
-                    Selection.activeGameObject = go;
+                        go.transform.SetParent(Selection.activeTransform, false);
+                        Selection.activeGameObject = go;
+                    }
+                    
                 }
             }
             if (GUILayout.Button("创建Text Mesh Pro", new GUILayoutOption[] { GUILayout.Height(30) }))
             {
                 if (Selection.activeTransform && Selection.activeTransform.GetComponentInParent<Canvas>())
                 {
-                    GameObject go = new GameObject(Selection.activeGameObject.name + "Text", typeof(TextMeshProUGUI));
-                    var text = go.GetComponent<TextMeshProUGUI>();
+                    if (m_CreateTextObj != null)
+                    {
+                        var text = Instantiate<TextMeshProUGUI>((TextMeshProUGUI)m_CreateTextObj, Selection.activeTransform);
+                        Selection.activeGameObject = text.gameObject;
+                    }
+                    else
+                    {
+                        GameObject go = new GameObject(Selection.activeGameObject.name + "Text", typeof(TextMeshProUGUI));
+                        var text = go.GetComponent<TextMeshProUGUI>();
 
-                    text.raycastTarget = false;
-                    text.font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Datas/Fonts/default.ttf");
-                    text.richText = false;
-                    text.fontSize = 50;
-                    text.rectTransform.sizeDelta = new Vector2(100, 100);//必要时,可暴露出来给外部面板填写参数
-                    text.text = "Hi";
-                    //text.alignment =  TextAlignmentOptions.Center | TextAlignmentOptions.Midline;
-                    text.horizontalAlignment = HorizontalAlignmentOptions.Center;
-                    text.verticalAlignment = VerticalAlignmentOptions.Middle;
-                    //text.SetAllDirty();
-                    //text.rectTransform.anchorMin = Vector2.zero;
-                    //text.rectTransform.anchorMax = Vector2.one;
-                    //text.rectTransform.sizeDelta = Vector2.zero;
+                        text.raycastTarget = false;
+                        text.font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Datas/Fonts/default.ttf");
+                        text.richText = false;
+                        text.fontSize = 50;
+                        text.rectTransform.sizeDelta = new Vector2(100, 100);//必要时,可暴露出来给外部面板填写参数
+                        text.text = "Hi";
+                        //text.alignment =  TextAlignmentOptions.Center | TextAlignmentOptions.Midline;
+                        text.horizontalAlignment = HorizontalAlignmentOptions.Center;
+                        text.verticalAlignment = VerticalAlignmentOptions.Middle;
+                        //text.SetAllDirty();
+                        //text.rectTransform.anchorMin = Vector2.zero;
+                        //text.rectTransform.anchorMax = Vector2.one;
+                        //text.rectTransform.sizeDelta = Vector2.zero;
 
-                    go.transform.SetParent(Selection.activeTransform, false);
-                    Selection.activeGameObject = go;
+                        go.transform.SetParent(Selection.activeTransform, false);
+                        Selection.activeGameObject = go;
+                    }
+
+                       
                 }
             }
+            GUILayout.EndHorizontal();
         }
         //------------------------------------------------------
+        UnityEngine.Object m_CreateBtnObj;
         void CreateBtn()
         {
+            GUILayout.BeginHorizontal();
+            m_CreateBtnObj = EditorGUILayout.ObjectField("按钮预制体:", m_CreateBtnObj, typeof(GameObject), true);
             if (GUILayout.Button("创建Button", new GUILayoutOption[] { GUILayout.Height(30) }))
             {
                 if (Selection.activeTransform && Selection.activeTransform.GetComponentInParent<Canvas>())
                 {
-                    //GameObject go = new GameObject("Btn", typeof(EmptyImage),typeof(UIEventListener));
-                    //GameObject icon = new GameObject("icon", typeof(Image));
+                    if (m_CreateBtnObj != null)
+                    {
+                        var btn = Instantiate<GameObject>((GameObject)m_CreateBtnObj, Selection.activeTransform);
+                        Selection.activeGameObject = btn.gameObject;
+                    }
+                    else
+                    {
+                        //GameObject go = new GameObject("Btn", typeof(EmptyImage),typeof(UIEventListener));
+                        //GameObject icon = new GameObject("icon", typeof(Image));
 
-                    //go.transform.SetParent(Selection.activeTransform, false);
-                    //var goRect = go.transform as RectTransform;
-                    //goRect.sizeDelta = new Vector2(220,100);
+                        //go.transform.SetParent(Selection.activeTransform, false);
+                        //var goRect = go.transform as RectTransform;
+                        //goRect.sizeDelta = new Vector2(220,100);
 
-                    //icon.GetComponent<Image>().raycastTarget = false;
-                    //icon.transform.SetParent(go.transform, false);
-                    //var iconRect = icon.transform as RectTransform;
-                    //iconRect.sizeDelta = new Vector2(220, 79);
-                    //icon.GetComponent<Image>().sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/DatasRef/UI/Textures/common/buttons/button_general_21.png");
-                    ////UISerialized ui = FindUISerializedReferences();
-                    ////AddComponentToUISerialized<Text>(ui, text);//按钮不需要添加到UISerialized中
-                    //Selection.activeGameObject = go;
+                        //icon.GetComponent<Image>().raycastTarget = false;
+                        //icon.transform.SetParent(go.transform, false);
+                        //var iconRect = icon.transform as RectTransform;
+                        //iconRect.sizeDelta = new Vector2(220, 79);
+                        //icon.GetComponent<Image>().sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/DatasRef/UI/Textures/common/buttons/button_general_21.png");
+                        ////UISerialized ui = FindUISerializedReferences();
+                        ////AddComponentToUISerialized<Text>(ui, text);//按钮不需要添加到UISerialized中
+                        //Selection.activeGameObject = go;
+                    }
                 }
             }
+            GUILayout.EndHorizontal();
         }
         #endregion
         //------------------------------------------------------
