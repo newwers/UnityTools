@@ -163,6 +163,12 @@ namespace Z.UI
             text.text = str;
         }
         //------------------------------------------------------
+        public static void SetLabel(TMPro.TextMeshProUGUI text, string str)
+        {
+            if (text == null) return;
+            text.text = str;
+        }
+        //------------------------------------------------------
         public static void SetPositionTo(Transform transform, Vector3 toPos)
         {
             if (transform == null) return;
