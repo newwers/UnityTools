@@ -64,6 +64,10 @@ public class BaseMonoSingleClass<T> : MonoBehaviour  where T:MonoBehaviour
 
     protected virtual void Awake()
     {
+        if (mInstance)//如果已经有了该对象,销毁新创建的对象
+        {
+            Destroy(gameObject);
+        }
         mInstance = this as T;
     }
 
