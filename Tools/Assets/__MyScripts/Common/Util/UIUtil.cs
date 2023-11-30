@@ -270,6 +270,66 @@ namespace Z.UI
                 rect.rectTransform.anchoredPosition = pos;
             }
         }
-        
+
+        public static void SetEnable(Behaviour component, bool bEnable)
+        {
+            if (component)
+            {
+                component.enabled = bEnable;
+            }
+        }
+
+        public static void SetEnable(Renderer component, bool bEnable)
+        {
+            if (component)
+            {
+                component.enabled = bEnable;
+            }
+        }
+
+        public static bool IsInView(Camera camera, Renderer renderer)
+        {
+            if (!camera || !renderer)
+            {
+                Debug.Log("无法正常计算是否在视野中");
+                return false;
+            }
+
+            Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
+
+            // 判断物体是否在摄像机视野范围内
+            if (GeometryUtility.TestPlanesAABB(planes, renderer.bounds))
+            {
+                Debug.Log("物体在摄像机视野范围内");
+                return true;
+            }
+            else
+            {
+                Debug.Log("物体不在摄像机视野范围内");
+                return false;
+            }
+        }
+
+        public static bool IsInView(Camera camera, GameObject go)
+        {
+            if (!camera || !go)
+            {
+                Debug.Log("无法正常计算是否在视野中");
+                return false;
+            }
+            Plane[] planes = GeometryUtility.CalculateFrustumPlanes(camera);
+
+            // 判断物体是否在摄像机视野范围内
+            if (GeometryUtility.TestPlanesAABB(planes, go.GetComponent<Renderer>().bounds))
+            {
+                Debug.Log("物体在摄像机视野范围内");
+                return true;
+            }
+            else
+            {
+                Debug.Log("物体不在摄像机视野范围内");
+                return false;
+            }
+        }
     }
 }
