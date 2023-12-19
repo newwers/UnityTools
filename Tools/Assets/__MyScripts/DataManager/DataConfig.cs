@@ -1,8 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
-using JetBrains.Annotations;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -10,8 +8,7 @@ using System;
 
 namespace Z.Data
 {
-
-    [CreateAssetMenu(fileName = "DataConfig", menuName = "ScriptableObjects/CreateDataConfig", order = 1)]
+    [CreateAssetMenu(fileName = "Config", menuName = "ScriptableObjects/CreateDataConfig")]
     public class DataConfig : ScriptableObject
     {
         [Serializable]
@@ -47,6 +44,7 @@ namespace Z.Data
                 cfg.filePath = AssetDatabase.GetAssetPath(cfg.data);
                 cfg.guid = cfg.data.GetInstanceID();
             }
+            EditorUtility.SetDirty(this);
         }
 #endif
     }
@@ -70,23 +68,29 @@ namespace Z.Data
 
         public override void OnInspectorGUI()
         {
+            this.serializedObject.Update();
+            EditorGUI.BeginChangeCheck();
+
             m_FilePath = EditorGUILayout.TextField("生成文件夹路径:", m_FilePath);
             if (GUILayout.Button("选择路径"))
             {
                 m_FilePath = EditorUtility.OpenFolderPanel("选择导出文件夹路径", Application.dataPath, "");
                 m_Target.BuildFilePath = m_FilePath;
+                EditorUtility.SetDirty(m_Target);
             }
 
-            //EditorGUILayout.PropertyField(m_vConfigs);
+            EditorGUILayout.PropertyField(m_vConfigs);
+            
 
+            //base.OnInspectorGUI();
+            //base.DrawDefaultInspector();
 
-
-            base.OnInspectorGUI();
+            
 
             if (GUILayout.Button("添加"))
             {
                 m_Target.vConfigs.Add(null);
-                //EditorUtility.SetDirty(m_Target);
+                EditorUtility.SetDirty(m_Target);
             }
 
             if (GUILayout.Button("生成代码"))
@@ -121,8 +125,18 @@ namespace Z.Data
 
                 DataManager.Instance.Init(filePath);
                 var datas = DataManager.Instance.Text.datas;
-                Debug.Log($"id:{datas[1].id}");
+                Debug.Log($"id:{datas[10001000].textCN}");
             }
+
+            //if (GUILayout.Button("保存"))
+            //{
+            //    EditorUtility.SetDirty(m_Target);
+            //    AssetDatabase.SaveAssetIfDirty(m_Target);
+            //}
+
+
+            EditorGUI.EndChangeCheck();
+            this.serializedObject.ApplyModifiedProperties();
         }
         //------------------------------------------------------
         private void BuilderManager(DataConfig config)
