@@ -52,8 +52,173 @@ namespace zdq.UIEditor
             ConvertSelectEmptyImage();
             SetParticleOrder();
             SetParticleMasking();
+
+            EditorGUILayout.BeginHorizontal();
+            SetRectTransformAnchorEqualSize();
+            SetRectTransformAnchorToPos();
+            EditorGUILayout.EndHorizontal();
+
             EditorGUILayout.EndScrollView();
         }
+
+
+        /// <summary>
+        /// 让当前选中得RectTrasnform的锚点和Size一样大
+        /// </summary>
+        void SetRectTransformAnchorEqualSize()
+        {
+            if (GUILayout.Button("让当前选中得RectTrasnform的锚点和Size一样大"))
+            {
+                GameObject[] gos = Selection.gameObjects;
+
+                List<RectTransform> rects = new List<RectTransform>();
+                foreach (var item in gos)
+                {
+                    if (item == null)
+                    {
+                        continue;
+                    }
+                    rects.Add(item.GetComponent<RectTransform>());
+                }
+
+                foreach (var item in rects)
+                {
+                    if (item)
+                    {
+                        //怎么求出锚点的坐标?
+                        //根据当前屏幕分辨率,计算当前rect大小占屏幕的比例
+                        //左下角为min,右上角为max
+
+                        //要求锚点和轴都是(0.5,0.5)
+                        if (item.anchorMax != new Vector2(0.5f, 0.5f) || item.anchorMin != new Vector2(0.5f, 0.5f) || item.pivot != new Vector2(0.5f, 0.5f))//todo:如果锚点改变了,怎么计算?
+                        {
+                            ShowNotification(new GUIContent("要求锚点和轴都是(0.5, 0.5)"));
+                            return;
+                        }
+                        Vector2 rectSize = item.sizeDelta;
+                        Vector2 resolution = GetScreenSize(FindCanvasScalerInParents(item));
+
+                        float heightRatio = rectSize.y / resolution.y;
+                        float heightOffsetRatio = item.localPosition.y / resolution.y;//todo:这边要保证是父物体是全屏,如果不是全屏,能代码解决吗?
+
+                        float minY = 0.5f - (heightRatio / 2f) + heightOffsetRatio;
+
+                        float widthRatio = rectSize.x / resolution.x;
+                        float widthOffsetRatio = item.localPosition.x / resolution.x;
+
+                        float minX = 0.5f - (widthRatio / 2f) + widthOffsetRatio;
+
+
+                        Undo.RecordObject(item, "item");
+                        item.anchorMin = new Vector2(minX, minY);
+                        item.anchorMax = item.anchorMin + new Vector2(widthRatio, heightRatio);
+
+                        item.offsetMin = Vector2.zero;
+                        item.offsetMax = Vector2.zero;
+                    }
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// 让选择的Recttransform 的anchor到当前的坐标
+        /// </summary>
+        void SetRectTransformAnchorToPos()
+        {
+            if (GUILayout.Button("设置锚点跟坐标一样"))
+            {
+                //查找UI Camera
+                //if (m_UICamera == null)
+                //{
+                //    var cameras = FindObjectsOfType(typeof(Camera)) as Camera[];
+                //    foreach (var camera in cameras)
+                //    {
+                //        if (camera.cullingMask == (1 << LayerMask.NameToLayer("UI")))
+                //        {
+                //            m_UICamera = camera;
+                //            break;
+                //        }
+                //    }
+                //}
+                
+
+                GameObject[] gos = Selection.gameObjects;
+
+                List<RectTransform> rects = new List<RectTransform>();
+                foreach (var item in gos)
+                {
+                    if (item == null)
+                    {
+                        continue;
+                    }
+                    rects.Add(item.GetComponent<RectTransform>());
+                }
+
+                foreach (var item in rects)
+                {
+                    if (item)
+                    {
+                        //要求锚点和轴都是(0.5, 0.5)
+                        if (item.pivot != new Vector2(0.5f, 0.5f))
+                        {
+                            ShowNotification(new GUIContent("要求轴是(0.5, 0.5)"));
+                            return;
+                        }
+                        Vector2 rectPos = item.localPosition;
+                        Vector2 resolution = GetScreenSize(FindCanvasScalerInParents(item));//Screen.Width 有问题,只有运行时才会正常，非运行时是获取当前窗口的大小
+                        ShowNotification(new GUIContent($"resolution:{resolution}"));
+
+                        float heightRatio = 0.5f + (rectPos.y / resolution.y);
+
+                        float minY = heightRatio;
+
+                        float widthRatio = 0.5f + (rectPos.x / resolution.x);
+
+                        float minX = widthRatio;
+
+
+                        Undo.RecordObject(item, "item");
+                        item.anchorMin = new Vector2(minX, minY);
+                        item.anchorMax = item.anchorMin;
+
+                        //这边设置完锚点后，坐标应该为0
+                        item.anchoredPosition = Vector2.zero;
+
+                    }
+                }
+            }
+        }
+
+        private Vector2 GetScreenSize(CanvasScaler canvasScaler)
+        {
+            if (canvasScaler == null)
+            {
+                return new Vector2(Screen.width, Screen.height);
+            }
+            return canvasScaler.referenceResolution;
+        }
+
+        private CanvasScaler FindCanvasScalerInParents(Transform transform)
+        {
+            if(transform == null) return null;
+
+            CanvasScaler canvasScaler = transform.GetComponent<CanvasScaler>();
+
+            if (canvasScaler != null)
+            {
+                return canvasScaler;
+            }
+            else if (transform.parent != null)
+            {
+                return FindCanvasScalerInParents(transform.parent);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
 
         Vector3 m_SetSelectPos;
         private void SetSelectGameobjectPos()
