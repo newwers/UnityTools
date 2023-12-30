@@ -12,10 +12,9 @@ using UnityEngine.UI;
 using UnityEditor;
 #endif
 
-namespace TopGame.UI
+namespace Z.UI.HP
 {
-    [UIWidgetExport]
-    public class CustomHP : Image
+    public class DNFHP : Image
     {
         struct DamageData
         {
@@ -454,7 +453,7 @@ namespace TopGame.UI
     }
 
 #if UNITY_EDITOR
-    [CustomEditor(typeof(CustomHP), true)]
+    [CustomEditor(typeof(DNFHP), true)]
     [CanEditMultipleObjects]
     public class CustomHPEditor : UnityEditor.UI.ImageEditor
     {
@@ -469,13 +468,13 @@ namespace TopGame.UI
         private SerializedProperty m_MaxHPCount;
         private SerializedProperty m_CurHPCount;
         private SerializedProperty m_ColorIndex;
-        CustomHP m_hp;
+        DNFHP m_hp;
 
         //------------------------------------------------------
         protected override void OnEnable()
         {
             base.OnEnable();
-            m_hp = target as CustomHP;
+            m_hp = target as DNFHP;
             m_Slider = serializedObject.FindProperty("slider");
             m_offsetX = serializedObject.FindProperty("m_offsetX");
             m_offsetY = serializedObject.FindProperty("m_offsetY");

@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace zdq.UI
+namespace Z.UI.HP
 {
-    public class HPCustomUI : MaskableGraphic
+    public class LOLHP : MaskableGraphic
     {
         public float m_hp = 0;//总血量
         public float m_interval = 1000;//大单位血量一格
@@ -17,9 +17,9 @@ namespace zdq.UI
         public float m_offsetX;//x轴偏移
         public float m_offsetY;//y轴偏移
         [Range(0,1)]
-        public float m_maskValue;//控制绘制百分比
+        public float m_maskValue = 1;//控制绘制百分比
 
-
+        
         public void RefreshUI(float hp, float interval)
         {
             m_hp = hp;
@@ -105,18 +105,10 @@ namespace zdq.UI
             }
         }
 
-        private void Test(VertexHelper vh)
+        [ContextMenu("测试")]
+        private void Test()
         {
-            Rect rect = GetPixelAdjustedRect();//获取到血条UI的长宽
-            float x = m_offsetX + rect.xMin;
-            float y = m_offsetY + rect.yMin;
-            vh.AddVert(new Vector3(x, y, 0), color, Vector2.zero);
-            vh.AddVert(new Vector3(x, y + rect.height, 0), color, Vector2.zero);
-            vh.AddVert(new Vector3(x + m_thickness, y + rect.height, 0), color, Vector2.zero);
-            vh.AddVert(new Vector3(x + m_thickness, y, 0), color, Vector2.zero);
-
-            vh.AddTriangle(0, 1, 2);
-            vh.AddTriangle(0, 2, 3);
+            RefreshUI(m_hp,m_interval);
         }
     }
 }
