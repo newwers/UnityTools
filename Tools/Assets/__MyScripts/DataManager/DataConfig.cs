@@ -80,12 +80,12 @@ namespace Z.Data
             }
 
             EditorGUILayout.PropertyField(m_vConfigs);
-            
+
 
             //base.OnInspectorGUI();
             //base.DrawDefaultInspector();
 
-            
+
 
             if (GUILayout.Button("添加"))
             {
@@ -156,7 +156,9 @@ namespace Z.Data
             CsvBuilder csvBuilder = new CsvBuilder(data.data.text, data.data.name, m_FilePath);
             csvBuilder.Parse();
         }
-        
+
     }
-}
+
 #endif
+
+}

@@ -1,3 +1,6 @@
+ï»¿#if UNITY_EDITOR
+
+
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -13,43 +16,43 @@ namespace InputSimulation
         InputRecorder m_InputRecorder = new InputRecorder();
         Dictionary<int, List<InputRecorder.Info>> m_vInfos = new Dictionary<int, List<InputRecorder.Info>>();
 
-        [MenuItem("Tools/Êó±ê²Ù×÷Â¼ÖÆÃæ°å")]
+        [MenuItem("Tools/é¼ æ ‡æ“ä½œå½•åˆ¶é¢æ¿")]
         public static void ShowWindow()
         {
             EditorWindow window = EditorWindow.GetWindow(typeof(InputSimulationWindow));
-            window.titleContent = new GUIContent("Êó±ê²Ù×÷Â¼ÖÆÃæ°å");
+            window.titleContent = new GUIContent("é¼ æ ‡æ“ä½œå½•åˆ¶é¢æ¿");
 
 
         }
 
-        [MenuItem("Tools/Í£Ö¹Êó±êÂ¼ÖÆ²¥·Å %#q")]
+        [MenuItem("Tools/åœæ­¢é¼ æ ‡å½•åˆ¶æ’­æ”¾ %6")]
         public static void StopInputPlay()
         {
             InputRecorder.SStop();
-            Debug.Log("Í£Ö¹Êó±êÂ¼ÖÆ²¥·Å");
+            Debug.Log("åœæ­¢é¼ æ ‡å½•åˆ¶æ’­æ”¾");
         }
 
-        [MenuItem("Tools/¿ªÊ¼Êó±êÂ¼ÖÆ %#4")]
+        [MenuItem("Tools/å¼€å§‹é¼ æ ‡å½•åˆ¶ %4")]
         public static void RecordInput()
         {
             InputRecorder.SStartRecord();
             MouseHook.Start();
-            Debug.Log("¿ªÊ¼Êó±êÂ¼ÖÆ");
+            Debug.Log("å¼€å§‹é¼ æ ‡å½•åˆ¶");
         }
 
-        [MenuItem("Tools/½áÊøÊó±êÂ¼ÖÆ %#5")]
+        [MenuItem("Tools/ç»“æŸé¼ æ ‡å½•åˆ¶ %5")]
         public static void StopRecordInput()
         {
             InputRecorder.SEndRecord();
             MouseHook.Stop();
-            Debug.Log("½áÊøÊó±êÂ¼ÖÆ");
+            Debug.Log("ç»“æŸé¼ æ ‡å½•åˆ¶");
         }
 
         private void OnEnable()
         {
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             InputRecorder.OnStartRecord += InputRecorder_OnStartRecord;
-            InputRecorder.OnEndRecord += InputRecorder_OnEndRecord;     
+            InputRecorder.OnEndRecord += InputRecorder_OnEndRecord;
             //EditorApplication.update+= m_Input.Update;
             //Debug.Log("TestEditor OnEnable");
         }
@@ -90,7 +93,7 @@ namespace InputSimulation
                 case PlayModeStateChange.ExitingEditMode:
                     break;
                 case PlayModeStateChange.EnteredPlayMode:
-                    //½øÈëÓÎÏ·Ê±
+                    //è¿›å…¥æ¸¸æˆæ—¶
                     MouseHook.Stop();
                     KeyboardHook.Stop();
                     break;
@@ -105,7 +108,7 @@ namespace InputSimulation
         {
             InputListen();
 
-            // ¼àÌı¼üÅÌ°´¼ü
+            // ç›‘å¬é”®ç›˜æŒ‰é”®
             //Event e = Event.current;
 
             //if (e != null && e.isKey && e.type == EventType.KeyDown)
@@ -123,7 +126,6 @@ namespace InputSimulation
         int m_nSelectIndex;
         List<string> m_vShowItems = new List<string>();
         string m_Name;
-        float m_nPlayTimeOffset;
         void InputListen()
         {
             var color = GUI.color;
@@ -131,7 +133,7 @@ namespace InputSimulation
             if (m_bIsInputListener)
             {
                 GUI.color = Color.yellow;
-                if (GUILayout.Button("Í£Ö¹Â¼ÖÆÊó±êµã»÷²Ù×÷(ctrl+shift+5)", new GUILayoutOption[] { GUILayout.Height(50) }))
+                if (GUILayout.Button("åœæ­¢å½•åˆ¶é¼ æ ‡ç‚¹å‡»æ“ä½œ", new GUILayoutOption[] { GUILayout.Height(50) }))
                 {
                     m_InputRecorder.EndRecord();
                     MouseHook.Stop();
@@ -142,7 +144,7 @@ namespace InputSimulation
             else
             {
                 GUI.color = Color.white;
-                if (GUILayout.Button("¿ªÊ¼Â¼ÖÆÊó±êµã»÷²Ù×÷(ctrl+shift+4)", new GUILayoutOption[] { GUILayout.Height(50) }))
+                if (GUILayout.Button("å¼€å§‹å½•åˆ¶é¼ æ ‡ç‚¹å‡»æ“ä½œ", new GUILayoutOption[] { GUILayout.Height(50) }))
                 {
                     m_InputRecorder.StartRecord();
                     MouseHook.Start();
@@ -153,7 +155,7 @@ namespace InputSimulation
             if (m_bIsPlayRecord)
             {
                 GUI.color = Color.yellow;
-                if (GUILayout.Button("Í£Ö¹²¥·ÅÊó±ê²Ù×÷(ctrl+shift+q)", new GUILayoutOption[] { GUILayout.Height(50) }))
+                if (GUILayout.Button("åœæ­¢æ’­æ”¾é¼ æ ‡æ“ä½œ", new GUILayoutOption[] { GUILayout.Height(50) }))
                 {
                     MouseHook.Stop();
                     m_bIsInputListener = false;
@@ -166,7 +168,7 @@ namespace InputSimulation
             else
             {
                 GUI.color = Color.white;
-                if (GUILayout.Button("²¥·ÅÂ¼ÖÆÊó±ê²Ù×÷", new GUILayoutOption[] { GUILayout.Height(50) }))
+                if (GUILayout.Button("æ’­æ”¾å½•åˆ¶é¼ æ ‡æ“ä½œ", new GUILayoutOption[] { GUILayout.Height(50) }))
                 {
                     MouseHook.Stop();
                     m_bIsInputListener = false;
@@ -179,65 +181,55 @@ namespace InputSimulation
 
             GUI.color = color;
 
-            m_Name = EditorGUILayout.TextField("Ãû³Æ", m_Name);
-            if (GUILayout.Button("±£´æ", new GUILayoutOption[] { GUILayout.Height(50) }))
+            m_Name = EditorGUILayout.TextField("åç§°", m_Name);
+            if (GUILayout.Button("ä¿å­˜", new GUILayoutOption[] { GUILayout.Height(50) }))
             {
                 MouseHook.Stop();
                 m_bIsInputListener = false;
                 EditorApplication.update -= m_InputRecorder.Update;
 
                 Save();
-                
+
 
             }
-            if (GUILayout.Button("¼ÓÔØÁĞ±í", new GUILayoutOption[] { GUILayout.Height(50) }))
+            if (GUILayout.Button("åŠ è½½åˆ—è¡¨", new GUILayoutOption[] { GUILayout.Height(50) }))
             {
                 Load();
             }
 
             EditorGUILayout.BeginHorizontal();
 
-            m_nSelectIndex = EditorGUILayout.Popup("¼ÇÂ¼ÁĞ±í:",m_nSelectIndex, m_vShowItems.ToArray());
+            m_nSelectIndex = EditorGUILayout.Popup("è®°å½•åˆ—è¡¨:", m_nSelectIndex, m_vShowItems.ToArray());
 
-            if (GUILayout.Button("ÉèÖÃ³Éµ±Ç°¶ÔÏó", new GUILayoutOption[] { GUILayout.Height(50) }))
+            if (GUILayout.Button("è®¾ç½®æˆå½“å‰å¯¹è±¡", new GUILayoutOption[] { GUILayout.Height(50) }))
             {
                 if (m_vInfos.TryGetValue(m_nSelectIndex, out var value))
                 {
                     m_InputRecorder.Load(value);
-                    ShowNotification(new GUIContent("ÉèÖÃ³É¹¦"));
+                    ShowNotification(new GUIContent("è®¾ç½®æˆåŠŸ"));
                 }
                 else
                 {
-                    ShowNotification(new GUIContent("ÕÒ²»µ½¶ÔÓ¦Êı¾İ,»òÕß¼ÓÔØÒ»ÏÂÁĞ±í"));
+                    ShowNotification(new GUIContent("æ‰¾ä¸åˆ°å¯¹åº”æ•°æ®,æˆ–è€…åŠ è½½ä¸€ä¸‹åˆ—è¡¨"));
                 }
             }
 
-            if (GUILayout.Button("É¾³ıµ±Ç°¶ÔÏó", new GUILayoutOption[] { GUILayout.Height(50) }))
+            if (GUILayout.Button("åˆ é™¤å½“å‰å¯¹è±¡", new GUILayoutOption[] { GUILayout.Height(50) }))
             {
                 if (m_vInfos.TryGetValue(m_nSelectIndex, out var value) && m_nSelectIndex < m_vShowItems.Count)
                 {
                     Delete(m_vShowItems[m_nSelectIndex]);
                     m_vInfos.Remove(m_nSelectIndex);
                     m_vShowItems.RemoveAt(m_nSelectIndex);
-                    ShowNotification(new GUIContent("É¾³ı³É¹¦"));
+                    ShowNotification(new GUIContent("åˆ é™¤æˆåŠŸ"));
                 }
                 else
                 {
-                    ShowNotification(new GUIContent("ÕÒ²»µ½¶ÔÓ¦Êı¾İ,»òÕß¼ÓÔØÒ»ÏÂÁĞ±í"));
+                    ShowNotification(new GUIContent("æ‰¾ä¸åˆ°å¯¹åº”æ•°æ®,æˆ–è€…åŠ è½½ä¸€ä¸‹åˆ—è¡¨"));
                 }
             }
 
             EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.BeginHorizontal();
-            
-            m_nPlayTimeOffset = EditorGUILayout.Slider(new GUIContent("²¥·ÅÆ«ÒÆ"),m_nPlayTimeOffset, -2f, 2f);
-            EditorGUILayout.EndHorizontal();
-            if (GUILayout.Button("ÉèÖÃ²¥·ÅÆ«ÒÆ", new GUILayoutOption[] { GUILayout.Height(50) }))
-            {
-                m_InputRecorder.SetPlayTimeOffset(m_nPlayTimeOffset);
-                ShowNotification(new GUIContent("ÉèÖÃ²¥·ÅÆ«ÒÆ³É¹¦:" + m_nPlayTimeOffset));
-            }
         }
 
 
@@ -253,18 +245,18 @@ namespace InputSimulation
         void Save()
         {
             int index = m_vInfos.Count;
-            //½«ÄÚ´æÖĞÊı¾İ,±£´æµ½±¾µØÎÄ¼ş
+            //å°†å†…å­˜ä¸­æ•°æ®,ä¿å­˜åˆ°æœ¬åœ°æ–‡ä»¶
             string folderPath = Application.dataPath + "/../Local/InputSimulation/";
             string filePath = Path.Combine(folderPath, $"{m_Name}.json");
 
-            // ´´½¨ÎÄ¼ş¼Ğ
+            // åˆ›å»ºæ–‡ä»¶å¤¹
             Directory.CreateDirectory(folderPath);
 
-            // ½«List×ª»»ÎªJSON¸ñÊ½µÄ×Ö·û´®
+            // å°†Listè½¬æ¢ä¸ºJSONæ ¼å¼çš„å­—ç¬¦ä¸²
             var data = m_InputRecorder.GetInfos();
             string json = JsonUtility.ToJson(new SerializableList<InputRecorder.Info>(data, m_Name), true);
 
-            // ½«JSON×Ö·û´®Ğ´ÈëÎÄ¼ş
+            // å°†JSONå­—ç¬¦ä¸²å†™å…¥æ–‡ä»¶
             File.WriteAllText(filePath, json);
 
             Debug.Log("JSON file saved to: " + filePath);
@@ -284,7 +276,6 @@ namespace InputSimulation
             if (!Directory.Exists(folderPath))
             {
                 Debug.LogError("Folder does not exist: " + folderPath);
-                ShowNotification(new GUIContent("¼ÓÔØÊ§°Ü,Ã»ÓĞ¸ÄÂ·¾¶ÎÄ¼ş¼Ğ:" + folderPath));
                 return;
             }
 
@@ -294,23 +285,21 @@ namespace InputSimulation
             {
                 string json = File.ReadAllText(filePath);
 
-                // ½«JSON×Ö·û´®×ª»»Îª¶ÔÏó
+                // å°†JSONå­—ç¬¦ä¸²è½¬æ¢ä¸ºå¯¹è±¡
                 var dataObject = JsonUtility.FromJson<SerializableList<InputRecorder.Info>>(json);
 
-                // ÔÚ´Ë´¦´¦ÀíÄãµÄÊı¾İ¶ÔÏó
+                // åœ¨æ­¤å¤„å¤„ç†ä½ çš„æ•°æ®å¯¹è±¡
                 Debug.Log("Loaded JSON file: " + filePath + "\nData: " + dataObject.ToString());
 
                 int index = m_vInfos.Count;
                 m_vInfos[index] = dataObject.list;
                 m_vShowItems.Add(dataObject.name);
             }
-
-            ShowNotification(new GUIContent($"¼ÓÔØ³É¹¦,±¾´Î¼ÓÔØ{m_vInfos.Count}¸ö!"));
         }
 
         void Delete(string fileName)
         {
-            //É¾³ıÎÄ¼ş
+            //åˆ é™¤æ–‡ä»¶
 
             string folderPath = Application.dataPath + "/../Local/InputSimulation/";
 
@@ -321,13 +310,13 @@ namespace InputSimulation
             }
 
             string[] jsonFilePaths = Directory.GetFiles(folderPath, "*.json");
-            var path = Path.Combine(folderPath, fileName+".json");
+            var path = Path.Combine(folderPath, fileName + ".json");
 
             foreach (string filePath in jsonFilePaths)
             {
                 if (filePath.Equals(path))
                 {
-                    Debug.Log("É¾³ı¸ÃÎÄ¼ş:" + filePath);
+                    Debug.Log("åˆ é™¤è¯¥æ–‡ä»¶:" + filePath);
                     File.Delete(filePath);
                     break;
                 }
@@ -348,3 +337,4 @@ namespace InputSimulation
         }
     }
 }
+#endif

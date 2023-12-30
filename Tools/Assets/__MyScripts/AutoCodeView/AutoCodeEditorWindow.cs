@@ -1,6 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
+#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 using Z.UI;
@@ -22,14 +20,14 @@ namespace AutoCode
 
         private void OnGUI()
         {
-            m_Ui =  EditorGUILayout.ObjectField(m_Ui, typeof(UIReferenceComponent),true) as UIReferenceComponent;
+            m_Ui = EditorGUILayout.ObjectField(m_Ui, typeof(UIReferenceComponent), true) as UIReferenceComponent;
             m_FileName = EditorGUILayout.TextField("文件名", m_FileName);
             m_FilePath = EditorGUILayout.TextField("文件路径", m_FilePath);
             if (GUILayout.Button("选择生成路径"))
             {
                 m_FilePath = EditorUtility.OpenFolderPanel("选择文件夹路径", Application.dataPath, "");
 
-                
+
             }
             if (GUILayout.Button("生成"))
             {
@@ -55,3 +53,4 @@ namespace AutoCode
         }
     }
 }
+#endif

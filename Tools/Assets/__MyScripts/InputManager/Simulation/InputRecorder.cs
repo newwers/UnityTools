@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using UnityEngine;
 
 namespace InputSimulation
 {
-    public class InputRecorder 
+    public class InputRecorder
     {
         [System.Serializable]
         public struct Info
@@ -24,8 +25,8 @@ namespace InputSimulation
 
         public enum EMouseButton
         {
-            Left=0,
-            Right=1
+            Left = 0,
+            Right = 1
         }
 
         public static event Action OnStopPlay;
@@ -39,7 +40,6 @@ namespace InputSimulation
         int m_nPlayIndex = 0;
         double m_nRecordTime;
         double m_nTimer = 0;
-        float m_nPlayTimeOffset = 0;
 
         public InputRecorder()
         {
@@ -73,7 +73,7 @@ namespace InputSimulation
             OnEndRecord?.Invoke();
         }
 
-        private void MouseHook_ButtonDown(int button,bool isDown, MouseHook.POINT point)
+        private void MouseHook_ButtonDown(int button, bool isDown, MouseHook.POINT point)
         {
             if (m_vRecordInfo.Count > 0)
             {
@@ -88,7 +88,7 @@ namespace InputSimulation
             m_nRecordTime = EditorApplication.timeSinceStartup;
         }
 
-        public void AddInfo(int button,bool isDown, MouseHook.POINT point)
+        public void AddInfo(int button, bool isDown, MouseHook.POINT point)
         {
             Debug.Log("m_nRecordTime:" + m_nRecordTime);
             Info info = new Info();
@@ -147,10 +147,10 @@ namespace InputSimulation
                 m_sInstance.EndRecord();
             }
         }
-        int index = 0;
+
         public void Update()
         {
-            if (!m_bPlay || m_vRecordInfo.Count == 0 || m_nPlayIndex>= m_vRecordInfo.Count)
+            if (!m_bPlay || m_vRecordInfo.Count == 0 || m_nPlayIndex >= m_vRecordInfo.Count)
             {
                 return;
             }
@@ -160,9 +160,9 @@ namespace InputSimulation
             {
                 m_nTimer = info.time + EditorApplication.timeSinceStartup;//先等待再执行
             }
-            
 
-            if (EditorApplication.timeSinceStartup + m_nPlayTimeOffset < m_nTimer)
+
+            if (EditorApplication.timeSinceStartup < m_nTimer)
             {
                 return;
             }
@@ -179,7 +179,7 @@ namespace InputSimulation
             m_nTimer = 0;
         }
 
-        void ExcudeInfo(Info info,int index)
+        void ExcudeInfo(Info info, int index)
         {
             Debug.Log($"index:{index}  info: {info.ToString()}");
             MouseHook.MoveTo(info.point.X, info.point.Y);
@@ -221,10 +221,6 @@ namespace InputSimulation
             //根据本地文件,加载数据到内存中
             m_vRecordInfo = infos;
         }
-        //------------------------------------------------------
-        public void SetPlayTimeOffset(float timeOffset)
-        {
-            m_nPlayTimeOffset=timeOffset;
-        }
     }
 }
+#endif
