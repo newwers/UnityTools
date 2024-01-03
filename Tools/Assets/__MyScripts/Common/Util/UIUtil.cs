@@ -331,5 +331,25 @@ namespace Z.UI
                 return false;
             }
         }
+
+        public static T FindComponentInParents<T>(Transform transform) where T : Component
+        {
+            if (transform == null) return null;
+
+            T component = transform.GetComponent<T>();
+
+            if (component != null)
+            {
+                return component;
+            }
+            else if (transform.parent != null)
+            {
+                return FindComponentInParents<T>(transform.parent);
+            }
+            else
+            {
+                return null;
+            }
+        }
     }
 }
