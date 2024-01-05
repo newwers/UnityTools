@@ -8,7 +8,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using static UnityEditor.Progress;
 using static Z.UI.UIReferenceComponent;
 
 #if UNITY_EDITOR
@@ -26,7 +25,7 @@ namespace Z.UI
             public Component component;
         }
 
-        public List<UIReferenceData> Datas { get; private set; }
+        public List<UIReferenceData> Datas = new List<UIReferenceData>();
         Dictionary<string,UIReferenceData> m_vuiReferences = new Dictionary<string, UIReferenceData>();
 
         private void Awake()
@@ -174,12 +173,11 @@ namespace Z.UI
                 }
             }
 
-            serializedObject.ApplyModifiedProperties();
-            base.OnInspectorGUI();
+            
 
             if (Event.current.type == EventType.DragExited) // 只有在拖拽操作完成后才显示GenericMenu
             {
-                if (DragAndDrop.objectReferences.Length > 0)
+                if (DragAndDrop.objectReferences.Length > 0 && m_draggedSlotIndex >= 0 && m_draggedSlotIndex < m_ui.Datas.Count)
                 {
                     var item = m_ui.Datas[m_draggedSlotIndex];
 
@@ -203,6 +201,9 @@ namespace Z.UI
 
                 }
             }
+
+            serializedObject.ApplyModifiedProperties();
+            base.OnInspectorGUI();
         }
 
     }

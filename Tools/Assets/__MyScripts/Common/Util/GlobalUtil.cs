@@ -1,18 +1,22 @@
-/********************************************************************
-生成日期:	17:9:2019   16:19
-类    名: 	Util
-作    者:	HappLI
-描    述:	通用工具集
-*********************************************************************/
-using Framework.Core;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace TopGame.Base
+namespace Z.Util
 {
     public static class GlobalUtil
     {
+        public static T DeepCopy<T>(T obj)
+        {
+            using (MemoryStream stream = new MemoryStream())
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+                formatter.Serialize(stream, obj);
+                stream.Seek(0, SeekOrigin.Begin);
+                return (T)formatter.Deserialize(stream);
+            }
+        }
+
         public static float PROGRESS_END_SNAP = 0.99f;
         //-----------------------------------------------------
         public static System.Text.StringBuilder stringBuilder
@@ -21,11 +25,6 @@ namespace TopGame.Base
             {
                 return BaseUtil.stringBuilder;
             }
-        }
-        //-----------------------------------------------------
-        public static string ToLocalization(int locationId, string strDefault = null)
-        {
-            return Core.ALocalizationManager.ToLocalization(locationId, strDefault);
         }
         //------------------------------------------------------
         public static string SetNum(long left, long right, bool isShowRed = true)
@@ -90,60 +89,60 @@ namespace TopGame.Base
             return money.ToString();
         }
         //-----------------------------------------------------
-        public static Vector3 Bezier2(float t, Vector3 p1, Vector3 p2)
-        {
-            return BaseUtil.Bezier2(t, p1, p2);
-        }
-        //-----------------------------------------------------
-        public static Vector3 Bezier3(float t, Vector3 p1, Vector3 p2, Vector3 p3)
-        {
-            return BaseUtil.Bezier3(t, p1, p2, p3);
-        }
-        //-----------------------------------------------------
-        public static Vector3 Bezier4(float t, Vector3 p1, Vector3 p2, Vector3 p3, Vector3 p4)
-        {
-            return BaseUtil.Bezier4(t, p1, p2, p3, p4);
-        }
-        //------------------------------------------------------
-        public static Vector3 RayHitPos(Vector3 pos, Vector3 dir, float floorY = 0)
-        {
-            return BaseUtil.RayHitPos(pos, dir, floorY);
-        }
-        //------------------------------------------------------
-        public static Vector3 RayHitPos(Ray ray, float floorY = 0)
-        {
-            return BaseUtil.RayHitPos(ray, floorY);
-        }
-        //------------------------------------------------------
-        public static Vector3 ProjectLinePos(ref float factor, Vector3 linePos, Vector3 lineDir, Vector3 point, bool bProjectFacor = true)
-        {
-            return BaseUtil.ProjectLinePos(ref factor, linePos, lineDir, point, bProjectFacor);
-        }
-        //------------------------------------------------------
-        public static Vector3 ProjectPointOnPlane(Vector3 planeNormal, Vector3 planePoint, Vector3 point)
-        {
-            return BaseUtil.ProjectPointOnPlane(planeNormal, planePoint, point);
-        }
-        //------------------------------------------------------
-        public static Vector3 ProjectPointOnPlane(ref float distance, Vector3 planeNormal, Vector3 planePoint, Vector3 point)
-        {
-            return BaseUtil.ProjectPointOnPlane(ref distance, planeNormal, planePoint, point);
-        }
-        //------------------------------------------------------
-        public static float PointDistancePlane(Vector3 planeNormal, Vector3 planePoint, Vector3 point)
-        {
-            return BaseUtil.PointDistancePlane(planeNormal, planePoint, point);
-        }
-        //------------------------------------------------------
-        public static bool LinePlaneIntersection(out Vector3 intersection, Vector3 linePoint, Vector3 lineVec, Vector3 planeNormal, Vector3 planePoint)
-        {
-            return BaseUtil.LinePlaneIntersection(out intersection, linePoint, lineVec, planeNormal, planePoint);
-        }
-        //------------------------------------------------------
-        public static bool LineLineIntersection(out Vector3 intersection, Vector3 linePoint1, Vector3 lineVec1, Vector3 linePoint2, Vector3 lineVec2)
-        {
-            return BaseUtil.LineLineIntersection(out intersection, linePoint1, lineVec1, linePoint2, lineVec2);
-        }
+        //public static Vector3 Bezier2(float t, Vector3 p1, Vector3 p2)
+        //{
+        //    return BaseUtil.Bezier2(t, p1, p2);
+        //}
+        ////-----------------------------------------------------
+        //public static Vector3 Bezier3(float t, Vector3 p1, Vector3 p2, Vector3 p3)
+        //{
+        //    return BaseUtil.Bezier3(t, p1, p2, p3);
+        //}
+        ////-----------------------------------------------------
+        //public static Vector3 Bezier4(float t, Vector3 p1, Vector3 p2, Vector3 p3, Vector3 p4)
+        //{
+        //    return BaseUtil.Bezier4(t, p1, p2, p3, p4);
+        //}
+        ////------------------------------------------------------
+        //public static Vector3 RayHitPos(Vector3 pos, Vector3 dir, float floorY = 0)
+        //{
+        //    return BaseUtil.RayHitPos(pos, dir, floorY);
+        //}
+        ////------------------------------------------------------
+        //public static Vector3 RayHitPos(Ray ray, float floorY = 0)
+        //{
+        //    return BaseUtil.RayHitPos(ray, floorY);
+        //}
+        ////------------------------------------------------------
+        //public static Vector3 ProjectLinePos(ref float factor, Vector3 linePos, Vector3 lineDir, Vector3 point, bool bProjectFacor = true)
+        //{
+        //    return BaseUtil.ProjectLinePos(ref factor, linePos, lineDir, point, bProjectFacor);
+        //}
+        ////------------------------------------------------------
+        //public static Vector3 ProjectPointOnPlane(Vector3 planeNormal, Vector3 planePoint, Vector3 point)
+        //{
+        //    return BaseUtil.ProjectPointOnPlane(planeNormal, planePoint, point);
+        //}
+        ////------------------------------------------------------
+        //public static Vector3 ProjectPointOnPlane(ref float distance, Vector3 planeNormal, Vector3 planePoint, Vector3 point)
+        //{
+        //    return BaseUtil.ProjectPointOnPlane(ref distance, planeNormal, planePoint, point);
+        //}
+        ////------------------------------------------------------
+        //public static float PointDistancePlane(Vector3 planeNormal, Vector3 planePoint, Vector3 point)
+        //{
+        //    return BaseUtil.PointDistancePlane(planeNormal, planePoint, point);
+        //}
+        ////------------------------------------------------------
+        //public static bool LinePlaneIntersection(out Vector3 intersection, Vector3 linePoint, Vector3 lineVec, Vector3 planeNormal, Vector3 planePoint)
+        //{
+        //    return BaseUtil.LinePlaneIntersection(out intersection, linePoint, lineVec, planeNormal, planePoint);
+        //}
+        ////------------------------------------------------------
+        //public static bool LineLineIntersection(out Vector3 intersection, Vector3 linePoint1, Vector3 lineVec1, Vector3 linePoint2, Vector3 lineVec2)
+        //{
+        //    return BaseUtil.LineLineIntersection(out intersection, linePoint1, lineVec1, linePoint2, lineVec2);
+        //}
         //-----------------------------------------------------
         static public bool rayHitTriangle(Ray ray, Vector3 v0, Vector3 v1, Vector3 v2)
         {
@@ -210,40 +209,40 @@ namespace TopGame.Base
             return false;
         }
         //-----------------------------------------------------
-        public static void ExternPolygon(System.Collections.Generic.List<Vector3> polygon, float fExtern, bool bCheckConvex = true)
-        {
-            Framework.Base.PolygonUtil.ExternPolygon(polygon, fExtern, bCheckConvex);
-        }
+        //public static void ExternPolygon(System.Collections.Generic.List<Vector3> polygon, float fExtern, bool bCheckConvex = true)
+        //{
+        //    Framework.Base.PolygonUtil.ExternPolygon(polygon, fExtern, bCheckConvex);
+        //}
+        ////-----------------------------------------------------
+        //public static bool IsPointInPolygon(Vector3 point, List<Vector3> polygon, float fExtern =0, bool bCheckConvex = true)
+        //{
+        //    if (polygon == null || polygon.Count < 3) return false;
+        //    if(Mathf.Abs(fExtern)>0.001f)
+        //    {
+        //        ExternPolygon(polygon, fExtern);
+        //    }
+        //    return Framework.Base.PolygonUtil.ContainsConvexPolygonPoint(polygon, point, bCheckConvex);
+        //}
+        ////-----------------------------------------------------
+        //public static bool IsPolygonInPolygon(List<Vector3> checkPly, List<Vector3> polygon, bool bCheckConvex = true)
+        //{
+        //    return Framework.Base.PolygonUtil.ContainsPolygonInPolygon(checkPly, polygon, bCheckConvex);
+        //}
         //-----------------------------------------------------
-        public static bool IsPointInPolygon(Vector3 point, List<Vector3> polygon, float fExtern =0, bool bCheckConvex = true)
-        {
-            if (polygon == null || polygon.Count < 3) return false;
-            if(Mathf.Abs(fExtern)>0.001f)
-            {
-                ExternPolygon(polygon, fExtern);
-            }
-            return Framework.Base.PolygonUtil.ContainsConvexPolygonPoint(polygon, point, bCheckConvex);
-        }
-        //-----------------------------------------------------
-        public static bool IsPolygonInPolygon(List<Vector3> checkPly, List<Vector3> polygon, bool bCheckConvex = true)
-        {
-            return Framework.Base.PolygonUtil.ContainsPolygonInPolygon(checkPly, polygon, bCheckConvex);
-        }
-        //-----------------------------------------------------
-        static public Vector3 EulersAngleToDirection(Vector3 eulerAngle)
-        {
-            return BaseUtil.EulersAngleToDirection(eulerAngle);
-        }
-        //-----------------------------------------------------
-        static public Vector3 DirectionToEulersAngle(Vector3 dir)
-        {
-            return BaseUtil.DirectionToEulersAngle(dir);
-        }
-        //-----------------------------------------------------
-        public static bool Equal(Vector3 v0, Vector3 v1, float failover = 0.01f)
-        {
-            return BaseUtil.Equal(v0, v1, failover);
-        }
+        //static public Vector3 EulersAngleToDirection(Vector3 eulerAngle)
+        //{
+        //    return BaseUtil.EulersAngleToDirection(eulerAngle);
+        //}
+        ////-----------------------------------------------------
+        //static public Vector3 DirectionToEulersAngle(Vector3 dir)
+        //{
+        //    return BaseUtil.DirectionToEulersAngle(dir);
+        //}
+        ////-----------------------------------------------------
+        //public static bool Equal(Vector3 v0, Vector3 v1, float failover = 0.01f)
+        //{
+        //    return BaseUtil.Equal(v0, v1, failover);
+        //}
         //-----------------------------------------------------
         public static void SetActive(UnityEngine.GameObject pObj, bool bActive)
         {

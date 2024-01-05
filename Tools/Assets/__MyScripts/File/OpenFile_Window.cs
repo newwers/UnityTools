@@ -36,7 +36,7 @@ public class OpenFile_Window
         OpenFileName.title = "Ñ¡ÎÄ¼þ";
         OpenFileName.flags = 0x00080000 | 0x00001000 | 0x00000800 | 0x00000008;
         if (WindowDll.GetOpenFileName(OpenFileName))
-            return OpenFileName.file;
+            return OpenFileName.file.Trim('\0');
         else
             return null;
     }
