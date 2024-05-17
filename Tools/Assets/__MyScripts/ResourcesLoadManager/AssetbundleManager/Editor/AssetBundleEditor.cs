@@ -8,9 +8,16 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using System.IO;
+using LitJson;
+using Z.FileTool;
 
-namespace newwer
+namespace Z.Assets
 {
+    public struct AssetBundleEditorJson
+    {
+        public string path;
+    }
+
     public class AssetBundleEditor : EditorWindow
     {
         //******窗口参数
@@ -24,6 +31,8 @@ namespace newwer
         private static AssetBundleEditor m_Window;
 
         string m_folderRootName = "AssetBundles";
+        AssetBundleEditorJson m_data;
+        string m_SelectABPath;
 
         //int indentation;//缩进等级
         struct stru_FileInfo
@@ -34,20 +43,24 @@ namespace newwer
             public Type assetType;
         }
 
-        [MenuItem("Assets/AssetBundle工具箱/设置AB包名 _F3")]
+        [MenuItem("Assets/AssetBundle工具箱/ab编辑器 _F3")]
         private static void OpenSetAssetBundleNameWindow()
         {
 
             list_Files = new List<stru_FileInfo>();
             //indentation = 1;
             //EditorUtility.ExtractOggFile
-            CheckFileSystemInfo();
             m_Window = GetWindow<AssetBundleEditor>("设置AssetBundlesName");
             m_Window.position = new Rect(300, 100, 300, 500);
-            m_Window.minSize = new Vector2(300, 500);
+            m_Window.minSize = new Vector2(600, 500);
             m_Window.Show();
 
 
+        }
+
+        private void OnEnable()
+        {
+            Load();
         }
 
 
@@ -76,14 +89,23 @@ namespace newwer
             GUILayout.Space(5);
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(150);
-            if (GUILayout.Button("刷新资源", new GUIStyle("Box")))
+            if (GUILayout.Button("加载配置文件", new GUIStyle("Box")))
+            {
+                Load();
+            }
+
+            if (GUILayout.Button("保存配置文件", new GUIStyle("Box")))
+            {
+                Save();
+            }
+            if (GUILayout.Button("选择打包资源路径", new GUIStyle("Box")))
             {
                 if (list_Files == null)
                 {
-                    return;
+                    list_Files = new List<stru_FileInfo>();
                 }
                 list_Files.Clear();
-                CheckFileSystemInfo();
+                bool result = CheckFileSystemInfo();
             }
             EditorGUILayout.EndHorizontal();
 
@@ -137,12 +159,14 @@ namespace newwer
 
             //确定设置
             GUILayout.Space(20);
-            if (GUILayout.Button("确定"))
+            if (GUILayout.Button("设置资源的ab包名"))
             {
                 for (int a = 0; a < list_Files.Count; a++)
                 {
                     SetBundleName(list_Files[a].assetPath);
                 }
+
+                this.ShowNotification(new GUIContent("设置名称完成"));
             }
 
             if (GUILayout.Button("打包Windows平台ab包"))
@@ -150,7 +174,7 @@ namespace newwer
                 //  DeterministicAssetBundle = 16,//使每个Object具有唯一不变的hash id，可用于增量式发布AssetBoundle
                 //  ChunkBasedCompression = 256,//创建AssetBundle时使用LZ4压缩。默认情况是Lzma格式，下载AssetBoundle后立即解压。
                 //  Windows平台
-                string packagePath = m_folderRootName  + "/PC";
+                string packagePath = m_folderRootName  + "/PC";//打包路径在Asset同级下的 AssetBundles/PC
                 if (!Directory.Exists(packagePath))
                 {
                     Directory.CreateDirectory(packagePath);
@@ -182,11 +206,21 @@ namespace newwer
             string desPath = Application.streamingAssetsPath + "/" + m_folderRootName;
             if (Directory.Exists(desPath))
             {
-                Directory.Delete(desPath);
+                Directory.Delete(desPath,true);
+                Debug.Log("delete diretory :" + desPath);
             }
             
             Debug.Log("move: " + m_folderRootName + " to: " + desPath);
-            Directory.Move(m_folderRootName, desPath);
+            try
+            {
+                Directory.Move(m_folderRootName, desPath);
+            }
+            catch (Exception e)
+            {
+
+                Debug.Log($"移动文件夹时,出现错误:{e},请检测是否有其他文件打开着,占用文件");
+            }
+            
             AssetDatabase.Refresh();
         }
 
@@ -194,13 +228,24 @@ namespace newwer
         /// <summary>
         /// 检查文件系统下的信息
         /// </summary>
-        private static void CheckFileSystemInfo()
+        private bool CheckFileSystemInfo()
         {
             AssetDatabase.RemoveUnusedAssetBundleNames();//移除无用的AssetBundleName
 
-            string path = EditorUtility.OpenFolderPanel("选择要打包的文件夹路径", "", "");
+            string path = EditorUtility.OpenFolderPanel("选择要打ab包的资源文件夹路径", "", "");
+
+            if (string.IsNullOrEmpty(path))
+            {
+                return false;
+            }
 
             CoutineCheck(path);
+
+            m_SelectABPath = path;
+
+            Save();
+
+            return true;
         }
         /// <summary>
         /// 是文件，继续向下
@@ -208,6 +253,10 @@ namespace newwer
         /// <param name="path"></param>
         private static void CoutineCheck(string path)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                return;
+            }
             DirectoryInfo directory = new DirectoryInfo(path);
             FileSystemInfo[] fileSystemInfos = directory.GetFileSystemInfos();
 
@@ -276,6 +325,37 @@ namespace newwer
             }
             else
                 Debug.Log("importer是空的");
+        }
+
+        #endregion
+
+        #region Save
+
+        void Save()
+        {
+            if (m_data.path == m_SelectABPath)
+            {
+                return;
+            }
+            m_data.path = m_SelectABPath;
+            var json = JsonMapper.ToJson(m_data);
+            FileTools.WriteFile(Application.dataPath + "/Editor/AssetBundleEditorData.json", json, System.Text.Encoding.UTF8);
+            ShowNotification(new GUIContent("保存完成"));
+        }
+
+        void Load()
+        {
+            var json = FileTools.ReadFile(Application.dataPath + "/Editor/AssetBundleEditorData.json", System.Text.Encoding.UTF8);
+            if (json != null)
+            {
+                m_data = JsonMapper.ToObject<AssetBundleEditorJson>(json);
+                ShowNotification(new GUIContent("加载完成"));
+                CoutineCheck(m_data.path);
+            }
+            else
+            {
+                m_data = new AssetBundleEditorJson();
+            }
         }
 
         #endregion

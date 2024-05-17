@@ -8,7 +8,7 @@ using System.IO;
 using System.Text;
 using UnityEngine;
 
-namespace Tools.FileTool
+namespace Z.FileTool
 {
     /// <summary>
     /// 文件工具类,

@@ -196,13 +196,43 @@ public class AssetBundleManager : BaseSingleClass<AssetBundleManager>
         return null;
     }
 
+    public void UnloadAssetBundle(string bundlePath)
+    {
+        if (m_LoadAbDic.ContainsKey(bundlePath))
+        {
+            ABInfo info = m_LoadAbDic[bundlePath];
+            AssetBundle assetBundle = info.ab;
+            assetBundle.Unload(true);
+            m_LoadAbDic.Remove(bundlePath);
+            Debug.Log("AssetBundle unloaded: " + bundlePath);
+        }
+        else
+        {
+            Debug.LogWarning("AssetBundle not found: " + bundlePath);
+        }
+    }
+
+    public void UnloadAllAssetBundles()
+    {
+        foreach (var kvp in m_LoadAbDic)
+        {
+            kvp.Value.ab.Unload(true);
+        }
+        m_LoadAbDic.Clear();
+        Debug.Log("All AssetBundles unloaded");
+    }
+
 
     void Dispose()
     {
-        AssetBundle.UnloadAllAssetBundles(false);
+        //AssetBundle.UnloadAllAssetBundles(false);//只释放掉已经没有引用的资源
+        AssetBundle.UnloadAllAssetBundles(true);//释放掉所有资源,包括还在引用的资源
         if (m_LoadAbDic != null)
         {
             m_LoadAbDic.Clear();
         }
+
+        m_RootAB = null;
+        m_RootManifest = null;
     }
 }

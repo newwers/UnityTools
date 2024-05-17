@@ -41,9 +41,15 @@ public class ResourceLoadManager : BaseMonoSingleClass<ResourceLoadManager> {
             AssetBundleManager.Instance.Init();
         }
     }
-
+    /// <summary>
+    /// 加载资源
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="path">例如:Assets/Textures/myTexture.png</param>
+    /// <returns></returns>
     public T Load<T>(string path) where T : UnityEngine.Object
     {
+        path = path.ToLower();
 #if UNITY_EDITOR
         if (assetType == LoadAssetType.AssetBundle)
         {
