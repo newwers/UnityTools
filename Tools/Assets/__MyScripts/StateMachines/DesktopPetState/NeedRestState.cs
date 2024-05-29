@@ -48,6 +48,11 @@ namespace StateMachines
             m_GameManager.m_UseTime++;
 
             m_GameManager.m_CheckUseTime++;
+            if (m_GameManager.m_CheckUseTime > 2* m_GameManager.RestTime)//大于两倍休息时间时,严重提醒
+            {
+                m_GameManager.OnNeedRest(m_GameManager.m_CheckUseTime);
+            }
+            
             if (m_GameManager.m_CheckUseTime >= m_GameManager.CheckUseTime && !m_GameManager.m_bPerformanceMode)//长时间没用电脑 并且不是性能模式时才进入休息状态
             {
                 m_GameManager.OnRest();

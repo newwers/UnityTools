@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Pal;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,13 +13,13 @@ namespace StateMachines
     {
         protected IStateMachineOwner m_owner;
         protected StateManager m_stateManager;
-        protected GameManager m_GameManager;
+        protected PalManager m_GameManager;
 
         public override void Init(IStateMachineOwner owner, StateManager stateManager)
         {
             m_owner = owner;
             m_stateManager = stateManager;
-            m_GameManager = owner as GameManager;
+            m_GameManager = owner as PalManager;
         }
 
         public override void OnStateEnter(AStateBase beforState)

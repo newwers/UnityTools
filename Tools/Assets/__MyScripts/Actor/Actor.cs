@@ -17,7 +17,7 @@ namespace Z.Actor
     {
         public interface IMoveCharacter
         {
-            public void OnMove(Vector3 deltaPos);
+            public void OnMove(Vector3 deltaPos, float moveSpeed);
 
             public void OnStopMove();
 
@@ -206,7 +206,7 @@ namespace Z.Actor
 
             for (int i = 0; i < m_vMoveCharacterLogic.Count; i++)
             {
-                m_vMoveCharacterLogic[i].OnMove(deltaPos);
+                m_vMoveCharacterLogic[i].OnMove(deltaPos, moveSpeed);
                 IsStopMoveFlag = true;
             }
 

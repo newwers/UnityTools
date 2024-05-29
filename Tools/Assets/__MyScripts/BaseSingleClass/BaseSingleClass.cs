@@ -56,6 +56,8 @@ public class BaseSingleClass<T> where T : new()//约束子类必须有无参构�
 /// <summary>
 /// 针对需要Mono运行生命周期函数,或者需要挂载在场景中
 /// 这边需要继承MonoBehaviour 并且限制T类型,否则报错,这边就限制需要继承MonoBehaviour,不过只要继承这个类,就相当于继承MonoBehaviour
+/// 
+/// 注意:针对单例场景切换回来后,重复存在问题,单例物体不能重复加载,需要单独提取出来,而且单例身上引用的组件,也需要一起设置为dontDestroy才行,否则场景重复加载时,丢失引用
 /// </summary>
 /// <typeparam name="T"></typeparam>
 public class BaseMonoSingleClass<T> : MonoBehaviour  where T:MonoBehaviour

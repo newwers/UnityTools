@@ -44,12 +44,12 @@ namespace StateMachines
                 return;
             }
 
-            m_GameManager.ShowText.text = Tool.FormatSeconds(m_GameManager.m_UseTime);
+            //m_GameManager.ShowText.text = Tool.FormatSeconds(m_GameManager.m_UseTime);
             m_GameManager.m_UseTime++;
 
             if (m_GameManager.m_UseTime >= m_GameManager.RestTime)//休息时间到
             {
-                m_GameManager.OnNeedRest();
+                m_GameManager.OnNeedRest(m_GameManager.m_CheckUseTime);
 
             }
 

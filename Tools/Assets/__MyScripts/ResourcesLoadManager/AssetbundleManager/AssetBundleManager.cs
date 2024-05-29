@@ -3,11 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using UnityEditor;
 using UnityEngine;
 
 public class AssetBundleManager : BaseSingleClass<AssetBundleManager>
 {
+    public delegate void LoadAsset<T>(T asset);
 
     struct ABInfo
     {
@@ -40,6 +40,7 @@ public class AssetBundleManager : BaseSingleClass<AssetBundleManager>
 
     AssetBundle m_RootAB;
     AssetBundleManifest m_RootManifest;
+    bool m_IsLoaded = false;
 
     /// <summary>
     /// 包后缀,要注意是需要逗号
@@ -68,26 +69,19 @@ public class AssetBundleManager : BaseSingleClass<AssetBundleManager>
         }
     }
 
-    static AssetBundleManager()
-    {
-        //if (Instance != null)
-        //{
-        //    Instance.Init();
-        //}
-        //else
-        //{
-        //    Debug.LogError("未进行初始化");
-        //}
-        //在这边进行初始化变量会被清空
-    }
 
     public void Init()
     {
         LoadManifest();
+        Debug.Log("AssetBundle 初始化完毕");
     }
 
     void LoadManifest()
     {
+        if (m_IsLoaded)
+        {
+            return;
+        }
         m_RootAB = AssetBundle.LoadFromFile(m_RootPath + m_Platform + "/PC");
         if (m_RootAB == null)
         {
@@ -95,6 +89,7 @@ public class AssetBundleManager : BaseSingleClass<AssetBundleManager>
             return;
         }
         m_RootManifest = m_RootAB.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
+        m_IsLoaded = true;
     }
 
     /// <summary>
@@ -148,6 +143,7 @@ public class AssetBundleManager : BaseSingleClass<AssetBundleManager>
         return default;
     }
 
+
     /// <summary>
     /// 同步资源加载
     /// </summary>
@@ -195,6 +191,76 @@ public class AssetBundleManager : BaseSingleClass<AssetBundleManager>
 
         return null;
     }
+
+    #region 异步加载
+
+
+    /// <summary>
+    /// 异步加载AssetBundle资源
+    /// </summary>
+    /// <typeparam name="T">资源类型</typeparam>
+    /// <param name="path">资源路径（Assets的相对路径）</param>
+    /// <param name="callback">加载完成回调</param>
+    public void LoadAssetBundleAsync<T>(string path, LoadAsset<T> callback) where T : UnityEngine.Object
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            callback?.Invoke(null);
+            return;
+        }
+
+        path = path.ToLower();
+
+        string[] str = path.Split('/');
+
+        string name;
+        if (str.Length == 0)
+        {
+            name = str[0];
+        }
+        else
+        {
+            name = str[str.Length - 1];
+        }
+
+        int index = path.LastIndexOf("/");
+
+        string abFileName = path.Substring(0, index) + abVariant;
+
+        LoadDepend(abFileName);
+
+        if (m_LoadAbDic.ContainsKey(abFileName))
+        {
+            AssetBundleRequest request = m_LoadAbDic[abFileName].ab.LoadAssetAsync<T>(name);
+            request.completed += (asyncRequest) =>
+            {
+                T asset = (asyncRequest as AssetBundleRequest).asset as T;
+                callback?.Invoke(asset);
+            };
+        }
+        else
+        {
+            ABInfo info = AddLoadABDic(abFileName);
+            Debug.Log("加载AB文件:" + abFileName);
+
+            if (info.ab != null)
+            {
+                AssetBundleRequest request = info.ab.LoadAssetAsync<T>(name);
+                request.completed += (asyncRequest) =>
+                {
+                    T asset = (asyncRequest as AssetBundleRequest).asset as T;
+                    callback?.Invoke(asset);
+                };
+            }
+            else
+            {
+                callback?.Invoke(null);
+            }
+        }
+    }
+
+
+    #endregion
 
     public void UnloadAssetBundle(string bundlePath)
     {

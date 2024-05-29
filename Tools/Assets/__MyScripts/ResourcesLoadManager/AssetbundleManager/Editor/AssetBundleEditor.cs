@@ -30,7 +30,7 @@ namespace Z.Assets
         string assetBundleVariant = "ab";
         private static AssetBundleEditor m_Window;
 
-        string m_folderRootName = "AssetBundles";
+        static string m_folderRootName = "AssetBundles";
         AssetBundleEditorJson m_data;
         string m_SelectABPath;
 
@@ -43,7 +43,7 @@ namespace Z.Assets
             public Type assetType;
         }
 
-        [MenuItem("Assets/AssetBundle工具箱/ab编辑器 _F3")]
+        [MenuItem("Tools/AssetBundle工具箱/ab编辑器 _F3")]
         private static void OpenSetAssetBundleNameWindow()
         {
 
@@ -174,20 +174,29 @@ namespace Z.Assets
                 //  DeterministicAssetBundle = 16,//使每个Object具有唯一不变的hash id，可用于增量式发布AssetBoundle
                 //  ChunkBasedCompression = 256,//创建AssetBundle时使用LZ4压缩。默认情况是Lzma格式，下载AssetBoundle后立即解压。
                 //  Windows平台
-                string packagePath = m_folderRootName  + "/PC";//打包路径在Asset同级下的 AssetBundles/PC
-                if (!Directory.Exists(packagePath))
-                {
-                    Directory.CreateDirectory(packagePath);
-                }
-                BuildPipeline.BuildAssetBundles(packagePath, BuildAssetBundleOptions.DeterministicAssetBundle | BuildAssetBundleOptions.ChunkBasedCompression, BuildTarget.StandaloneWindows64);
+                BuildAssetBundles();
                 //AssetDatabase.Refresh();
                 //string dir = Directory.GetCurrentDirectory();
 
-                OpenDirectory(m_folderRootName);
+                //OpenDirectory(m_folderRootName);
             }
             EditorGUILayout.EndVertical();
 
             //GUI.EndGroup();
+        }
+
+        public static AssetBundleManifest BuildAssetBundles()
+        {
+            string packagePath = m_folderRootName + "/PC";//打包路径在Asset同级下的 AssetBundles/PC
+            if (!Directory.Exists(packagePath))
+            {
+                Directory.CreateDirectory(packagePath);
+            }
+            var manifest = BuildPipeline.BuildAssetBundles(packagePath, BuildAssetBundleOptions.DeterministicAssetBundle | BuildAssetBundleOptions.ChunkBasedCompression, BuildTarget.StandaloneWindows64);
+
+            MoveToStreamingAssets();
+
+            return manifest;
         }
 
         void OpenDirectory(string dirPath)
@@ -195,11 +204,11 @@ namespace Z.Assets
             System.Diagnostics.Process.Start("explorer.exe", dirPath);
         }
 
-        void MoveToStreamingAssets()
+        static void MoveToStreamingAssets()
         {
             if (!Directory.Exists(m_folderRootName))
             {
-                ShowNotification(new GUIContent("没有 " + m_folderRootName + " 文件夹,不进行复制!"));
+                m_Window.ShowNotification(new GUIContent("没有 " + m_folderRootName + " 文件夹,不进行复制!"));
                 return;
             }
             //string path = Path.Combine(Directory.GetCurrentDirectory(), m_folderRootName);
@@ -350,6 +359,10 @@ namespace Z.Assets
             {
                 m_data = JsonMapper.ToObject<AssetBundleEditorJson>(json);
                 ShowNotification(new GUIContent("加载完成"));
+                if (list_Files == null)
+                {
+                    list_Files = new List<stru_FileInfo>();
+                }
                 CoutineCheck(m_data.path);
             }
             else

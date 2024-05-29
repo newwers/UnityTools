@@ -32,15 +32,22 @@ public class ResourceLoadManager : BaseMonoSingleClass<ResourceLoadManager> {
 
     protected override void Awake()
     {
-        base.Awake();
 
         DontDestroyOnLoad(this);
 
+        Init();
+
+        print("ResourceLoadManager Awake");
+    }
+
+    public void Init()
+    {
         if (assetType == LoadAssetType.AssetBundle)
         {
             AssetBundleManager.Instance.Init();
         }
     }
+
     /// <summary>
     /// 加载资源
     /// </summary>
@@ -71,16 +78,21 @@ public class ResourceLoadManager : BaseMonoSingleClass<ResourceLoadManager> {
 
     }
 
-    // 同步加载资源
+    // 同步加载AB
     T LoadAssetBundle<T>(string path) where T : UnityEngine.Object
     {
         return AssetBundleManager.Instance.LoadAssetBundle<T>(path);
     }
 
-    void LoadAssetBundleAsync()
+    /// <summary>
+    /// 异步加载AB资源
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="path"></param>
+    /// <param name="loadAsset"></param>
+    public void LoadAssetAsync<T>(string path,AssetBundleManager.LoadAsset<T> loadAsset) where T : UnityEngine.Object
     {
-        //todo:异步加载 ab
-        //todo:异步加载资源
+        AssetBundleManager.Instance.LoadAssetBundleAsync<T>(path,loadAsset);
     }
 
     

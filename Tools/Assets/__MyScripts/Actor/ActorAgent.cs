@@ -1,21 +1,25 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.Playables;
+using static Z.Actor.Actor;
 
 namespace Z.Actor
 {
     /// <summary>
     /// 该脚本是继承自 MonoBehaviour 的Actor代理类,方便后面角色继承该类
     /// </summary>
-    public class ActorAgent : MonoBehaviour
+    public class ActorAgent : MonoBehaviour,IMoveCharacter
     {
-        public Animator animator;
+        protected Animator animator;
+        protected PlayableDirector playableDirector;
         public float groundCheckDistance = 0.3f; // 高度判断距离
 
         Actor m_pActor;
         BoxCollider m_Collider;
         protected ActorAnimatorLogic m_pAnimatorLogic;
+
+        public AudioSource audioSource;
 
         protected Vector3 m_MoveTargetPos
         {
@@ -66,6 +70,10 @@ namespace Z.Actor
 
         protected virtual void Awake()
         {
+
+            audioSource = GetComponent<AudioSource>();
+
+
             m_pActor = new Actor(this.transform);
             //if (GroundCheckTransform == null)
             //{
@@ -74,6 +82,7 @@ namespace Z.Actor
             //m_pActor.GroundCheckTransform = GroundCheckTransform;
             m_pActor.groundCheckDistance = groundCheckDistance;
             m_pActor.GroundLayer = GroundLayer;
+
 
             m_Collider = GetComponent<BoxCollider>();
             if (m_Collider)
@@ -85,14 +94,17 @@ namespace Z.Actor
             {
                 animator = GetComponent<Animator>();
             }
-            if (animator != null)
+            if (playableDirector == null)
             {
-                m_pAnimatorLogic = new ActorAnimatorLogic(animator);
+                playableDirector = GetComponent<PlayableDirector>();
             }
+            m_pAnimatorLogic = new ActorAnimatorLogic(animator, playableDirector);
 
             //加入接口监听
             m_pActor.AddMoveCharacterLogic(m_pAnimatorLogic);
             m_pActor.AddRotateCharacterLogic(m_pAnimatorLogic);
+
+            m_pActor.AddMoveCharacterLogic(this);
         }
 
         protected virtual void Start()
@@ -237,6 +249,26 @@ namespace Z.Actor
         {
             if (m_pAnimatorLogic != null)
                 m_pAnimatorLogic.SetBool(name, value);
+        }
+
+        public virtual void OnMove(Vector3 deltaPos, float moveSpeed)
+        {
+            
+        }
+
+        public virtual void OnStopMove()
+        {
+            
+        }
+
+        public virtual void OnFallGround()
+        {
+            
+        }
+
+        public virtual void OnGetOffGround()
+        {
+            
         }
 
         #endregion
