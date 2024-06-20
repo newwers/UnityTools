@@ -240,7 +240,7 @@ public class LogManager :MonoBehaviour {
         {
             return;
         }
-        Tools.FileTool.FileTools.WriteFile(Application.streamingAssetsPath + "/Log.txt", log, Encoding.UTF8, true);
+        Z.FileTool.FileTools.WriteFile(Application.streamingAssetsPath + "/Log.txt", log, Encoding.UTF8, true);
         
     }
 
