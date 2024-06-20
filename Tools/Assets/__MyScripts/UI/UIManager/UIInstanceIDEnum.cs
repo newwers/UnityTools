@@ -23,5 +23,17 @@ public enum EUIInstanceID
     /// <summary>
     /// 主界面
     /// </summary>
-    MainUIPanel = 4
+    MainUIPanel = 4,
+    /// <summary>
+    /// 黑屏
+    /// </summary>
+    BlackScreen = 5,
+    /// <summary>
+    /// 通用弹窗界面
+    /// </summary>
+    CommonTips = 6,
+    /// <summary>
+    /// 商店
+    /// </summary>
+    Shop = 7,
 }
