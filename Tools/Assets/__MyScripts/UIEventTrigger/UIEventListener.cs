@@ -8,23 +8,23 @@ using UnityEngine.EventSystems;
 public class UIEventListener : UnityEngine.EventSystems.EventTrigger
 {
     public delegate void VoidDelegate();
-    public VoidDelegate onBeginDrag;
-    public VoidDelegate onCancel;
-    public VoidDelegate onDeselect;
-    public VoidDelegate onDrag;
-    public VoidDelegate onDrop;
-    public VoidDelegate onEndDrag;
-    public VoidDelegate onInitializePotentialDrag;
-    public VoidDelegate onMove;
-    public VoidDelegate onPointerClick;
-    public VoidDelegate onPointerDown;
-    public VoidDelegate onPointerEnter;
-    public VoidDelegate onPointerExit;
-    public VoidDelegate onPointerUp;
-    public VoidDelegate onScroll;
-    public VoidDelegate onSelect;
-    public VoidDelegate onSubmit;
-    public VoidDelegate onUpdateSelected;
+    public event VoidDelegate onBeginDrag;
+    public event VoidDelegate onCancel;
+    public event VoidDelegate onDeselect;
+    public event VoidDelegate onDrag;
+    public event VoidDelegate onDrop;
+    public event VoidDelegate onEndDrag;
+    public event VoidDelegate onInitializePotentialDrag;
+    public event VoidDelegate onMove;
+    public event VoidDelegate onPointerClick;
+    public event VoidDelegate onPointerDown;
+    public event VoidDelegate onPointerEnter;
+    public event VoidDelegate onPointerExit;
+    public event VoidDelegate onPointerUp;
+    public event VoidDelegate onScroll;
+    public event VoidDelegate onSelect;
+    public event VoidDelegate onSubmit;
+    public event VoidDelegate onUpdateSelected;
 
     /// <summary>
     /// 游戏物体绑定的参数
