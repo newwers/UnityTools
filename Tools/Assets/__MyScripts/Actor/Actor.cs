@@ -19,7 +19,7 @@ namespace Z.Actor
         {
             public void OnMove(Vector3 deltaPos, float moveSpeed);
 
-            public void OnStopMove();
+            public void OnMoveTargetToPosEnd();
 
             /// <summary>
             /// 当落到地面时
@@ -51,13 +51,15 @@ namespace Z.Actor
         /// 当前位置过渡到目标位置开关
         /// </summary>
         public bool IsMoveToTargetPosition = false;
-        public bool IsStopMoveFlag = false;
+        public bool IsMoveFlag = false;
 
+        public bool IsUseGravity = true;
+        public bool IsDragging = false;
 
         /// <summary>
         /// 移动距离阈值
         /// </summary>
-        public float moveDistanceThreshold = 0.01f;
+        public float moveDistanceThreshold = 0.05f;
 
         //public Quaternion currentRotation;
         public Quaternion targetRotation;
@@ -103,13 +105,21 @@ namespace Z.Actor
                 }
             }}
 
-        public Actor(Transform tra)
+        public bool isKinematic { get; internal set; }
+
+        public Actor(Transform tra, Collider collider)
         {
             transform = tra;
             m_vMoveCharacterLogic = new List<IMoveCharacter>();
             m_vRotateCharacterLogic = new List<IRotateCharacter>();
             GroundLayer = LayerMask.NameToLayer("Ground");
             m_GroundCheckTransform = transform;
+
+
+            if (collider)
+            {
+                Height = collider.bounds.size.y;
+            }
             m_HalfHeight = new Vector3(0, Height / 2f, 0);
         }
 
@@ -130,10 +140,16 @@ namespace Z.Actor
 
         public void FixedUpdate()
         {
-            if (GroundCheckTransform)
+            if (!GroundCheckTransform)
             {
+                return;
+            }
+
+            if (IsDragging || IsUseGravity)//使用重力,拖拽中,并且有检测地面才检测
+            {
+                
                 //地面检测,用角色中心坐标进行发射射线检测是否和 GroundLayer 有碰撞
-                RaycastHit[] hits = Physics.RaycastAll(m_GroundCheckTransform.position + m_HalfHeight, Vector3.down, groundCheckDistance, GroundLayer);
+                RaycastHit[] hits = Physics.RaycastAll(m_GroundCheckTransform.position + m_HalfHeight * transform.localScale.x, Vector3.down, groundCheckDistance* transform.localScale.x, GroundLayer);
 
                 bool result = false;
                 foreach (RaycastHit hit in hits)
@@ -178,16 +194,20 @@ namespace Z.Actor
             {
                 return;
             }
+            if (IsUseGravity)//使用重力情况下,目标位置Y更新为当前位置
+            {
+                targetPosition = new Vector3(targetPosition.x, transform.position.y, targetPosition.z);
+            }
 
             if (Vector3.Distance(transform.position, targetPosition) <= moveDistanceThreshold)
             {
-                if (IsStopMoveFlag)
+                if (IsMoveFlag)
                 {
                     for (int i = 0; i < m_vMoveCharacterLogic.Count; i++)
                     {
-                        m_vMoveCharacterLogic[i].OnStopMove();
+                        m_vMoveCharacterLogic[i].OnMoveTargetToPosEnd();
                     }
-                    IsStopMoveFlag = false;
+                    IsMoveFlag = false;
                 }
                 
 
@@ -207,7 +227,7 @@ namespace Z.Actor
             for (int i = 0; i < m_vMoveCharacterLogic.Count; i++)
             {
                 m_vMoveCharacterLogic[i].OnMove(deltaPos, moveSpeed);
-                IsStopMoveFlag = true;
+                IsMoveFlag = true;
             }
 
         }

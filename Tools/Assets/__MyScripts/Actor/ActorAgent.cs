@@ -11,15 +11,18 @@ namespace Z.Actor
     /// </summary>
     public class ActorAgent : MonoBehaviour,IMoveCharacter
     {
-        protected Animator animator;
-        protected PlayableDirector playableDirector;
         public float groundCheckDistance = 0.3f; // 高度判断距离
 
-        Actor m_pActor;
-        BoxCollider m_Collider;
+
+        private Animator animator;
+        private PlayableDirector playableDirector;
+        private AudioSource audioSource;
+
+
+        protected Actor m_pActor;
+        Collider m_Collider;
         protected ActorAnimatorLogic m_pAnimatorLogic;
 
-        public AudioSource audioSource;
 
         protected Vector3 m_MoveTargetPos
         {
@@ -65,40 +68,39 @@ namespace Z.Actor
             }
         }
 
+        public Animator Animator { get => animator; set => animator = value; }
+        public PlayableDirector PlayableDirector { get => playableDirector; set => playableDirector = value; }
+        public AudioSource AudioSource { get => audioSource; set => audioSource = value; }
 
-        public LayerMask GroundLayer;
+        public LayerMask GroundLayer ;
 
         protected virtual void Awake()
         {
 
-            audioSource = GetComponent<AudioSource>();
+            AudioSource = GetComponent<AudioSource>();
+            m_Collider = GetComponent<Collider>();
 
+            m_pActor = new Actor(this.transform, m_Collider);
 
-            m_pActor = new Actor(this.transform);
-            //if (GroundCheckTransform == null)
-            //{
-            //    Debug.LogError("GroundCheckTransform is null!!");
-            //}
-            //m_pActor.GroundCheckTransform = GroundCheckTransform;
             m_pActor.groundCheckDistance = groundCheckDistance;
+            if (GroundLayer == 0)
+            {
+                GroundLayer = LayerMask.NameToLayer("Ground");
+            }
             m_pActor.GroundLayer = GroundLayer;
 
 
-            m_Collider = GetComponent<BoxCollider>();
-            if (m_Collider)
-            {
-                m_pActor.Height = m_Collider.size.y;
-            }
+            
 
-            if (animator == null)
+            if (Animator == null)
             {
-                animator = GetComponent<Animator>();
+                Animator = GetComponent<Animator>();
             }
-            if (playableDirector == null)
+            if (PlayableDirector == null)
             {
-                playableDirector = GetComponent<PlayableDirector>();
+                PlayableDirector = GetComponent<PlayableDirector>();
             }
-            m_pAnimatorLogic = new ActorAnimatorLogic(animator, playableDirector);
+            m_pAnimatorLogic = new ActorAnimatorLogic(this);
 
             //加入接口监听
             m_pActor.AddMoveCharacterLogic(m_pAnimatorLogic);
@@ -255,8 +257,11 @@ namespace Z.Actor
         {
             
         }
-
-        public virtual void OnStopMove()
+        /// <summary>
+        /// 当移动到目标位置时
+        /// 问题:移动到目标位置时,被挤,导致当前位置和目标位置超过阈值后,会再次进入到移动状态,导致多次触发 OnMoveTargetToPosEnd 函数,需要注意
+        /// </summary>
+        public virtual void OnMoveTargetToPosEnd()
         {
             
         }
