@@ -1,16 +1,37 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using WeChatWASM;
 
 namespace Z.SDK
 {
+    public struct CustomStyle_Z
+    {
+        //
+        // æ‘˜è¦:
+        //     åŸç”Ÿæ¨¡æ¿å¹¿å‘Šç»„ä»¶çš„å·¦ä¸Šè§’æ¨ªåæ ‡
+        public int left;
+
+        //
+        // æ‘˜è¦:
+        //     åŸç”Ÿæ¨¡æ¿å¹¿å‘Šç»„ä»¶çš„å·¦ä¸Šè§’çºµåæ ‡
+        public int top;
+
+        //
+        // æ‘˜è¦:
+        //     åŸç”Ÿæ¨¡æ¿å¹¿å‘Šç»„ä»¶çš„å®½åº¦
+        public int width;
+    }
+
     public interface ISDK
     {
+        void ShowAllAD();
         void CreateBannerAdAndShow();
-        void CreateCustomAdAndShow(string adID, CustomStyle customStyle);
+        void CreateCustomAdAndShow(string adID, CustomStyle_Z customStyle);
+        void CreateInterstitialAd();
+        void ShowInterstitialAd();
         void CreateRewardVideoAd();
+        void ShowRewardVideoAd(System.Action successAction, System.Action failedAction);
         void Login();
 
         void SetRankData();
@@ -64,14 +85,30 @@ namespace Z.SDK
     }
 
     /// <summary>
-    /// Ìá¹©sdk»ù´¡¹¦ÄÜ,²»ĞèÒª¿¼ÂÇsdkÆ½Ì¨ÎÊÌâ,ÓÉ¾ßÌåÊµÏÖ½øĞĞÅĞ¶Ïµ÷ÓÃÆ½Ì¨
+    /// æä¾›sdkåŸºç¡€åŠŸèƒ½,ä¸éœ€è¦è€ƒè™‘sdkå¹³å°é—®é¢˜,ç”±å…·ä½“å®ç°è¿›è¡Œåˆ¤æ–­è°ƒç”¨å¹³å°
     /// 
     /// </summary>
     public class SDKManager : MonoBehaviour, ISDK
     {
+        public string BannerADID = "adunit-6169d57fcfe9fd13";
+        public string RewardedVideoADID = "adunit-507f956db4fdd2a1";
+        public string InterstitialAdID = "adunit-77f22f8984aa19e2";//æ’å±å¹¿å‘Š
+        public string CustomAdID1 = "adunit-7d240ca18682a11d";//æ ¼å­å¹¿å‘Š åŸç”Ÿ1*1å·¦
+        public string CustomAdID2 = "adunit-1a15f35f62100b06";//æ ¼å­å¹¿å‘Š åŸç”Ÿ1*1å³
+        public string CustomAdID3 = "adunit-7682d9cd0694be14";//æ ¼å­å¹¿å‘Š åŸç”Ÿ1*5
 
         ISDK m_CurrentSDK;
 
+
+        public ISDK CurSDK
+        {
+            get
+            {
+                return m_CurrentSDK;
+            }
+        }
+        public static SDKManager Instance { set; get; }
+        
 
         private void Awake()
         {
@@ -88,23 +125,34 @@ namespace Z.SDK
             InitializeSDK();
         }
 
-        void InitializeSDK()
+        private void Start()
         {
-            //todo:¸ù¾İºêÈ·¶¨Ê¹ÓÃÆ½Ì¨
-#if USE_DY_SDK
-        m_CurrentSDK = new DouYinSDK();
-#else 
-            m_CurrentSDK = new WXAdController();
+#if !UNITY_EDITOR
+            Invoke("ShowAllAD", 4f);
 #endif
-            var wx = m_CurrentSDK as WXAdController;
-            if (wx != null)
+        }
+
+        public void ShowAllAD()
+        {
+            if (m_CurrentSDK != null)
             {
-                //wx.ShowAllAD();//ÏÖÔÚÔİÊ±Ã»ÓĞ¹ã¸æ
+                m_CurrentSDK.ShowAllAD();
             }
         }
 
+        void InitializeSDK()
+        {
+            //æ ¹æ®å®ç¡®å®šä½¿ç”¨å¹³å°
+#if USE_DY_SDK
+        m_CurrentSDK = new DYSDKController();
+#else
+            m_CurrentSDK = new WXAdController();
+#endif
+            
+        }
 
-        public static SDKManager Instance { set; get; }
+
+
 
         public void CreateBannerAdAndShow()
         {
@@ -116,7 +164,7 @@ namespace Z.SDK
             m_CurrentSDK.CreateBannerAdAndShow();
         }
 
-        public void CreateCustomAdAndShow(string adID, CustomStyle customStyle)
+        public void CreateCustomAdAndShow(string adID, CustomStyle_Z customStyle)
         {
             if (m_CurrentSDK == null)
             {
@@ -135,6 +183,37 @@ namespace Z.SDK
 
             m_CurrentSDK.CreateRewardVideoAd();
         }
+        public void ShowRewardVideoAd(System.Action successAction, System.Action failedAction)
+        {
+            if (m_CurrentSDK == null)
+            {
+                return;
+            }
+
+            m_CurrentSDK.ShowRewardVideoAd(successAction,failedAction);
+        }
+
+
+        public void CreateInterstitialAd()
+        {
+            if (m_CurrentSDK == null)
+            {
+                return;
+            }
+
+            m_CurrentSDK.CreateInterstitialAd();
+        }
+
+        public void ShowInterstitialAd()
+        {
+            if (m_CurrentSDK == null)
+            {
+                return;
+            }
+
+            m_CurrentSDK.ShowInterstitialAd();
+        }
+
 
         public void Login()
         {
@@ -157,18 +236,19 @@ namespace Z.SDK
         }
 
 
-        //¹ã¸æ
-        //¼¤Àø
-        //²åÆÁ
-        //¸ñ×Ó
 
-        //µÇÂ½
+        //å¹¿å‘Š
+        //æ¿€åŠ±
+        //æ’å±
+        //æ ¼å­
 
-        //ÅÅĞĞ°ñ
+        //ç™»é™†
 
-        //·ÖÏí?
+        //æ’è¡Œæ¦œ
 
-        //Â¼ÖÆÊÓÆµ?
+        //åˆ†äº«?
+
+        //å½•åˆ¶è§†é¢‘?
 
     }
 

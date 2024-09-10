@@ -32,7 +32,7 @@ public class Logger : MonoBehaviour
             style = new GUIStyle(GUI.skin.label);
             style.fontSize = fontSize; // 设置字体大小
         }
-		GUILayout.BeginArea(new Rect(0, Screen.height - ShowLogCount* LogHeight, Screen.width, ShowLogCount * LogHeight));
+		GUILayout.BeginArea(new Rect(0, Screen.height - ShowLogCount* LogHeight-200, Screen.width, ShowLogCount * LogHeight));
 		foreach (string s in queue) {
 			GUILayout.Label(s, style);
 		}

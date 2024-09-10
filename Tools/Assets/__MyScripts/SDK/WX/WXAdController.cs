@@ -1,4 +1,4 @@
-﻿//#if USE_WX_SDK
+﻿#if USE_WX_SDK
 
 using System;
 using UnityEngine;
@@ -21,12 +21,6 @@ public class WXAdController : ISDK
 
     public bool IsUseLocalStorageADID = false;
 
-    public string BannerADID = "adunit-6169d57fcfe9fd13";
-    public string RewardedVideoADID = "adunit-77f22f8984aa19e2";
-    public string InterstitialAdID = "adunit-77f22f8984aa19e2";//插屏广告
-    public string CustomAdID1 = "adunit-91a3ca3c75c4e20e";//格子广告 原生1*1左
-    public string CustomAdID2 = "adunit-1a15f35f62100b06";//格子广告 原生1*1右
-    public string CustomAdID3 = "adunit-7682d9cd0694be14";//格子广告 原生1*5
 
 
 
@@ -35,6 +29,7 @@ public class WXAdController : ISDK
     WXInterstitialAd m_InterstitialAd;
 
     
+
     public WXAdController()
     {
         WX.InitSDK(OnInitCallback);
@@ -47,29 +42,30 @@ public class WXAdController : ISDK
 
     public void ShowAllAD()
     {
-        CreateBannerAd(OnBannerLoadSuccess, OnCreateBannerError);
+        //CreateBannerAd(OnBannerLoadSuccess, OnCreateBannerError,true);
 
-        CreateCustomAd(OnCustomADLoad, new CustomStyle()//左 1*1 广告格子
-        {
-            left = 10,
-            top = 200,
-            width = 100,
-        }, CustomAdID1, GetLeftGrid1IDStorageString, null);
+        //CreateCustomAd(OnCustomADLoad,new Z.SDK.CustomStyle_Z()//左 1*1 广告格子
+        //{
+        //    left = 0,
+        //    top = (int)WX.GetSystemInfoSync().screenHeight - 100,
+        //    width = (int)WX.GetSystemInfoSync().screenWidth,
+        //}, SDKManager.Instance.CustomAdID1, GetLeftGrid1IDStorageString, null);
 
-        CreateCustomAd(OnCustomADLoad, new CustomStyle()//右 1*1 广告格子
-        {
-            left = (int)WX.GetSystemInfoSync().screenWidth - 60,
-            top = 200,
-            width = 100,
-        }, CustomAdID2, GetRightGrid1IDStorageString, null);
+        //CreateCustomAd(OnCustomADLoad, new Z.SDK.CustomStyle_Z()//右 1*1 广告格子
+        //{
+        //    left = (int)WX.GetSystemInfoSync().screenWidth - 60,
+        //    top = 200,
+        //    width = 100,
+        //}, SDKManager.Instance.CustomAdID2, GetRightGrid1IDStorageString, null);
 
-        CreateCustomAd(OnCustomADLoad, new CustomStyle()//下1*5 广告格子
-        {
-            left = 10,
-            top = (int)WX.GetSystemInfoSync().screenHeight - 150,
-            width = (int)WX.GetSystemInfoSync().screenWidth - 100,
-        }, CustomAdID3, GetGrid5IDStorageString, null);
+        //CreateCustomAd(OnCustomADLoad, new Z.SDK.CustomStyle_Z()//下1*5 广告格子
+        //{
+        //    left = 10,
+        //    top = (int)WX.GetSystemInfoSync().screenHeight - 150,
+        //    width = (int)WX.GetSystemInfoSync().screenWidth - 100,
+        //}, SDKManager.Instance.CustomAdID3, GetGrid5IDStorageString, null);
 
+        CreateInterstitialAd();//创建插屏广告.等待展示
         CreateRewardVideoAd();//创建激励视频广告.等待展示
     }
 
@@ -106,12 +102,12 @@ public class WXAdController : ISDK
     /// <returns></returns>
     string GetBannerIDStorageString()
     {
-        return WX.StorageGetStringSync("settingAds_bannerId", BannerADID);
+        return WX.StorageGetStringSync("settingAds_bannerId", SDKManager.Instance.BannerADID);
     }
 
     void SetBannerIDStorageString()
     {
-        WX.StorageSetStringSync("settingAds_bannerId", BannerADID);
+        WX.StorageSetStringSync("settingAds_bannerId", SDKManager.Instance.BannerADID);
     }
 
     private void OnBannerLoadSuccess(WXADLoadResponse response)
@@ -155,17 +151,17 @@ public class WXAdController : ISDK
 
         if (IsUseLocalStorageADID)//如果使用localStorage的情况下,读取h5的本地存储localstorage
         {
-            BannerADID = GetBannerIDStorageString();
+            SDKManager.Instance.BannerADID = GetBannerIDStorageString();
         }
 
         //创建Banner广告,但是还未展示
         WXBannerAd bannerAD = WX.CreateBannerAd(new WXCreateBannerAdParam()
         {
-            adUnitId = BannerADID,
+            adUnitId = SDKManager.Instance.BannerADID,
             style = new Style()
             {
                 left = 0,
-                top = 0,
+                top = (int)WX.GetSystemInfoSync().screenHeight - 100,
                 width = (int)WX.GetSystemInfoSync().screenWidth,//获取屏幕宽度,
             },
             //adIntervals = 30//广告刷新间隔
@@ -183,6 +179,7 @@ public class WXAdController : ISDK
         }
 
         m_BannerAD = bannerAD;
+        Debug.Log("创建banner视频，isShow：" + isShow);
 
         return bannerAD;
     }
@@ -206,19 +203,37 @@ public class WXAdController : ISDK
 
     #region RewardedVideoAd激励视频广告
 
-    public void CreateRewardVideoAd()
+
+    Action m_ShowRewardVideoAdSuccessAction;
+    Action m_ShowRewardVideoAdFailedAction;
+    public void ShowRewardVideoAd(System.Action successAction, System.Action failedAction)
     {
-        CreateRewardVideoAd(null, null);
+        m_ShowRewardVideoAdSuccessAction = successAction;
+        m_ShowRewardVideoAdFailedAction = failedAction;
+
+        ShowRewardedVideoAD(m_RewardedVideoAd, (a) => { 
+            //successAction?.Invoke();
+            Debug.Log("显示激励广告成功回调"); }, 
+            (a) => { 
+                //failedAction?.Invoke();
+                Debug.Log("显示激励广告失败回调");
+            }
+        );
     }
 
-    public void ShowRewardVideoAd()
-    {
-        ShowRewardedVideoAD(m_RewardedVideoAd, null, null);
-    }
+
 
     string GetRewardVideoIDStorageString()
     {
-        return WX.StorageGetStringSync("settingAds_rewardId", RewardedVideoADID);
+        return WX.StorageGetStringSync("settingAds_rewardId", SDKManager.Instance.RewardedVideoADID);
+    }
+    /// <summary>
+    /// 创建激励视频
+    /// 此函数为SDK接口函数
+    /// </summary>
+    public void CreateRewardVideoAd()
+    {
+        CreateRewardVideoAd(null, null);
     }
 
     public WXRewardedVideoAd CreateRewardVideoAd(Action<WXADLoadResponse> OnLoadAction, System.Action<WXADErrorResponse> OnErrorAction)
@@ -232,13 +247,13 @@ public class WXAdController : ISDK
 
         if (IsUseLocalStorageADID)//如果使用localStorage的情况下,读取h5的本地存储localstorage
         {
-            RewardedVideoADID = GetRewardVideoIDStorageString();
+            SDKManager.Instance.RewardedVideoADID = GetRewardVideoIDStorageString();
         }
 
         //创建Banner广告,但是还未展示
         WXRewardedVideoAd ad = WX.CreateRewardedVideoAd(new WXCreateRewardedVideoAdParam()
         {
-            adUnitId = RewardedVideoADID
+            adUnitId = SDKManager.Instance.RewardedVideoADID
         });
 
 
@@ -247,6 +262,8 @@ public class WXAdController : ISDK
         ad.OnLoad(OnLoadAction);
 
         m_RewardedVideoAd = ad;
+
+        Debug.Log("创建激励视频广告");
 
         return ad;
     }
@@ -267,17 +284,21 @@ public class WXAdController : ISDK
     /// <param name="response"></param>
     private void OnRewardedVideoAdClose(WXRewardedVideoAdOnCloseResponse response)
     {
-        //print("OnRewardedVideoAdClose");
+        Debug.Log("OnRewardedVideoAdClose");
 
         // 用户点击了【关闭广告】按钮
         // 小于 2.1.0 的基础库版本，res 是一个 undefined
         if (response != null && response.isEnded || response == null)
         {
             // 正常播放结束，可以下发游戏奖励
+            Debug.Log("正常播放结束，可以下发游戏奖励");
+            m_ShowRewardVideoAdSuccessAction?.Invoke();
         }
         else
         {
             // 播放中途退出，不下发游戏奖励
+            Debug.Log("播放中途退出，不下发游戏奖励");
+            m_ShowRewardVideoAdFailedAction.Invoke();
         }
 
         //CreateRewardVideoAd();//播放完后,创建新的激励视频广告等待展示
@@ -290,27 +311,46 @@ public class WXAdController : ISDK
 
     string GetInterstitiaIDStorageString()
     {
-        return WX.StorageGetStringSync("settingAds_interstitiaId", InterstitialAdID);
+        return WX.StorageGetStringSync("settingAds_interstitiaId", SDKManager.Instance.InterstitialAdID);
+    }
+
+
+    /// <summary>
+    /// 创建插屏广告并且显示
+    /// 此函数为SDK接口函数
+    /// </summary>
+    public void CreateInterstitialAd()
+    {
+        CreateInterstitialAd(null,null);
+    }
+
+    /// <summary>
+    /// 显示插屏广告
+    /// 此函数为SDK接口函数
+    /// </summary>
+    public void ShowInterstitialAd()
+    {
+        ShowInterstitialAd(null, null);
     }
 
     public WXInterstitialAd CreateInterstitialAd(Action<WXADLoadResponse> OnLoadAction, System.Action<WXADErrorResponse> OnErrorAction)
     {
         //每次创建banner都需要销毁旧banner,
-        if (m_InterstitialAd != null)
-        {
-            m_InterstitialAd.Destroy();
-            m_InterstitialAd = null;
-        }
+        //if (m_InterstitialAd != null)
+        //{
+        //    m_InterstitialAd.Destroy();
+        //    m_InterstitialAd = null;
+        //}
 
         if (IsUseLocalStorageADID)//如果不填adID的情况下,读取h5的本地存储localstorage
         {
-            InterstitialAdID = GetInterstitiaIDStorageString();
+            SDKManager.Instance.InterstitialAdID = GetInterstitiaIDStorageString();
         }
 
-        //创建Banner广告,但是还未展示
+        //创建广告,但是还未展示
         WXInterstitialAd ad = WX.CreateInterstitialAd(new WXCreateInterstitialAdParam()
         {
-            adUnitId = InterstitialAdID
+            adUnitId = SDKManager.Instance.InterstitialAdID
         });
 
 
@@ -318,16 +358,19 @@ public class WXAdController : ISDK
         ad.OnError(OnErrorAction);
         ad.OnLoad(OnLoadAction);
 
+        Debug.Log("创建插屏广告");
+
         m_InterstitialAd = ad;
 
         return ad;
     }
 
-    public void ShowInterstitialAd(WXInterstitialAd ad, System.Action<WXTextResponse> successAction, System.Action<WXTextResponse> failedAction)
+    public void ShowInterstitialAd(System.Action<WXTextResponse> successAction, System.Action<WXTextResponse> failedAction)
     {
-        if (ad == null) return;
+        if (m_InterstitialAd == null) return;
 
-        ad.Show(successAction, failedAction);
+        m_InterstitialAd.Show(successAction, failedAction);
+        Debug.Log("显示插屏广告");
     }
 
     #endregion
@@ -336,37 +379,42 @@ public class WXAdController : ISDK
 
     string GetGrid5IDStorageString()
     {
-        return WX.StorageGetStringSync("settingAds_moreId", CustomAdID3);
+        return WX.StorageGetStringSync("settingAds_moreId", SDKManager.Instance.CustomAdID3);
     }
 
     string GetLeftGrid1IDStorageString()
     {
-        return WX.StorageGetStringSync("settingAds_leftId", CustomAdID1);
+        return WX.StorageGetStringSync("settingAds_leftId", SDKManager.Instance.CustomAdID1);
     }
 
     string GetRightGrid1IDStorageString()
     {
-        return WX.StorageGetStringSync("settingAds_rightId", CustomAdID2);
+        return WX.StorageGetStringSync("settingAds_rightId", SDKManager.Instance.CustomAdID2);
     }
 
 
-    public void CreateCustomAdAndShow(string adID,CustomStyle customStyle)
+    public void CreateCustomAdAndShow(string adID,Z.SDK.CustomStyle_Z customStyle)
     {
         CreateCustomAd(null, customStyle, adID, null, null);
     }
 
-    public WXCustomAd CreateCustomAd(Action<WXADLoadResponse> OnLoadAction, CustomStyle customStyle, string adID, Func<string> getIDFunc, System.Action<WXADErrorResponse> OnErrorAction = null)
+    public WXCustomAd CreateCustomAd(Action<WXADLoadResponse> OnLoadAction, Z.SDK.CustomStyle_Z customStyle, string adID, Func<string> getIDFunc, System.Action<WXADErrorResponse> OnErrorAction = null)
     {
         if (IsUseLocalStorageADID && getIDFunc != null)//如果不填adID的情况下,读取h5的本地存储localstorage
         {
             adID = getIDFunc();
         }
 
+        WeChatWASM.CustomStyle wxStyle = new WeChatWASM.CustomStyle();
+        wxStyle.left = customStyle.left;
+        wxStyle.top = customStyle.top;
+        wxStyle.width = customStyle.width;
+
         //创建Banner广告,但是还未展示
         WXCustomAd ad = WX.CreateCustomAd(new WXCreateCustomAdParam()
         {
             adUnitId = adID,
-            style = customStyle
+            style = wxStyle
         });
 
 
@@ -374,6 +422,7 @@ public class WXAdController : ISDK
         ad.OnLoad(OnLoadAction);
 
         ad.Show();
+        Debug.Log("创建并显示CustomAd,adID:" + adID);
 
         return ad;
     }
@@ -438,7 +487,5 @@ public class WXAdController : ISDK
         WX.HideOpenData();//隐藏排行榜
     }
 
-
-
 }
-//#endif
+#endif

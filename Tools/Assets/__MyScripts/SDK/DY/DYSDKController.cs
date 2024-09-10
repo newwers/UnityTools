@@ -1,17 +1,19 @@
-﻿using StarkSDKSpace;
+﻿#if USE_DY_SDK
+
+using StarkSDKSpace;
 using StarkSDKSpace.UNBridgeLib.LitJson;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
+using Z.SDK;
 using static StarkSDKSpace.StarkAccount;
+using static StarkSDKSpace.StarkAppLifeCycle;
 
-public class DYSDKController : MonoBehaviour
+public class DYSDKController : ISDK
 {
-    public string bannerAdId;
-    public string videoAdId;
-    public string interstitialAdId;
+
+    public Action<bool> RefreshGuidePanelAction;
 
 
     private StarkAdManager.BannerAd m_BannerAD;
@@ -138,20 +140,46 @@ public class DYSDKController : MonoBehaviour
     /// 首次及从侧边栏场景中进入
     /// 需要游戏一启动就监听
     /// </summary>
-    public void ListenerScene()
+    public void ListenerScene(OnShowEventWithDict action)
     {
-        StarkSDK.API.GetStarkAppLifeCycle().OnShowWithDict += OnShowOneParam;
+        StarkSDK.API.GetStarkAppLifeCycle().OnShowWithDict += action;
     }
 
     private void OnShowOneParam(Dictionary<string, object> param)
     {
-        print($"OnShowOneParam-->${param.ToString()}");
+        foreach (var item in param)
+        {
+            Debug.Log($"OnShowOneParam--> key:{item.Key},value:{item.Value}");
+        }
 
-        //todo:根据参数判断是否从侧边栏进入,是则切换成可以领取侧边栏奖励
+
+        //根据参数判断是否从侧边栏进入,是则切换成可以领取侧边栏奖励
         //启动场景 （key）         launchFrom返回值     location返回值
         //抖音首页侧边栏（value） "homepage"            sidebar_card
+        //启动场景值（「侧边栏」启动返回的场景值为：021036） 011004  我的-小程序列表-最近使用
+        //
 
-        //还需要判断奖励是否已经领过?
+        bool isLaunchFromSideBar = ((param.ContainsKey("launchFrom") && (string)param["launchFrom"] == "homepage"
+             && param.ContainsKey("location") && (string)param["location"] == "sidebar_card")
+             || param.ContainsKey("scene") && (string)param["scene"] == "011004"
+             || param.ContainsKey("scene") && (string)param["scene"] == "021036");
+
+        if (isLaunchFromSideBar)
+        {
+            //侧边栏用户，处理发奖逻辑
+            RefreshGuidePanel(true);
+            Debug.Log("从侧边栏进入!");
+        }
+        else
+        {
+            RefreshGuidePanel(false);
+            Debug.Log("未侧边栏进入!!");
+        }
+    }
+
+    void RefreshGuidePanel(bool isLaunchFromSlider)
+    {
+        RefreshGuidePanelAction?.Invoke(isLaunchFromSlider);
     }
 
     /// <summary>
@@ -159,12 +187,12 @@ public class DYSDKController : MonoBehaviour
     /// 游戏中途从侧边栏中复访
     /// </summary>
     /// <returns></returns>
-    private bool IsLaunchFromSlider()
+    public bool IsLaunchFromSlider()
     {
         string launchForm = StarkSDK.s_ContainerEnv.GetLaunchFrom();
         string location = StarkSDK.s_ContainerEnv.GetLocation();
 
-        print($"launchForm:{launchForm},location:{location}");
+        Debug.Log($"launchForm:{launchForm},location:{location}");
 
         return launchForm.Equals("homepage") || location.Equals("homepage");
     }
@@ -444,7 +472,7 @@ public class DYSDKController : MonoBehaviour
     public void CreateVideoAD()
     {
         var adManager = StarkSDK.API.GetStarkAdManager();
-        adManager.ShowVideoAdWithId(videoAdId, OnVideoCloseCallback, OnVideoErrorCallback , null);
+        adManager.ShowVideoAdWithId(SDKManager.Instance.RewardedVideoADID, false,null,1,false, OnVideoCloseCallback, OnVideoErrorCallback);
     }
     /// <summary>
     /// 连续观看激励广告
@@ -461,27 +489,36 @@ public class DYSDKController : MonoBehaviour
     public void CreateVideoAD(bool multiton, string[] multitonRewardMsg, int multitonRewardTime, bool progressTip, Action<bool, int> closeCallback = null, Action<int, string> errCallback = null)
     {
         var adManager = StarkSDK.API.GetStarkAdManager();
-        adManager.ShowVideoAdWithId(videoAdId, multiton, multitonRewardMsg, multitonRewardTime, progressTip, closeCallback, errCallback);
+        adManager.ShowVideoAdWithId(SDKManager.Instance.RewardedVideoADID, multiton, multitonRewardMsg, multitonRewardTime, progressTip, closeCallback, errCallback);
     }
 
-    private void OnVideoErrorCallback(int arg1, string arg2)
+    private void OnVideoErrorCallback(int errCode, string errMsg)
     {
-        
+        Debug.Log($"激励视频Error回调函数：errCode:{errCode},errMsg:{errMsg}");
+        m_ShowRewardVideoAdFailedAction?.Invoke();
     }
 
-    private void OnVideoCloseCallback(bool obj)
+    private void OnVideoCloseCallback(bool isCompleted,int code)
     {
-        
+        if (isCompleted)
+        {
+            m_ShowRewardVideoAdSuccessAction?.Invoke();
+        }
+        else
+        {
+            m_ShowRewardVideoAdFailedAction?.Invoke();
+        }
+        Debug.Log($"激励视频Close回调函数：isCompleted:{isCompleted},code:{code}");
     }
 
     #endregion
 
     #region InterstitialAd
 
-    public void CreateInterstitialAD()
+    public void CreateInterstitialAd()
     {
         var adManager = StarkSDK.API.GetStarkAdManager();
-        m_InterstitialAD = adManager.CreateInterstitialAd(interstitialAdId, OnInterstitialErrorCallback, OnInterstitialCloseCallback, OnInterstitialLoadCallback);
+        m_InterstitialAD = adManager.CreateInterstitialAd(SDKManager.Instance.InterstitialAdID, OnInterstitialErrorCallback, OnInterstitialCloseCallback, OnInterstitialLoadCallback);
     }
 
     private void OnInterstitialCloseCallback()
@@ -501,7 +538,7 @@ public class DYSDKController : MonoBehaviour
 
     void DestoryInterstitialAd()
     {
-        print("销毁插屏AD");
+        Debug.Log("销毁插屏AD");
         if (m_InterstitialAD != null)
             m_InterstitialAD.Destroy();
         m_InterstitialAD = null;
@@ -509,12 +546,12 @@ public class DYSDKController : MonoBehaviour
 
     public void ShowInterstitialAd()
     {
-        print("显示插屏AD");
+        Debug.Log("显示插屏AD");
         if (m_InterstitialAD != null)
             m_InterstitialAD.Show();
         else
         {
-            print("插屏AD未创建");
+            Debug.Log("插屏AD未创建");
         }
     }
 
@@ -524,7 +561,7 @@ public class DYSDKController : MonoBehaviour
             m_InterstitialAD.Load();
         else
         {
-            print("插屏AD未创建");
+            Debug.Log("插屏AD未创建");
         }
     }
 
@@ -537,7 +574,7 @@ public class DYSDKController : MonoBehaviour
     public void CreateBannerAD()
     {
         var adManager = StarkSDK.API.GetStarkAdManager();
-        m_BannerAD = adManager.CreateBannerAd(bannerAdId, new StarkAdManager.BannerStyle()
+        m_BannerAD = adManager.CreateBannerAd(SDKManager.Instance.BannerADID, new StarkAdManager.BannerStyle()
         {
             left = 0,
             top = 0,
@@ -563,5 +600,61 @@ public class DYSDKController : MonoBehaviour
         
     }
 
+
+
+    #endregion
+
+    #region SDK接口函数
+
+    public void ShowAllAD()
+    {
+        CreateInterstitialAd();
+        //CreateRewardVideoAd();
+        SetKeepScreenOn();
+
+        ListenerScene(OnShowOneParam);
+        Debug.Log("初始化抖音sdk函数");
+    }
+
+    public void CreateBannerAdAndShow()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void CreateCustomAdAndShow(string adID, CustomStyle_Z customStyle)
+    {
+        throw new NotImplementedException();
+    }
+
+
+    public void CreateRewardVideoAd()
+    {
+        //CreateVideoAD();
+    }
+    Action m_ShowRewardVideoAdSuccessAction;
+    Action m_ShowRewardVideoAdFailedAction;
+    public void ShowRewardVideoAd(Action successAction, Action failedAction)
+    {
+        m_ShowRewardVideoAdSuccessAction = successAction;
+        m_ShowRewardVideoAdFailedAction = failedAction;
+        CreateVideoAD();
+    }
+
+    public void Login()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void SetRankData()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void GetRankData()
+    {
+        throw new NotImplementedException();
+    }
+
     #endregion
 }
+#endif
