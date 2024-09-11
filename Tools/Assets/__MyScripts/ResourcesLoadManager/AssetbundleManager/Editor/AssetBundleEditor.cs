@@ -52,7 +52,7 @@ namespace Z.Assets
             //EditorUtility.ExtractOggFile
             m_Window = GetWindow<AssetBundleEditor>("设置AssetBundlesName");
             m_Window.position = new Rect(300, 100, 300, 500);
-            m_Window.minSize = new Vector2(600, 500);
+            m_Window.minSize = new Vector2(1000, 800);
             m_Window.Show();
 
 
@@ -89,7 +89,15 @@ namespace Z.Assets
             GUILayout.Space(5);
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(150);
-            if (GUILayout.Button("加载配置文件", new GUIStyle("Box")))
+            if (GUILayout.Button("加载所有资源列表", new GUIStyle("Box")))
+            {
+                LoadAll(false);
+            }
+            if (GUILayout.Button("加载所有ab资源列表", new GUIStyle("Box")))
+            {
+                LoadAll(true);
+            }
+            if (GUILayout.Button("加载上一次路径ab资源列表", new GUIStyle("Box")))
             {
                 Load();
             }
@@ -98,7 +106,7 @@ namespace Z.Assets
             {
                 Save();
             }
-            if (GUILayout.Button("选择打包资源路径", new GUIStyle("Box")))
+            if (GUILayout.Button("选择打包ab资源路径", new GUIStyle("Box")))
             {
                 if (list_Files == null)
                 {
@@ -135,12 +143,32 @@ namespace Z.Assets
             {
                 // 开启一行
                 GUILayout.BeginVertical();
+                GUILayout.BeginHorizontal();
                 //获取系统中的文件夹图标
                 GUIContent content = EditorGUIUtility.ObjectContent(null, file.assetType);
                 content.text = file.fileName;
                 //以lable展示
                 GUILayout.Label(content, GUILayout.Height(20));
 
+                if (GUILayout.Button("设置ab"))
+                {
+                    AssetImporter importer = AssetImporter.GetAtPath(file.assetPath);
+                    if (importer != null)
+                    {
+                        SetBundleName(file.assetPath);
+                        //importer.SaveAndReimport();
+                    }
+                }
+                if (GUILayout.Button("去掉ab"))
+                {
+                    AssetImporter importer = AssetImporter.GetAtPath(file.assetPath);
+                    if (importer != null)
+                    {
+                        importer.SetAssetBundleNameAndVariant("", "");
+                        //importer.SaveAndReimport();
+                    }
+                }
+                GUILayout.EndHorizontal();
                 GUILayout.EndVertical();
             }
         }
@@ -167,6 +195,20 @@ namespace Z.Assets
                 }
 
                 this.ShowNotification(new GUIContent("设置名称完成"));
+            }
+
+            if (GUILayout.Button("取消资源的ab包名"))
+            {
+                for (int a = 0; a < list_Files.Count; a++)
+                {
+                    AssetImporter importer = AssetImporter.GetAtPath(list_Files[a].assetPath);
+                    if (importer != null)
+                    {
+                        importer.SetAssetBundleNameAndVariant("", "");
+                    }
+                }
+
+                this.ShowNotification(new GUIContent("取消资源的ab包名完成"));
             }
 
             if (GUILayout.Button("打包Windows平台ab包"))
@@ -260,7 +302,7 @@ namespace Z.Assets
         /// 是文件，继续向下
         /// </summary>
         /// <param name="path"></param>
-        private static void CoutineCheck(string path)
+        private static void CoutineCheck(string path,bool isShowAB = false)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -271,7 +313,7 @@ namespace Z.Assets
 
             foreach (var item in fileSystemInfos)
             {
-                if (item.ToString().EndsWith(".meta") || item.ToString().EndsWith(".cs"))
+                if (item.ToString().EndsWith(".meta") || item.ToString().EndsWith(".cs") || item.ToString().EndsWith(".xml"))
                 {
                     continue;
                 }
@@ -279,7 +321,7 @@ namespace Z.Assets
                 int idx = item.ToString().LastIndexOf(@"\");
                 string name = item.ToString().Substring(idx + 1);
 
-                CheckFileOrDirectory(item, path + "/" + name);  //item  文件系统，加相对路径
+                CheckFileOrDirectory(item, path + "/" + name, isShowAB);  //item  文件系统，加相对路径
             }
 
         }
@@ -288,26 +330,46 @@ namespace Z.Assets
         /// </summary>
         /// <param name="fileSystemInfo"></param>
         /// <param name="path"></param>
-        private static void CheckFileOrDirectory(FileSystemInfo fileSystemInfo, string path)
+        private static void CheckFileOrDirectory(FileSystemInfo fileSystemInfo, string path, bool isShowAB = false)
         {
             FileInfo fileInfo = fileSystemInfo as FileInfo;
-            if (fileInfo != null)
+            if (fileInfo != null)//是文件资源,而不是文件夹
             {
-                //Debug.Log(fileInfo.Name);//文件名
-                //Debug.LogWarning(fileInfo.FullName);//路径带文件名
-                //Debug.LogError(fileInfo.DirectoryName);//上级路径
-                stru_FileInfo t_file = new stru_FileInfo();
-                t_file.fileName = fileInfo.Name.ToLower();
-                t_file.filePath = fileInfo.FullName.ToLower();
-                t_file.assetPath = fileInfo.FullName.Replace("\\", "/").Replace(Application.dataPath, "Assets").ToLower();//用于下一步获得文件类型
-                t_file.assetType = AssetDatabase.GetMainAssetTypeAtPath(t_file.assetPath);
-                list_Files.Add(t_file);
+                string assetPath = fileInfo.FullName.Replace("\\", "/").Replace(Application.dataPath, "Assets").ToLower();
+                if (isShowAB == false || isShowAB && IsAssetIsAB(assetPath))
+                {
+                    //Debug.Log(fileInfo.Name);//文件名
+                    //Debug.LogWarning(fileInfo.FullName);//路径带文件名
+                    //Debug.LogError(fileInfo.DirectoryName);//上级路径
+                    stru_FileInfo t_file = new stru_FileInfo();
+                    t_file.fileName = fileInfo.Name.ToLower();
+                    t_file.filePath = fileInfo.FullName.ToLower();
+                    t_file.assetPath = assetPath;//用于下一步获得文件类型
+                    t_file.assetType = AssetDatabase.GetMainAssetTypeAtPath(t_file.assetPath);
+                    list_Files.Add(t_file);
+                }
             }
             else
             {
-                CoutineCheck(path);
+                CoutineCheck(path, isShowAB);
             }
         }
+        /// <summary>
+        /// 判断资源是否是有ab标记
+        /// </summary>
+        /// <param name="assetPath"></param>
+        /// <returns></returns>
+        static bool IsAssetIsAB(string assetPath)
+        {
+            var importer = AssetImporter.GetAtPath(assetPath);
+            if (importer != null && string.IsNullOrWhiteSpace(importer.assetBundleName) == false)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// 设置assetbundle名字
         /// 规则:默认包名取文件上一级的文件夹从Assets开始全称作为包名,后缀自定义
@@ -363,12 +425,23 @@ namespace Z.Assets
                 {
                     list_Files = new List<stru_FileInfo>();
                 }
+                list_Files.Clear();
                 CoutineCheck(m_data.path);
             }
             else
             {
                 m_data = new AssetBundleEditorJson();
             }
+        }
+
+        void LoadAll(bool isShowAB)
+        {
+            if (list_Files == null)
+            {
+                list_Files = new List<stru_FileInfo>();
+            }
+            list_Files.Clear();
+            CoutineCheck(Application.dataPath, isShowAB);
         }
 
         #endregion

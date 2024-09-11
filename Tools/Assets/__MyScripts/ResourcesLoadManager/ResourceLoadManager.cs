@@ -56,6 +56,7 @@ public class ResourceLoadManager : BaseMonoSingleClass<ResourceLoadManager> {
     /// <returns></returns>
     public T Load<T>(string path) where T : UnityEngine.Object
     {
+        if (string.IsNullOrEmpty(path)) return null;
         path = path.ToLower();
 #if UNITY_EDITOR
         if (assetType == LoadAssetType.AssetBundle)

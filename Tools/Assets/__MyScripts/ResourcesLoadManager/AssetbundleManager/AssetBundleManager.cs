@@ -172,6 +172,8 @@ public class AssetBundleManager : BaseSingleClass<AssetBundleManager>
 
         int index = path.LastIndexOf("/");
 
+        if (index == -1) return null;//错误路径过滤
+
         string abFileName = path.Substring(0, index) + abVariant;
 
         LoadDepend(abFileName);
