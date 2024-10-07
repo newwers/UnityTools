@@ -47,9 +47,13 @@ public class PositionTweenController
 
 public class PositionTween : MonoBehaviour
 {
-    public float Duration = 1f;
-    public Vector3 StartPos;
-    public Vector3 EndPos;
+
+    private float m_Duration = 1f;
+    private Vector3 m_StartPos;
+    private Vector3 m_EndPos;
+
+    public List<Vector4> PosList;
+    private int m_Index;
 
     public bool isLoop = true;
 
@@ -62,26 +66,38 @@ public class PositionTween : MonoBehaviour
 
     [Header("是否使用本地坐标")]
     public bool isLocalPos = true;
+    [Header("是否使用锚点坐标")]
+    public bool isAnchorsPos = false;
+    [Header("是否使用相对坐标")]
+    public bool isRelativePos = false;
 
     public int ID;
 
     [Header("一开始就播放动画")]
     public bool PlayOnAwake = false;
 
+    RectTransform m_RectTransform;
+
     private void Awake()
     {
-        if (PlayOnAwake)
+        m_RectTransform = transform as RectTransform;
+
+        if (PlayOnAwake && PosList.Count > 1)
         {
+            m_Index = 0;
+            m_StartPos = PosList[m_Index];
+            m_EndPos = PosList[m_Index+1];
+            m_Duration = PosList[m_Index].w;
             isEnable = true;
-            OnStart(StartPos, EndPos, Duration);
+            OnStart(m_StartPos, m_EndPos, m_Duration);
         }
     }
 
     public void OnStart(Vector3 startPos, Vector3 endPos, float duration)
     {
-        StartPos = startPos;
-        EndPos = endPos;
-        this.Duration = duration;
+        m_StartPos = startPos;
+        m_EndPos = endPos;
+        this.m_Duration = duration;
 
         isEnable = true;
         m_Timer = 0f;
@@ -106,33 +122,60 @@ public class PositionTween : MonoBehaviour
             return;
         }
         m_Timer += Time.deltaTime;
-        if (m_Timer >= Duration && isLoop == false)
+        if (m_Timer >= m_Duration )
         {
-            isEnable = false;
-            m_Timer = 0f;
-            OnComplete();
-            return;
+            if (m_Index >= PosList.Count-1 && isLoop == false)
+            {
+                isEnable = false;
+                m_Timer = 0f;
+                OnComplete();
+                return;
+            }
+
+            m_Index ++;
+            m_StartPos = PosList[m_Index];
+            m_EndPos = PosList[m_Index + 1];
+            m_Duration = PosList[m_Index].w;
+
         }
         if (isLoop)
         {
-            if (m_Timer == Duration)
-            {
-
-            }
-            else
-            {
-                m_Timer %= Duration;
-            }
+            m_Timer %= m_Duration;
         }
 
-        if (isLocalPos)
+        if (isRelativePos)
         {
-            transform.localPosition = Vector3.Lerp(StartPos, EndPos, m_Timer / Duration);
+            if (isAnchorsPos && m_RectTransform)//锚点坐标
+            {
+                m_RectTransform.anchoredPosition += Vector2.Lerp(m_StartPos, m_EndPos, m_Timer / m_Duration) ;
+            }
+            else if (isLocalPos)//本地坐标
+            {
+                transform.localPosition += Vector3.Lerp(m_StartPos, m_EndPos, m_Timer / m_Duration);
+            }
+            else//世界坐标
+            {
+                transform.position += Vector3.Lerp(m_StartPos, m_EndPos, m_Timer / m_Duration);
+            }
         }
         else
         {
-            transform.position = Vector3.Lerp(StartPos, EndPos, m_Timer / Duration);
+            if (isAnchorsPos && m_RectTransform)//锚点坐标
+            {
+                m_RectTransform.anchoredPosition = Vector2.Lerp(m_StartPos, m_EndPos, m_Timer / m_Duration);
+            }
+            else if (isLocalPos)//本地坐标
+            {
+                transform.localPosition = Vector3.Lerp(m_StartPos, m_EndPos, m_Timer / m_Duration);
+            }
+            else//世界坐标
+            {
+                transform.position = Vector3.Lerp(m_StartPos, m_EndPos, m_Timer / m_Duration);
+            }
+
         }
+
+        
 
     }
 

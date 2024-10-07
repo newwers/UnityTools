@@ -8,10 +8,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace TopGame.UI
+namespace Z.UI
 {
     public class ScaleTween : MonoBehaviour
     {
+
+        [Header("一开始就播放动画")]
+        public bool PlayOnAwake = false;
+
         public AnimationCurve ScaleCurve;
         public float PlayDelay;
         public int index;
@@ -20,6 +24,14 @@ namespace TopGame.UI
         float m_DelayTimer = 0f;
         float m_PlayTimer = 0f;
         bool m_IsCallOnce = false;
+        private void Start()
+        {
+            if (PlayOnAwake)
+            {
+                Play();
+            }
+        }
+
         public void DisableOnFinish()
         {
             m_IsCallOnce = true;
@@ -58,13 +70,6 @@ namespace TopGame.UI
             m_PlayTimer = 0f;
             m_IsEnable = true;
 
-            if (index > 0)
-            {
-                if (ScaleCurve.keys.Length > 3)
-                {
-                    PlayDelay = (index - 1) * ScaleCurve.keys[ScaleCurve.keys.Length - 2].time;
-                }
-            }
             transform.localScale = new Vector3(ScaleCurve.Evaluate(0), ScaleCurve.Evaluate(0), ScaleCurve.Evaluate(0));
         }
 
