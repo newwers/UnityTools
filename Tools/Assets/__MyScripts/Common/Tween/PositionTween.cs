@@ -124,6 +124,8 @@ public class PositionTween : MonoBehaviour
         m_Timer += Time.deltaTime;
         if (m_Timer >= m_Duration )
         {
+            m_Index++;
+
             if (m_Index >= PosList.Count-1 && isLoop == false)
             {
                 isEnable = false;
@@ -132,11 +134,11 @@ public class PositionTween : MonoBehaviour
                 return;
             }
 
-            m_Index ++;
+
             m_StartPos = PosList[m_Index];
             m_EndPos = PosList[m_Index + 1];
             m_Duration = PosList[m_Index].w;
-
+            m_Timer = 0;
         }
         if (isLoop)
         {

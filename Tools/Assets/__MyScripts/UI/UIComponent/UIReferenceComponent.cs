@@ -26,7 +26,7 @@ namespace Z.UI
         }
 
         public List<UIReferenceData> Datas = new List<UIReferenceData>();
-        Dictionary<string,UIReferenceData> m_vuiReferences = new Dictionary<string, UIReferenceData>();
+        Dictionary<string,UIReferenceData> m_vUiReferences = new Dictionary<string, UIReferenceData>();
 
         private void Awake()
         {
@@ -44,17 +44,17 @@ namespace Z.UI
                     key = item.name;
                 }
 
-                m_vuiReferences[key] = item;
+                m_vUiReferences[key] = item;
             }
         }
 
         public T GetUI<T>(string name) where T : Component
         {
-            if (m_vuiReferences.Count == 0 && Datas.Count > 0)//未初始化判断,初始隐藏状态不执行awake函数
+            if (m_vUiReferences.Count == 0 && Datas.Count > 0)//未初始化判断,初始隐藏状态不执行awake函数
             {
                 Awake();
             }
-            if (m_vuiReferences.TryGetValue(name,out var value))
+            if (m_vUiReferences.TryGetValue(name,out var value))
             {
                 return value.component as T;
             }
@@ -93,6 +93,7 @@ namespace Z.UI
         {
             if (m_ui == null || m_ui.Datas == null)
             {
+                base.OnInspectorGUI();
                 return;
             }
 
@@ -155,29 +156,12 @@ namespace Z.UI
 
                 UnityEditor.EditorUtility.SetDirty(target);
             }
-            if (GUILayout.Button("设置所有元素名字和物体名字一致"))
-            {
-                for (int i = 0; i < m_ui.Datas.Count; i++)
-                {
-                    var item = m_ui.Datas[i];
-                    if (item.component == null)
-                    {
-                        continue;
-                    }
-                    string key = item.name;
-                    if (string.IsNullOrWhiteSpace(item.name))
-                    {
-                        item.name = item.component.name;
-                        key = item.name;
-                    }
-                }
-            }
 
             
 
-            if (Event.current.type == EventType.DragExited) // 只有在拖拽操作完成后才显示GenericMenu
+            if (UnityEngine.Event.current.type == EventType.DragExited) // 只有在拖拽操作完成后才显示GenericMenu
             {
-                if (DragAndDrop.objectReferences.Length > 0 && m_draggedSlotIndex >= 0 && m_draggedSlotIndex < m_ui.Datas.Count)
+                if (DragAndDrop.objectReferences.Length > 0)
                 {
                     var item = m_ui.Datas[m_draggedSlotIndex];
 
@@ -185,7 +169,15 @@ namespace Z.UI
                     // 调用EditorUtility.DisplayCustomMenu方法显示一个弹窗，让你选择引用类型
                     var obj = DragAndDrop.objectReferences[0];
                     var go = obj as GameObject;
-                    var comps = go.GetComponents<Component>();
+                    Component[] comps;
+                    if (go != null)
+                    {
+                        comps = go.GetComponents<Component>();
+                    }
+                    else
+                    {
+                        comps = new Component[] { obj as Component};
+                    }
 
                     GenericMenu menu = new GenericMenu();
 
@@ -193,7 +185,7 @@ namespace Z.UI
                     {
                         menu.AddItem(new GUIContent(comp.GetType().Name), false, () => {
                             item.component = comp;
-                            item.name = $"{comp.name}_{comp.GetType().Name}";
+                            item.name = $"{comp.name.Replace(' ','_')}_{comp.GetType().Name}";
                         });
                     }
 
