@@ -1,4 +1,3 @@
-using Greet;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -26,12 +25,6 @@ public class DelayAction : MonoBehaviour
         DontDestroyOnLoad(this.gameObject);
     }
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
     // Update is called once per frame
     void Update()
     {
@@ -42,7 +35,7 @@ public class DelayAction : MonoBehaviour
             if (data.time <= 0)
             {
                 data.action?.Invoke();
-                m_vActions.Remove(data);
+                m_vActions.RemoveAt(i);
             }
             else
             {

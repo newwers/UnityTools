@@ -1,11 +1,10 @@
 /********************************************************************
 生成日期:	1:11:2020 10:06
 类    名: 	UIUtil
-作    者:	HappLI
+作    者:	zdq
 描    述:	UI 通用方法
 *********************************************************************/
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -234,7 +233,26 @@ namespace Z.UI
             //}
 
             return count > 0;
-        }//------------------------------------------------------
+        }
+        //------------------------------------------------------
+        // 检查指针是否在UI元素上
+        public static bool IsPointerOverUI()
+        {
+            // 通过EventSystem获取当前指针下的事件目标
+            PointerEventData pointerEventData = new PointerEventData(EventSystem.current);
+            pointerEventData.position = Input.mousePosition;
+
+            // 模拟一个列表来存储RaycastResult
+            List<RaycastResult> results = new List<RaycastResult>();
+
+            // 执行UI射线检测
+            EventSystem.current.RaycastAll(pointerEventData, results);
+
+            // 如果结果列表不为空，则表示指针在UI元素上
+            return results.Count > 0;
+        }
+
+        //------------------------------------------------------
         public static void RebuildLayout(RectTransform transform)
         {
             LayoutRebuilder.ForceRebuildLayoutImmediate(transform);
