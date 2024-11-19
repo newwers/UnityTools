@@ -1,21 +1,21 @@
-/*
+ï»¿/*
  StreamingAssets
- »á½«ÀïÃæÎÄ¼ş¸´ÖÆµ½´ò°üÓ¦ÓÃÏÂ,µ«ÊÇÔÚ°²×¿Æ½Ì¨ÖĞ,Ö»ÄÜ¶Á,²»ÄÜĞ´
+ ä¼šå°†é‡Œé¢æ–‡ä»¶å¤åˆ¶åˆ°æ‰“åŒ…åº”ç”¨ä¸‹,ä½†æ˜¯åœ¨å®‰å“å¹³å°ä¸­,åªèƒ½è¯»,ä¸èƒ½å†™
 
 persistentDataPath
-ÔÚ°²×¿Æ½Ì¨ÉÏ£¬persistentDataPathÄ¬ÈÏÖ¸ÏòÓ¦ÓÃµÄÄÚ²¿´æ´¢Ä¿Â¼£¬Í¨³£ÊÇ/data/data/your.package.name/files¡£
-¿É¶Á¿ÉĞ´,Í¨³£´æ·ÅÅäÖÃÎÄ¼ş¼Ğ,ab×ÊÔ´,ÏÂÔØµÄÈÈ¸üĞÂ×ÊÔ´
+åœ¨å®‰å“å¹³å°ä¸Šï¼ŒpersistentDataPathé»˜è®¤æŒ‡å‘åº”ç”¨çš„å†…éƒ¨å­˜å‚¨ç›®å½•ï¼Œé€šå¸¸æ˜¯/data/data/your.package.name/filesã€‚
+å¯è¯»å¯å†™,é€šå¸¸å­˜æ”¾é…ç½®æ–‡ä»¶å¤¹,abèµ„æº,ä¸‹è½½çš„çƒ­æ›´æ–°èµ„æº
 
 PlayerPrefs
-pcÉÏ´¢´æÔÚ×¢²á±íÖĞ
-ÔÚ°²×¿Æ½Ì¨ÉÏ£¬PlayerPrefs½«Êı¾İ´æ´¢ÔÚ AndroidµÄSharedPreferencesÖĞ¡£
+pcä¸Šå‚¨å­˜åœ¨æ³¨å†Œè¡¨ä¸­
+åœ¨å®‰å“å¹³å°ä¸Šï¼ŒPlayerPrefså°†æ•°æ®å­˜å‚¨åœ¨ Androidçš„SharedPreferencesä¸­ã€‚
 
 
-Èç¹ûÊÇÎ¢ĞÅĞ¡ÓÎÏ·,ĞèÒªÊ¹ÓÃÎ¢ĞÅ¹Ù·½Ìá¹©µÄ PlayerPrefs ½øĞĞ´¢´æ
- ÔÚÎ¢ĞÅĞ¡ÓÎÏ·ÖĞ£¬PlayerPrefs¿ÉÄÜ²»ÊÇ×î¼ÑÑ¡Ôñ£¬ÒòÎªWebGLÆ½Ì¨ÏŞÖÆ£¬Ê¹ÓÃApplication.persistentDataPath»º´æÂ·¾¶À´±£´æÎÄ¼ş¿ÉÄÜ»áÊ§°Ü¡£
-Ò»ÖÖ¼òµ¥µÄ·½Ê½ÊÇÊ¹ÓÃPlayerPrefsÀ´´æ´¢ÄÚÈİ£¬µ«´æÔÚ¶ÁÈ¡ËÙ¶ÈÂıµÄÎÊÌâ¡£Î¢ĞÅĞ¡ÓÎÏ·Ìá¹©ÁË²å¼şÀ´ÓÅ»¯PlayerPrefsµÄÊ¹ÓÃ
+å¦‚æœæ˜¯å¾®ä¿¡å°æ¸¸æˆ,éœ€è¦ä½¿ç”¨å¾®ä¿¡å®˜æ–¹æä¾›çš„ PlayerPrefs è¿›è¡Œå‚¨å­˜
+ åœ¨å¾®ä¿¡å°æ¸¸æˆä¸­ï¼ŒPlayerPrefså¯èƒ½ä¸æ˜¯æœ€ä½³é€‰æ‹©ï¼Œå› ä¸ºWebGLå¹³å°é™åˆ¶ï¼Œä½¿ç”¨Application.persistentDataPathç¼“å­˜è·¯å¾„æ¥ä¿å­˜æ–‡ä»¶å¯èƒ½ä¼šå¤±è´¥ã€‚
+ä¸€ç§ç®€å•çš„æ–¹å¼æ˜¯ä½¿ç”¨PlayerPrefsæ¥å­˜å‚¨å†…å®¹ï¼Œä½†å­˜åœ¨è¯»å–é€Ÿåº¦æ…¢çš„é—®é¢˜ã€‚å¾®ä¿¡å°æ¸¸æˆæä¾›äº†æ’ä»¶æ¥ä¼˜åŒ–PlayerPrefsçš„ä½¿ç”¨
 
-persistentDataPathµÄÌæ´ú·½°¸ÊÇÊ¹ÓÃWX.env.USER_DATA_PATH
+persistentDataPathçš„æ›¿ä»£æ–¹æ¡ˆæ˜¯ä½¿ç”¨WX.env.USER_DATA_PATH
 
  */
 
@@ -24,7 +24,7 @@ using System.Text;
 using UnityEngine;
 
 /// <summary>
-/// ´¢´æÏµÍ³,¹ÜÀí streamingAssetsPath,persistentDataPath,PlayerPrefsµÄ´æ´¢ºÍ¶ÁÈ¡
+/// å‚¨å­˜ç³»ç»Ÿ,ç®¡ç† streamingAssetsPath,persistentDataPath,PlayerPrefsçš„å­˜å‚¨å’Œè¯»å–
 /// 
 /// </summary>
 public static class StorageSystem 
@@ -56,6 +56,7 @@ public static class StorageSystem
     public static string LoadStringFromStreamingAssets(string filename)
     {
         string path = Path.Combine(Application.streamingAssetsPath, filename);
+        Debug.Log("LoadStringFromStreamingAssets path:" + path + "  ,  Exists:" + File.Exists(path));
         if (File.Exists(path))
         {
             return File.ReadAllText(path, Encoding.UTF8);
@@ -98,5 +99,22 @@ public static class StorageSystem
     public static T JsonToObject<T>(string json)
     {
         return JsonUtility.FromJson<T>(json);
+    }
+
+    public static void SaveStringToResources(string data, string fileName)
+    {
+        string path = Path.Combine(Application.dataPath + "/Resources/", fileName);
+        File.WriteAllText(path, data, Encoding.UTF8);
+    }
+
+    public static string LoadStringFromResources(string fileName)
+    {
+        TextAsset textAsset = Resources.Load<TextAsset>(fileName);
+        if (textAsset)
+        {
+            return textAsset.text;
+        }
+
+        return null;
     }
 }
