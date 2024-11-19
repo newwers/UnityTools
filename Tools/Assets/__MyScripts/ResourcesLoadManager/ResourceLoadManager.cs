@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using UnityEngine;
+﻿using UnityEngine;
 # if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -46,6 +41,16 @@ public class ResourceLoadManager : BaseMonoSingleClass<ResourceLoadManager> {
         {
             AssetBundleManager.Instance.Init();
         }
+    }
+    /// <summary>
+    /// 从Resources文件夹下加载 例如 Csv/DataConfig 不需要后缀
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="path"></param>
+    /// <returns></returns>
+    public T ResourceLoad<T>(string path) where T : UnityEngine.Object
+    {
+        return Resources.Load<T>(path);
     }
 
     /// <summary>

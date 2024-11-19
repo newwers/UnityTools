@@ -93,6 +93,7 @@ namespace Z.Data
         void BuilderAutoCode(string name, List<SingleField> fields)
         {
             AddString("using System.Collections.Generic;");
+            AddString("using UnityEngine;");
             AddString("namespace Z.Data");
             AddString("{");
 
@@ -254,7 +255,7 @@ namespace Z.Data
                     {
                         if (i < fields.Count)
                         {
-                            fields[i].name = cells[i];
+                            fields[i].name = cells[i].Trim();
                         }
                     }
                     break;
@@ -263,7 +264,7 @@ namespace Z.Data
                     {
                         if (i < fields.Count)
                         {
-                            fields[i].type = cells[i];
+                            fields[i].type = cells[i].Trim();
                         }
                     }
                     break;
@@ -272,7 +273,7 @@ namespace Z.Data
                     {
                         if (i < fields.Count)
                         {
-                            fields[i].special = cells[i];
+                            fields[i].special = cells[i].Trim();
                         }
                     }
                     break;
@@ -281,7 +282,7 @@ namespace Z.Data
                     {
                         if (i < fields.Count)
                         {
-                            fields[i].field = cells[i];
+                            fields[i].field = cells[i].Trim();
                         }
                     }
                     break;

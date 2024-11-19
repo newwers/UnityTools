@@ -55,9 +55,24 @@ namespace Z.Data
                     m_nLoadCnt++;
                 }
             }
+#else
+            //这边需要接入资源加载模块,否则打包后,找不到配置文件
+            var cfg = ResourceLoadManager.Instance.ResourceLoad<DataConfig>(dataFile);
+            if (cfg != null && cfg.vConfigs != null)
+            {
+                m_nTotalCnt = cfg.vConfigs.Count;
+                m_nLoadCnt = 0;
+                CsvParser csvParser = new CsvParser();
+                for (int i = 0; i < cfg.vConfigs.Count; i++)
+                {
+                    var data = Parser(csvParser, cfg.vConfigs[i]);
+                    m_vDatas.Add(cfg.vConfigs[i].guid, data);
+                    m_nLoadCnt++;
+                }
+            }
 #endif
 
-            //todo:这边需要接入资源加载模块,否则打包后,找不到配置文件
+
 
             //更新加载数量
 
