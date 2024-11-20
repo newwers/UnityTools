@@ -19,7 +19,20 @@ namespace Z.Data
 
             public T Parse<T>()
             {
+                
                 var type = typeof(T);
+                if (type == typeof(UnityEngine.Vector2))
+                {
+                    return (T)(object)Vector2();//这边处理 vector类型转换
+                }
+                if (type == typeof(UnityEngine.Vector3))
+                {
+                    return (T)(object)Vector3();
+                }
+                if (type == typeof(UnityEngine.Vector4))
+                {
+                    return (T)(object)Vector4();
+                }
                 //UnityEngine.Debug.Log($"type:{type},name:{type.Name}");
                 if (string.IsNullOrWhiteSpace(m_Content))//没填,默认值设置
                 {
@@ -59,6 +72,79 @@ namespace Z.Data
                     return value;
                 }
                 return 0;
+            }
+
+            public UnityEngine.Vector4 Vector4()
+            {
+                var array = m_Content.Trim('\"').Split(',');//去掉前后"号,按照,号划分
+                float x = 0;
+                if (array.Length > 0)
+                {
+                    x = float.Parse(array[0]);
+                }
+                float y = 0;
+                if (array.Length > 1)
+                {
+                    y = float.Parse(array[1]);
+                }
+
+                float z = 0;
+                if (array.Length > 2)
+                {
+                    z = float.Parse(array[2]);
+                }
+
+                float w = 0;
+                if (array.Length > 3)
+                {
+                    w = float.Parse(array[3]);
+                }
+
+
+                return new UnityEngine.Vector4(x, y, z,w);
+            }
+
+            public UnityEngine.Vector3 Vector3()
+            {
+                var array = m_Content.Trim('\"').Split(',');
+                float x = 0;
+                if (array.Length > 0)
+                {
+                    x = float.Parse(array[0]);
+                }
+                float y = 0;
+                if (array.Length > 1)
+                {
+                    y =float.Parse(array[1]);
+                }
+
+                float z = 0;
+                if (array.Length > 2)
+                {
+                    z = float.Parse(array[2]);
+                }
+
+
+                return new UnityEngine.Vector3(x,y,z);
+            }
+
+            public UnityEngine.Vector2 Vector2()
+            {
+                var array = m_Content.Trim('\"').Split(',');
+                float x = 0;
+                if (array.Length > 0)
+                {
+                    x = float.Parse(array[0]);
+                }
+                float y = 0;
+                if (array.Length > 1)
+                {
+                    y = float.Parse(array[1]);
+                }
+
+
+
+                return new UnityEngine.Vector2(x, y);
             }
         }
         public class Row
@@ -130,7 +216,7 @@ namespace Z.Data
             m_vRows.Clear();
 
             //解析内容
-            var rows = CsvParser.SplitData(m_Content, '\n');
+            var rows = CsvParser.SplitData(m_Content.Replace("\r\n", "\n"), '\n');//将csv文本切分为行,并且替换掉\r\n,按照\n进行换行判断
             var fieldRow = rows[m_nTitleLine-1].Split(',');
 
             //获取每一行数据
