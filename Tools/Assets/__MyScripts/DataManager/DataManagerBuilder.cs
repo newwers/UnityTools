@@ -110,7 +110,7 @@ namespace Z.Data
                 var cfg = m_Configs.vConfigs[i];
                 string cfgName = cfg.data.name.First().ToString().ToUpper() + cfg.data.name.Substring(1);
 
-                AddString($"case {cfg.guid}:");
+                AddString($"case \"{cfg.guid}\":");
                 AddString("{");
                 m_nTabNum++;
 

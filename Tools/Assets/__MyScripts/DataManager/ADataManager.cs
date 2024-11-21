@@ -28,7 +28,7 @@ namespace Z.Data
 
         protected int m_nTotalCnt = 0;
 
-        private Dictionary<int, ConfigDataBase> m_vDatas = new Dictionary<int, ConfigDataBase>();
+        private Dictionary<string, ConfigDataBase> m_vDatas = new Dictionary<string, ConfigDataBase>();
 
         public ADataManager()
         {
@@ -42,7 +42,7 @@ namespace Z.Data
 
 #if UNITY_EDITOR
             //先使用编辑器模式加载
-            var cfg = UnityEditor.AssetDatabase.LoadAssetAtPath<DataConfig>(dataFile);
+            var cfg = ResourceLoadManager.Instance.ResourceLoad<DataConfig>(dataFile);
             if (cfg != null && cfg.vConfigs != null)
             {
                 m_nTotalCnt = cfg.vConfigs.Count;

@@ -14,7 +14,7 @@ namespace Z.Data
         [Serializable]
         public class DataInfo
         {
-            public int guid;
+            public string guid;
             public string filePath;
             public TextAsset data;
         }
@@ -22,6 +22,7 @@ namespace Z.Data
         [NonReorderable]
         public List<DataInfo> vConfigs = new List<DataInfo>();
 
+        [SerializeField]
         private string m_BuildFilePath;
         public string BuildFilePath
         {
@@ -42,7 +43,7 @@ namespace Z.Data
             {
                 var cfg = vConfigs[i];
                 cfg.filePath = AssetDatabase.GetAssetPath(cfg.data);
-                cfg.guid = cfg.data.GetInstanceID();
+                cfg.guid = AssetDatabase.AssetPathToGUID(cfg.filePath);
             }
             EditorUtility.SetDirty(this);
         }
@@ -113,6 +114,12 @@ namespace Z.Data
                 }
                 BuilderManager(config);
             }
+
+            if (GUILayout.Button("刷新"))
+            {
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
             if (GUILayout.Button("测试"))
             {
                 var filePath = AssetDatabase.GetAssetPath(m_Target);
@@ -124,8 +131,8 @@ namespace Z.Data
                 //打印数据
 
                 DataManager.Instance.Init(filePath);
-                var datas = DataManager.Instance.Text.datas;
-                Debug.Log($"id:{datas[10001000].textCN}");
+                //var datas = DataManager.Instance.Text.datas;
+                //Debug.Log($"id:{datas[10001000].textCN}");
             }
 
             //if (GUILayout.Button("保存"))
