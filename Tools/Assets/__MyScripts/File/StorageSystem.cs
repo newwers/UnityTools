@@ -56,7 +56,6 @@ public static class StorageSystem
     public static string LoadStringFromStreamingAssets(string filename)
     {
         string path = Path.Combine(Application.streamingAssetsPath, filename);
-        Debug.Log("LoadStringFromStreamingAssets path:" + path + "  ,  Exists:" + File.Exists(path));
         if (File.Exists(path))
         {
             return File.ReadAllText(path, Encoding.UTF8);
@@ -89,6 +88,17 @@ public static class StorageSystem
     public static string LoadStringFromPlayerPrefs(string key)
     {
         return PlayerPrefs.GetString(key, string.Empty);
+    }
+
+    public static void SaveIntToPlayerPrefs(int data, string key)
+    {
+        PlayerPrefs.SetInt(key, data);
+        PlayerPrefs.Save();
+    }
+
+    public static int LoadIntFromPlayerPrefs(string key)
+    {
+        return PlayerPrefs.GetInt(key, 0);
     }
 
     public static string ObjectToJson(object obj)

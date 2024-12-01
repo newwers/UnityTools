@@ -72,11 +72,12 @@ namespace Z.Data
             //判断是否存在文件
             var filePath = Path.Combine(m_FilePath, "CsvData_" + fileName + ".cs");
             //var filePath = Path.Combine(Application.dataPath + "/DataManager/AutoCode/", fileName + ".cs");
+            Debug.Log("filePath:" + filePath);
             //没有则创建,
-            if (!Directory.Exists(filePath))
-            {
-                Directory.CreateDirectory(Application.dataPath + "/DataManager/AutoCode/");
-            }
+            //if (!Directory.Exists(filePath))
+            //{
+            //    //Directory.CreateDirectory(Application.dataPath + "/DataManager/AutoCode/");//如何修改创建文件夹
+            //}
             FileStream fs = File.OpenWrite(filePath);
 
 
@@ -183,6 +184,10 @@ namespace Z.Data
                 {
                     AddString($"data.{field.field} = csv[i][\"{field.field}\"].ParseArray<{field.type.Replace("[]","")}>();");
                 }
+                //else if (field.type.Contains("Vector3"))
+                //{
+                //    AddString($"data.{field.field} = csv[i][\"{field.field}\"].Parse<{field.type}>();");
+                //}
                 else
                 {
                     AddString($"data.{field.field} = csv[i][\"{field.field}\"].Parse<{field.type}>();");

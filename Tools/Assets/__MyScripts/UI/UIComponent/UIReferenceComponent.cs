@@ -62,6 +62,20 @@ namespace Z.UI
             return null;
         }
 
+        public GameObject GetUIGameObject(string name)
+        {
+            if (m_vUiReferences.Count == 0 && Datas.Count > 0)//未初始化判断,初始隐藏状态不执行awake函数
+            {
+                Awake();
+            }
+            if (m_vUiReferences.TryGetValue(name, out var value))
+            {
+                return value.component.gameObject;
+            }
+
+            return null;
+        }
+
     }
 
 #if UNITY_EDITOR
@@ -161,7 +175,7 @@ namespace Z.UI
 
             if (UnityEngine.Event.current.type == EventType.DragExited) // 只有在拖拽操作完成后才显示GenericMenu
             {
-                if (DragAndDrop.objectReferences.Length > 0)
+                if (DragAndDrop.objectReferences.Length > 0 && m_draggedSlotIndex >= 0 && m_draggedSlotIndex < m_ui.Datas.Count)
                 {
                     var item = m_ui.Datas[m_draggedSlotIndex];
 
