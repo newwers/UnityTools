@@ -111,7 +111,7 @@ namespace zdq
 
         private void LoadDatas()
         {
-            if (Tools.FileTool.FileTools.ExistFile(StatisticDataManager.SaveFilePath) == false)
+            if (Z.FileTool.FileTools.ExistFile(StatisticDataManager.SaveFilePath) == false)
             {
                 m_data = new StatisticDataManager.UnityStatisticsSaveData();
                 m_data.datas = new List<StatisticDataManager.UnityStatisticsData>();

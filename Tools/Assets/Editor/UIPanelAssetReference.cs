@@ -10,7 +10,7 @@ using System.IO;
 
 public class UIPanelAssetReference : EditorWindow
 {
-    [MenuItem("zdq/界面资源依赖查找工具(可以通过鼠标拖动窗体大小)")]
+    [MenuItem("zdq/界面资源依赖查找复制工具(在项目替换资源或者查找使用资源使用)]
     public static void ShowWindow2()
     {
         EditorWindow.GetWindow<UIPanelAssetReference>(false);

@@ -12,6 +12,7 @@ public class DelayAction : MonoBehaviour
         public string id;
         public float time;
         public Action action;
+        public bool IsUnscaledDeltaTime;
     }
 
     static DelayAction Instance;
@@ -40,10 +41,20 @@ public class DelayAction : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        //print("update Time.unscaledDeltaTime:" + Time.unscaledDeltaTime + ",Time.deltaTime:" + Time.deltaTime);
         for (int i = m_vActions.Count-1; i >=0; i--)
         {
             ActionData data = m_vActions[i];
-            data.time -= Time.unscaledDeltaTime;
+            if (data.IsUnscaledDeltaTime)
+            {
+                data.time -= Time.unscaledDeltaTime;//受到游戏后台暂停影响
+            }
+            else
+            {
+                data.time -= Time.deltaTime;//暂停后,时间计时也暂停
+            }
+            
+            
             if (data.time <= 0)
             {
                 data.action?.Invoke();
@@ -61,12 +72,13 @@ public class DelayAction : MonoBehaviour
         m_vActions.Clear();
     }
 
-    public static string AddAction(Action aciton,float time)
+    public static string AddAction(Action aciton,float time,bool isUnscaledDeltaTime = false)
     {
         ActionData data = new ActionData();
         data.id = Instance.ID.ToString();
         data.time = time;
         data.action = aciton;
+        data.IsUnscaledDeltaTime = isUnscaledDeltaTime;
         Instance.m_vActions.Add(data);
         return data.id;
     }
@@ -103,7 +115,7 @@ public class DelayAction : MonoBehaviour
     /// <param name="action"></param>
     /// <param name="time"></param>
     /// <returns></returns>
-    public static string AddUniqueAction(Action action, float time)
+    public static string AddUniqueAction(Action action, float time, bool isUnscaledDeltaTime = false)
     {
         // 获取当前方法的名称和类名
         // 获取调用者的类名和方法名
@@ -111,7 +123,7 @@ public class DelayAction : MonoBehaviour
         string callerMethodName = MethodBase.GetCurrentMethod().Name;
 
         string identifier = callerClassName + "." + callerMethodName;
-        print("AddUniqueAction: identifier:" + identifier);
+        //print("AddUniqueAction: identifier:" + identifier);
 
         // 移除已存在的相同标识符的延迟函数
         RemoveAction(identifier);
@@ -121,6 +133,7 @@ public class DelayAction : MonoBehaviour
         data.id = identifier;
         data.time = time;
         data.action = action;
+        data.IsUnscaledDeltaTime = isUnscaledDeltaTime;
         Instance.m_vActions.Add(data);
         return data.id;
     }

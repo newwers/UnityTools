@@ -1,0 +1,3 @@
+WX-WASM-SDK-V2\Runtime\wechat-default\open-data\index.js 开放域js入口,里面注释掉默认设置用户随机数据
+
+WX-WASM-SDK-V2\Runtime\wechat-default\open-data\render\tpls\ friendRank.js  里面控制排行榜显示html代码

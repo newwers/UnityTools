@@ -382,5 +382,14 @@ namespace Z.UI
                 return (T)formatter.Deserialize(stream);
             }
         }
+
+        public static float GetRatio(Vector2 size)
+        {
+            Vector2 OriginScreenSize = size;
+
+            float radio = (OriginScreenSize.x / OriginScreenSize.y) / (Screen.width / (float)Screen.height);
+            //Debug.Log("radio:" + radio);
+            return radio;
+        }
     }
 }

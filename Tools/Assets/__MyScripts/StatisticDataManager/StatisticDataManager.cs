@@ -128,11 +128,11 @@ namespace zdq
 
         public static string GetJsonData()
         {
-            if (Tools.FileTool.FileTools.ExistFile(SaveFilePath) == false)
+            if (Z.FileTool.FileTools.ExistFile(SaveFilePath) == false)
             {
                 return null;
             }
-            var json = Tools.FileTool.FileTools.ReadFile(SaveFilePath, System.Text.Encoding.UTF8);
+            var json = Z.FileTool.FileTools.ReadFile(SaveFilePath, System.Text.Encoding.UTF8);
             return json;
         }
 
@@ -155,8 +155,8 @@ namespace zdq
 
         public static void SaveData(string json)
         {
-            Tools.FileTool.FileTools.CreateDirectory(SaveFileRoot);
-            Tools.FileTool.FileTools.WriteFile(SaveFilePath, json, System.Text.Encoding.UTF8);
+            Z.FileTool.FileTools.CreateDirectory(SaveFileRoot);
+            Z.FileTool.FileTools.WriteFile(SaveFilePath, json, System.Text.Encoding.UTF8);
         }
 
         public static void SaveData(UnityStatisticsSaveData data)
