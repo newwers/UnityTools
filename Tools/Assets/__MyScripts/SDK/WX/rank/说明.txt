@@ -1,3 +1,10 @@
 WX-WASM-SDK-V2\Runtime\wechat-default\open-data\index.js 开放域js入口,里面注释掉默认设置用户随机数据
 
 WX-WASM-SDK-V2\Runtime\wechat-default\open-data\render\tpls\ friendRank.js  里面控制排行榜显示html代码
+
+build\minigame/game.js 里面新增了 wx.cloud.init({env:'pk-3glrvvjra6adb00d'})
+
+build\minigame/project.config.json   新增 "cloudfunctionRoot": "cloundfunctions/",
+"cloudfunctionTemplateRoot": "cloundfunctionTemplate/",
+
+build\minigame/cloundfunctions 里面是云函数文件夹里面有文件需要同步到微信云上
