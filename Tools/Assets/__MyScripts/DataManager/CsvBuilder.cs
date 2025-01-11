@@ -1,4 +1,16 @@
-﻿using System.Collections;
+﻿/*
+ 使用规则:
+csv 第一行 中文 name
+第二行 字段类型 type int int[] float vector2,3,4(这个类型是自己处理的,其他类型用Convert.ChangeType 进行转换)
+第三行 特殊字段 special ,预留扩展 目前有个 group字段
+第四行 字段名称 field 
+默认第一个字段作为id
+用Dictionary<id,value>进行储存,如果是group 那么格式为 Dictionary<id,List<value>>
+group类型可以存在同id,多数据格式
+其中value 是以 CsvData_csv名称 进行命名,作为一行csv数据格式
+ 
+ */
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,11 +19,8 @@ using UnityEngine;
 
 namespace Z.Data
 {
-
-
     public class CsvBuilder
     {
-
         class SingleField
         {
             public string name;
@@ -26,6 +35,7 @@ namespace Z.Data
         }
 
         const string tab = "\t";
+        const string specialField_group = "group";
 
         string m_Content;
         string m_FileName;
@@ -126,13 +136,31 @@ namespace Z.Data
 
             //生成配置类
             string key = fields[0].type;
+            string id = fields[0].field;
             string value = $"{name}Data";
+            bool isGroup = fields[0].special == specialField_group;//同组id
 
             //字典
-            AddString($"Dictionary<{key}, {value}> m_vData = new Dictionary<{key}, {value}>();");
+            if (isGroup)
+            {
+                AddString($"Dictionary<{key}, List<{value}>> m_vData = new Dictionary<{key}, List<{value}>>();");
+            }
+            else
+            {
+                AddString($"Dictionary<{key}, {value}> m_vData = new Dictionary<{key}, {value}>();");
+            }
+
 
             //获取总数据属性
-            AddString($"public Dictionary<{key}, {value}> datas");
+            if (isGroup)
+            {
+                AddString($"public Dictionary<{key}, List<{value}>> datas");
+            }
+            else
+            {
+                AddString($"public Dictionary<{key}, {value}> datas");
+            }
+
             AddString("{");
 
             m_nTabNum++;
@@ -142,11 +170,27 @@ namespace Z.Data
             AddString("}");
 
             //获取数据函数
-            AddString($"public {value} GetData({key} id)");
+            if (isGroup)
+            {
+                AddString($"public List<{value}> GetData({key} id)");
+            }
+            else
+            {
+                AddString($"public {value} GetData({key} id)");
+            }
+            
             AddString("{");
             m_nTabNum++;
 
-            AddString($"{value} data;");
+            if (isGroup)
+            {
+                AddString($"List<{value}> data;");
+            }
+            else
+            {
+                AddString($"{value} data;");
+            }
+            
             AddString("if(m_vData.TryGetValue(id, out data))");
             m_nTabNum++;
             AddString("return data;");
@@ -156,6 +200,7 @@ namespace Z.Data
 
             m_nTabNum--;
             AddString("}");
+
             //加载数据函数
             AddString($"public override bool LoadData(string strContext,CsvParser csv = null)");
             AddString("{");
@@ -194,7 +239,32 @@ namespace Z.Data
                 }
             }
 
-            AddString("m_vData.Add(data.id, data);");
+            //添加数据
+            if (isGroup)
+            {
+                AddString($"if (m_vData.TryGetValue(data.{id},out var list))");
+                AddString("{");
+                m_nTabNum++;
+
+                AddString("list.Add(data);");
+
+                m_nTabNum--;
+                AddString("}");
+
+                AddString("else");
+                AddString("{");
+                m_nTabNum++;
+
+                AddString($"m_vData[data.{id}] = new List<{value}> {{data}};");
+
+                m_nTabNum--;
+                AddString("}");
+            }
+            else
+            {
+                AddString($"m_vData.Add(data.{id}, data);");
+            }
+            
             AddString("OnAddData(data);");
 
             m_nTabNum--;
