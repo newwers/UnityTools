@@ -67,6 +67,10 @@ public class WXAdController : ISDK
 
         CreateInterstitialAd();//创建插屏广告.等待展示
         CreateRewardVideoAd();//创建激励视频广告.等待展示
+
+
+        //游戏圈按钮
+        CreateGameClub(SDKManager.Instance.GameClubBtnRectTransform);
     }
 
 
@@ -206,6 +210,8 @@ public class WXAdController : ISDK
 
     Action m_ShowRewardVideoAdSuccessAction;
     Action m_ShowRewardVideoAdFailedAction;
+    private WXGameClubButton GameClubButton;
+
     public void ShowRewardVideoAd(System.Action successAction, System.Action failedAction)
     {
         m_ShowRewardVideoAdSuccessAction = successAction;
@@ -485,6 +491,41 @@ public class WXAdController : ISDK
     public void HideOpenData()
     {
         WX.HideOpenData();//隐藏排行榜
+    }
+    /// <summary>
+    /// 游戏圈
+    /// </summary>
+    /// <param name="btnRectTransform">传入unity按钮RectTransform</param>
+    /// <param name="openlink">打开链接</param>
+    public void CreateGameClub(RectTransform btnRectTransform,string openlink=null)
+    {
+        WXCreateGameClubButtonParam param = new WXCreateGameClubButtonParam();
+        // param.type = GameClubButtonType.image;
+        // param.icon = GameClubButtonIcon.dark;
+        param.openlink = openlink;
+
+        param.type = GameClubButtonType.text;
+        param.text = "";
+        param.hasRedDot = false;
+
+        GameClubButtonStyle gameClubButtonStyle = new GameClubButtonStyle();
+        int posX = (int)(btnRectTransform.transform.position.x - btnRectTransform.rect.width / 2);
+        int posY = (int)(btnRectTransform.transform.position.y + btnRectTransform.rect.height / 2);
+        float hRadion = (float)WX.GetSystemInfoSync().screenHeight / Screen.height;
+        float wRadion = (float)WX.GetSystemInfoSync().screenWidth / Screen.width;
+        gameClubButtonStyle.left = (int)(posX * wRadion);
+        gameClubButtonStyle.top = (int)(WX.GetSystemInfoSync().screenHeight - posY * hRadion);
+        gameClubButtonStyle.width = (int)(btnRectTransform.rect.width * wRadion);
+        gameClubButtonStyle.height = (int)(btnRectTransform.rect.height * hRadion);
+        param.style = gameClubButtonStyle;
+        GameClubButton = WX.CreateGameClubButton(param);
+        GameClubButton.Show();
+        Debug.Log("OnCreateGameClub");
+    }
+
+    public void HideGameClub()
+    {
+        GameClubButton.Hide();
     }
 
 }

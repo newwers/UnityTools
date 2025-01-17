@@ -44,7 +44,23 @@ export default function anonymous(it) {
         const l1 = arr1.length - 1;
         while (index < l1) {
             item = arr1[(index += 1)];
-            out += ` <view class="listItem"> <image src="open-data/render/image/rankBg.png" class="rankBg"></image> <image class="rankAvatarBg" src="open-data/render/image/rankAvatar.png"></image> <image class="rankAvatar" src="${item.avatarUrl}"></image> <view class="rankNameView"> <image class="rankNameBg" src="open-data/render/image/nameBg.png"></image> <text class="rankName" value="${item.nickname}"></text> <text class="rankScoreTip" value="关卡数:"></text> <text class="rankScoreVal" value="${item.score || 0}"></text> </view> <view class="shareToBtn" data-isSelf="${!!item.isSelf}" data-id="${item.openid || ''}"> <image src="open-data/render/image/${item.isSelf ? 'button3' : 'button2'}.png" class="shareBtnBg"></image> <text class="shareText" value="${item.isSelf ? '你自己' : '分享'}"></text> </view> </view> `;
+            let bgImage;
+            if (item.isSelf) {
+                bgImage = 'rankBgSelf.png';
+            } else {
+                bgImage = (index + 1) % 2 === 0 ? 'rankBg2.png' : 'rankBg1.png';
+            }
+            // 检查当前索引是否属于前三名
+            let rankDisplay;
+            if (index < 3) {
+                // 前三名显示对应的图片
+                //rankDisplay = ` <image src="open-data/render/image/${index+1}.png" class="rankIcon"></image>`;
+                rankDisplay = `<text class="rankNum" value="${index+1}"></text>`;
+            } else {
+                // 其他名次显示数字
+                rankDisplay = `<text class="rankNum" value="${index+1}"></text>`;
+            }
+            out += ` <view class="listItem"> <image src="open-data/render/image/${bgImage}" class="rankBg"></image> <image class="rankAvatarBg" src="open-data/render/image/rankAvatar.png"></image> <image class="rankAvatar" src="${item.avatarUrl}"></image> <view class="rankNameView"> <image class="rankNameBg" src="open-data/render/image/nameBg.png"></image> <text class="rankName" value="${item.nickname}"></text> <text class="rankScoreTip" value="关卡数:"></text>${rankDisplay} <text class="rankScoreVal" value="${item.score || 0}"></text> </view>  </view> `;
         }
     }
     out += ' </scrollview> </view></view>';

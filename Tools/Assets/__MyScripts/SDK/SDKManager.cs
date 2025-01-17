@@ -90,12 +90,20 @@ namespace Z.SDK
     /// </summary>
     public class SDKManager : MonoBehaviour, ISDK
     {
+        [Header("banner广告")]
         public string BannerADID = "adunit-6169d57fcfe9fd13";
+        [Header("激励广告")]
         public string RewardedVideoADID = "adunit-507f956db4fdd2a1";
+        [Header("插屏广告")]
         public string InterstitialAdID = "adunit-77f22f8984aa19e2";//插屏广告
+        [Header("格子广告 原生1*1左")]
         public string CustomAdID1 = "adunit-7d240ca18682a11d";//格子广告 原生1*1左
+        [Header("格子广告 原生1*1右")]
         public string CustomAdID2 = "adunit-1a15f35f62100b06";//格子广告 原生1*1右
+        [Header("格子广告 原生1*5")]
         public string CustomAdID3 = "adunit-7682d9cd0694be14";//格子广告 原生1*5
+
+        public RectTransform GameClubBtnRectTransform;
 
         ISDK m_CurrentSDK;
 
