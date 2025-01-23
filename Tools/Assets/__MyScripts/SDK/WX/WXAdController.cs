@@ -33,6 +33,17 @@ public class WXAdController : ISDK
     public WXAdController()
     {
         WX.InitSDK(OnInitCallback);
+        if (SDKManager.Instance.ShareBtn)
+        {
+            SDKManager.Instance.ShareBtn.onClick.RemoveAllListeners();
+            SDKManager.Instance.ShareBtn.onClick.AddListener(OnShareBtnClick);
+        }
+        
+    }
+
+    private void OnShareBtnClick()
+    {
+        ShareDirect("好运消扑克");
     }
 
     private void OnInitCallback(int obj)
@@ -526,6 +537,69 @@ public class WXAdController : ISDK
     public void HideGameClub()
     {
         GameClubButton.Hide();
+    }
+    /// <summary>
+    /// 分享给好友
+    /// </summary>
+    /// <param name="title">分享标题</param>
+    public void ShareToFriend(string title, string imageUrl = null, string imageUrlId = null)
+    {
+        WXShareAppMessageParam param = new WXShareAppMessageParam();
+        param.imageUrl = imageUrl;//后台提交申请分享图片地址
+        param.imageUrlId = imageUrlId;//后台提交申请图片id
+        param.title = title;//分享标题
+        WX.OnShareAppMessage(param);
+    }
+
+    /// <summary>
+    /// 直接分享
+    /// </summary>
+    /// <param name="title"></param>
+    public void ShareDirect(string title, string imageUrl = null, string imageUrlId = null)
+    {
+        ShareAppMessageOption param = new ShareAppMessageOption();
+        param.imageUrl = imageUrl;//后台提交申请分享图片地址
+        param.imageUrlId = imageUrlId;//后台提交申请图片id
+        param.title = title;//分享标题
+        WX.ShareAppMessage(param);//imageUrl 和 imageUrlId 不填时,使用游戏画面进行分享
+    }
+    /// <summary>
+    /// 使用某张图片链接进分享
+    /// </summary>
+    /// <param name="imageUrl"></param>
+    public void SharePic(string imageUrl = null)
+    {
+        WX.DownloadFile(new DownloadFileOption()
+        {
+            url = imageUrl,
+            success = (res) =>
+            {
+                WX.ShowShareImageMenu(new ShowShareImageMenuOption()
+                {
+                    path = res.tempFilePath,
+                    needShowEntrance = true,
+                    success = (r) =>
+                    {
+                        Debug.Log("分享成功");
+                    },
+                    fail = (r) => {
+                        Debug.Log("分享失败");
+                    }
+                });
+
+            }
+        });
+    }
+
+    /// <summary>
+    /// 分享到朋友圈
+    /// 微信没有直接分享到朋友圈的接口,可以用右上角三个点进行分享
+    /// </summary>
+    /// <param name="title"></param>
+    [Obsolete("微信没有直接分享到朋友圈的接口,可以用右上角三个点进行分享")]
+    public void ShareToFriendClub(string title)
+    {
+        
     }
 
 }

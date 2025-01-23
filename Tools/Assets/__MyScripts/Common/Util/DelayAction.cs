@@ -44,6 +44,11 @@ public class DelayAction : MonoBehaviour
         //print("update Time.unscaledDeltaTime:" + Time.unscaledDeltaTime + ",Time.deltaTime:" + Time.deltaTime);
         for (int i = m_vActions.Count-1; i >=0; i--)
         {
+            if (i >= m_vActions.Count)
+            {
+                continue;//有可能一次性删除多个数据情况,需要判断
+            }
+            //UnityEngine.Debug.Log("index:" + i);
             ActionData data = m_vActions[i];
             if (data.IsUnscaledDeltaTime)
             {
@@ -57,8 +62,8 @@ public class DelayAction : MonoBehaviour
             
             if (data.time <= 0)
             {
-                data.action?.Invoke();
                 m_vActions.RemoveAt(i);
+                data.action?.Invoke();
             }
             else
             {

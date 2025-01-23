@@ -46,6 +46,9 @@ public class WXCloundFunc : MonoBehaviour
 
     public GlobalRankManager globalRankManager;
     public string testData;
+    private string m_RankResult;
+    private double m_Timer;
+    private const double RefreshRankTime = 60;//60秒刷新一次
 
     void Start()
     {
@@ -63,7 +66,18 @@ public class WXCloundFunc : MonoBehaviour
 
     public void ShowGlobalRank()
     {
-        CallGetUserData();
+        //一分钟刷新一次排行榜
+        if ((m_Timer + RefreshRankTime) > Time.realtimeSinceStartupAsDouble)
+        {
+            Debug.Log("请求排行榜数据");
+            CallGetUserData();
+            
+        }
+        else
+        {
+            Debug.Log("使用排行榜缓存数据");
+            ShowRankUI(m_RankResult);
+        }
     }
 
     void GetNameAndAvator(int curChapterIndex)
@@ -165,6 +179,8 @@ public class WXCloundFunc : MonoBehaviour
     private void OnCallGetUserInfoFuncSuccess(CallFunctionResult result)
     {
         print("OnCallGetUserInfoFuncSuccess:" + result.result);
+        m_RankResult = result.result;
+        m_Timer = Time.realtimeSinceStartupAsDouble;
         //获取到数据后,展示排行榜信息
         ShowRankUI(result.result);
     }
