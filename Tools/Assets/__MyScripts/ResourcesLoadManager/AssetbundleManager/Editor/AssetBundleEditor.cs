@@ -8,7 +8,6 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using System.IO;
-using LitJson;
 using Z.FileTool;
 
 namespace Z.Assets
@@ -409,7 +408,7 @@ namespace Z.Assets
                 return;
             }
             m_data.path = m_SelectABPath;
-            var json = JsonMapper.ToJson(m_data);
+            var json = JsonUtility.ToJson(m_data);
             FileTools.WriteFile(Application.dataPath + "/Editor/AssetBundleEditorData.json", json, System.Text.Encoding.UTF8);
             ShowNotification(new GUIContent("保存完成"));
         }
@@ -419,7 +418,7 @@ namespace Z.Assets
             var json = FileTools.ReadFile(Application.dataPath + "/Editor/AssetBundleEditorData.json", System.Text.Encoding.UTF8);
             if (json != null)
             {
-                m_data = JsonMapper.ToObject<AssetBundleEditorJson>(json);
+                m_data = JsonUtility.FromJson<AssetBundleEditorJson>(json);
                 ShowNotification(new GUIContent("加载完成"));
                 if (list_Files == null)
                 {

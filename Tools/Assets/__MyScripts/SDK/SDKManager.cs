@@ -5,6 +5,15 @@ using UnityEngine.UI;
 
 namespace Z.SDK
 {
+    public interface IGame
+    {
+        public void Init();
+        public void GameStart();
+        public void GamePause(bool pause);
+
+        public void GameEnd();
+    }
+
     public struct CustomStyle_Z
     {
         //
@@ -40,44 +49,41 @@ namespace Z.SDK
     }
 
 
-    public interface ISDKUI
+    public interface IRank
     {
 
-        public Button LoginButton
-        {
-            get;
-        }
 
-        public Button GetRankDataButton
-        {
-            get;
-        }
-
-        public Button SetRankDataButton
-        {
-            get;
-        }
+        public void SetRankData(int index);
+        public string GetRankData();
 
     }
 
     public interface IDY_SDK_UI
     {
-
+        /// <summary>
+        /// 侧边栏引导界面
+        /// </summary>
         public GameObject dySideBarGuidePanel
         {
             get;
         }
-
+        /// <summary>
+        /// 打开侧边栏引导界面按钮
+        /// </summary>
         public Button dySliderRewardButton
         {
             get;
         }
-
+        /// <summary>
+        /// 侧边栏引导界面奖励领取按钮
+        /// </summary>
         public Button dySliderRewardReceiveButton
         {
             get;
         }
-
+        /// <summary>
+        /// 侧边栏引导界面导航进入侧边栏按钮
+        /// </summary>
         public Button dySliderRewardNavigationButton
         {
             get;
@@ -88,25 +94,31 @@ namespace Z.SDK
     /// 提供sdk基础功能,不需要考虑sdk平台问题,由具体实现进行判断调用平台
     /// 
     /// </summary>
-    public class SDKManager : MonoBehaviour, ISDK
+    public class SDKManager : MonoBehaviour, ISDK, IGame
+#if USE_DY_SDK
+        , IDY_SDK_UI
+#endif
     {
-        [Header("banner广告")]
         public string BannerADID = "adunit-6169d57fcfe9fd13";
-        [Header("激励广告")]
         public string RewardedVideoADID = "adunit-507f956db4fdd2a1";
-        [Header("插屏广告")]
         public string InterstitialAdID = "adunit-77f22f8984aa19e2";//插屏广告
-        [Header("格子广告 原生1*1左")]
         public string CustomAdID1 = "adunit-7d240ca18682a11d";//格子广告 原生1*1左
-        [Header("格子广告 原生1*1右")]
         public string CustomAdID2 = "adunit-1a15f35f62100b06";//格子广告 原生1*1右
-        [Header("格子广告 原生1*5")]
         public string CustomAdID3 = "adunit-7682d9cd0694be14";//格子广告 原生1*5
-
-        public RectTransform GameClubBtnRectTransform;
 
         ISDK m_CurrentSDK;
 
+#if USE_WX_SDK
+        public RectTransform GameClubBtnRectTransform;
+#endif
+
+#if USE_DY_SDK
+        private DYSDKLogic m_DYSDKLogic;
+        public GameObject m_dySideBarGuidePanel;
+        public Button m_dySliderRewardButton;
+        public Button m_dySliderRewardReceiveButton;
+        public Button m_dySliderRewardNavigationButton;
+#endif
 
         public ISDK CurSDK
         {
@@ -116,7 +128,26 @@ namespace Z.SDK
             }
         }
         public static SDKManager Instance { set; get; }
-        
+
+        public GameObject dySideBarGuidePanel
+        {
+            get
+            {
+                return m_dySideBarGuidePanel;
+            }
+        }
+
+        public Button dySliderRewardButton
+        {
+            get
+            {
+                return m_dySliderRewardButton;
+            }
+        }
+
+        public Button dySliderRewardReceiveButton => m_dySliderRewardReceiveButton;
+
+        public Button dySliderRewardNavigationButton => m_dySliderRewardNavigationButton;
 
         private void Awake()
         {
@@ -153,10 +184,11 @@ namespace Z.SDK
             //根据宏确定使用平台
 #if USE_DY_SDK
         m_CurrentSDK = new DYSDKController();
+            Init();
 #else
             m_CurrentSDK = new WXAdController();
 #endif
-            
+
         }
 
 
@@ -241,6 +273,38 @@ namespace Z.SDK
         public void GetRankData()
         {
             
+        }
+
+        public void Init()
+        {
+            m_DYSDKLogic = new DYSDKLogic();
+            {
+                m_DYSDKLogic.Awake(this);
+            }
+        }
+
+        public void GameStart()
+        {
+            if (m_DYSDKLogic != null)
+            {
+                m_DYSDKLogic.OnGameStart();
+            }
+        }
+
+        public void GamePause(bool pause)
+        {
+            if (m_DYSDKLogic != null)
+            {
+                m_DYSDKLogic.GamePause(pause);
+            }
+        }
+
+        public void GameEnd()
+        {
+            if (m_DYSDKLogic != null)
+            {
+                m_DYSDKLogic.OnGameEnd();
+            }
         }
 
 

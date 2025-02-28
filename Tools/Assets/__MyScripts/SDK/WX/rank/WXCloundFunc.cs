@@ -17,7 +17,7 @@ public class WXCloundFunc : MonoBehaviour
         public string nickName;
         public int weekTime;
         public float level;
-        //public string province;//测试省份
+        //public string province;//虏芒脢脭脢隆路脻
     }
 
     public Button btn;
@@ -27,7 +27,7 @@ public class WXCloundFunc : MonoBehaviour
         public int level;
     }
 
-    #region 服务器返回数据
+    #region 路镁脦帽脝梅路碌禄脴脢媒戮脻
     [Serializable]
     public class ServerData
     {
@@ -45,10 +45,10 @@ public class WXCloundFunc : MonoBehaviour
     #endregion
 
     public GlobalRankManager globalRankManager;
-    public string testData;
+    public string testData= "{\"code\":1,\"data\":[{\"_id\":\"a00247e96773fa69009cc03a78144c7a\",\"openid\":\"oa03u64dE56wRZawxsTvc9DL8G2k\",\"gamedata\":{\"avatarUrl\":\"娴嬭瘯澶村儚鍦板潃3\",\"nickName\":\"娴嬭瘯鐢ㄦ埛鍚嶅瓧3\",\"userInfo\":{\"appId\":\"wx31ea30b346ccda2b\",\"openId\":\"oa03u64dE56wRZawxsTvc9DL8G2k\"},\"weekTime\":1,\"level\":220}},{\"_id\":\"a00247e96773fa69009cc03a78144c6a\",\"openid\":\"oa03u64dE56wRZawxsTvc9DL8G1k\",\"gamedata\":{\"avatarUrl\":\"娴嬭瘯澶村儚鍦板潃2\",\"nickName\":\"娴嬭瘯鐢ㄦ埛鍚嶅瓧2\",\"userInfo\":{\"appId\":\"wx31ea30b346ccda1b\",\"openId\":\"oa03u64dE56wRZawxsTvc9DL8G1k\"},\"weekTime\":1,\"level\":110}},{\"_id\":\"a00247e96773fa69009cc03a78144c5a\",\"openid\":\"oa03u64dE56wRZawxsTvc9DL8GOk\",\"gamedata\":{\"avatarUrl\":\"https://thirdwx.qlogo.cn/mmopen/vi_32/PiajxSqBRaEKeoDznpVpMF1iaXpru8QV4ickKVxzWqesQouW7VDB8FEu3kK7e3tmHXL5LyOEpKQUQibuibGxeWDiaCFvk59ias27k1ic6gbOL0S1ZdP3ian0RnrTnqQ/132\",\"nickName\":\"鍊熺偣鏃堕棿\",\"userInfo\":{\"appId\":\"wx31ea30b346ccda0b\",\"openId\":\"oa03u64dE56wRZawxsTvc9DL8GOk\"},\"weekTime\":1,\"level\":3,\"time\":0}}]}";
     private string m_RankResult;
     private double m_Timer;
-    private const double RefreshRankTime = 60;//60秒刷新一次
+    private const double RefreshRankTime = 60;//60脙毛脣垄脨脗脪禄麓脦
 
     void Start()
     {
@@ -66,16 +66,16 @@ public class WXCloundFunc : MonoBehaviour
 
     public void ShowGlobalRank()
     {
-        //一分钟刷新一次排行榜
+        //脪禄路脰脰脫脣垄脨脗脪禄麓脦脜脜脨脨掳帽
         if ((m_Timer + RefreshRankTime) > Time.realtimeSinceStartupAsDouble)
         {
-            Debug.Log("请求排行榜数据");
+            Debug.Log("脟毛脟贸脜脜脨脨掳帽脢媒戮脻");
             CallGetUserData();
             
         }
         else
         {
-            Debug.Log("使用排行榜缓存数据");
+            Debug.Log("脢鹿脫脙脜脜脨脨掳帽禄潞麓忙脢媒戮脻");
             ShowRankUI(m_RankResult);
         }
     }
@@ -86,9 +86,9 @@ public class WXCloundFunc : MonoBehaviour
         {
             success = (result) =>
             {
-                if (result.authSetting.ContainsKey("scope.userInfo") && result.authSetting["scope.userInfo"])//如果授权,可以直接获取
+                if (result.authSetting.ContainsKey("scope.userInfo") && result.authSetting["scope.userInfo"])//脠莽鹿没脢脷脠篓,驴脡脪脭脰卤陆脫禄帽脠隆
                 {
-                    print("GetUserInfo 有授权");
+                    print("GetUserInfo 脫脨脢脷脠篓");
                     WX.GetUserInfo(new GetUserInfoOption
                     {
                         success = (res) =>
@@ -97,10 +97,10 @@ public class WXCloundFunc : MonoBehaviour
                         }
                     });
                 }
-                else//没有授权需要手动授权
+                else//脙禄脫脨脢脷脠篓脨猫脪陋脢脰露炉脢脷脠篓
                 {
-                    //todo:生成按钮让玩家点击?
-                    print("GetUserInfo 没有授权");
+                    //todo:脡煤鲁脡掳麓脜楼脠脙脥忙录脪碌茫禄梅?
+                    print("GetUserInfo 脙禄脫脨脢脷脠篓");
                     var rect = btn.transform as RectTransform;
                     var wxBtn = WX.CreateUserInfoButton((int)btn.transform.position.x,Screen.height - (int)btn.transform.position.y,
                         (int)rect.rect.width,(int)rect.rect.height,"zh_CN",false);
@@ -127,7 +127,7 @@ public class WXCloundFunc : MonoBehaviour
             level = level,
             nickName = name,
             avatarUrl = avatar,
-            //province = "测试省份",
+            //province = "虏芒脢脭脢隆路脻",
             weekTime = 1
         };
         CallSetUserData(data);
@@ -181,7 +181,7 @@ public class WXCloundFunc : MonoBehaviour
         print("OnCallGetUserInfoFuncSuccess:" + result.result);
         m_RankResult = result.result;
         m_Timer = Time.realtimeSinceStartupAsDouble;
-        //获取到数据后,展示排行榜信息
+        //禄帽脠隆碌陆脢媒戮脻潞贸,脮鹿脢戮脜脜脨脨掳帽脨脜脧垄
         ShowRankUI(result.result);
     }
 
@@ -190,11 +190,11 @@ public class WXCloundFunc : MonoBehaviour
         var response = LoadData(result);
         if (response == null)
         {
-            print("服务器数据不对!,不能加载全国排行榜");
+            print("路镁脦帽脝梅脢媒戮脻虏禄露脭!,虏禄脛脺录脫脭脴脠芦鹿煤脜脜脨脨掳帽");
             return ;
         }
 
-        //将排行榜名称和头像,关卡加载到UI
+        //陆芦脜脜脨脨掳帽脙没鲁脝潞脥脥路脧帽,鹿脴驴篓录脫脭脴碌陆UI
         globalRankManager.ShowRank(response.data);
     }
 

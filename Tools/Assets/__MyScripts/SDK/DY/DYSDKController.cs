@@ -1,14 +1,14 @@
-﻿#if USE_DY_SDK
+#if USE_DY_SDK
 
-using StarkSDKSpace;
-using StarkSDKSpace.UNBridgeLib.LitJson;
+using TTSDK.UNBridgeLib.LitJson;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Z.SDK;
-using static StarkSDKSpace.StarkAccount;
-using static StarkSDKSpace.StarkAppLifeCycle;
+using TTSDK;
+using static TTSDK.TTAccount;
+using static TTSDK.TTAppLifeCycle;
 
 public class DYSDKController : ISDK
 {
@@ -16,8 +16,8 @@ public class DYSDKController : ISDK
     public Action<bool> RefreshGuidePanelAction;
 
 
-    private StarkAdManager.BannerAd m_BannerAD;
-    private StarkAdManager.InterstitialAd m_InterstitialAD;
+    private TTBannerAd m_BannerAD;
+    private TTInterstitialAd m_InterstitialAD;
 
     /// <summary>
     /// 录屏时,是否录制音频
@@ -34,10 +34,10 @@ public class DYSDKController : ISDK
     public void SwithMockModule()
     {
         //开启关注抖音号API的MOCK
-        StarkSDKSpace.MockSetting.SwithMockModule(StarkSDKSpace.MockModule.FollowDouyin, true);
+        TTSDK.MockSetting.SwithMockModule(TTSDK.MockModule.FollowDouyin, true);
 
         //调用API时会弹出调试框
-        StarkSDK.API.FollowDouYinUserProfile(null, null);//Editor下,测试关注抖音号api
+        TT.OpenAwemeUserProfile(null, null);//Editor下,测试关注抖音号api
     }
 
     #endregion
@@ -52,7 +52,7 @@ public class DYSDKController : ISDK
     /// <param name="failedCallback">用户实名认证失败</param>
     public void AuthenticateRealName(OnAuthenticateRealNameSuccessCallback successCallback, OnAuthenticateRealNameFailedCallback failedCallback)
     {
-        StarkSDK.API.GetAccountManager().AuthenticateRealName(successCallback, failedCallback);
+        TT.AuthenticateRealName(successCallback, failedCallback);
     }
 
 
@@ -70,7 +70,7 @@ public class DYSDKController : ISDK
     /// <param name="onGetSettingFail"></param>
     public void GetSetting(OnGetSettingSuccess onGetSettingSuccess, OnGetSettingFail onGetSettingFail)
     {
-        StarkSDK.API.GetAccountManager().GetSetting(onGetSettingSuccess, onGetSettingFail);
+        TT.GetSetting(onGetSettingSuccess, onGetSettingFail);
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ public class DYSDKController : ISDK
     /// <param name="onOpenSettingFail"></param>
     public void OpenSetting(OnOpenSettingSuccess onOpenSettingSuccess, OnOpenSettingFail onOpenSettingFail)
     {
-        StarkSDK.API.GetAccountManager().OpenSetting(onOpenSettingSuccess,onOpenSettingFail);
+        TT.OpenSetting(onOpenSettingSuccess,onOpenSettingFail);
     }
 
     /// <summary>
@@ -92,7 +92,7 @@ public class DYSDKController : ISDK
     /// <param name="scopes"></param>
     /// <param name="successCallback"></param>
     /// <param name="failedCallback"></param>
-    public void ShowDouyinOpenAuth(Dictionary<string, DouyinPermissionScopeStatus> scopes, OnShowDouyinOpenAuthSuccessCallback successCallback, OnShowDouyinOpenAuthFailedCallback failedCallback)
+    public void ShowDouyinOpenAuth(Dictionary<string, TTSDK.DouyinPermissionScopeStatus> scopes, TTAccount.OnShowDouyinOpenAuthSuccessCallback successCallback, TTAccount.OnShowDouyinOpenAuthFailedCallback failedCallback)
     {
         /*
          
@@ -103,7 +103,7 @@ public class DYSDKController : ISDK
         },
          
          */
-        StarkSDK.API.GetAccountManager().ShowDouyinOpenAuth(scopes,successCallback,failedCallback);
+        TT.ShowDouyinOpenAuth(scopes,successCallback,failedCallback);
     }
 
     #endregion
@@ -119,7 +119,7 @@ public class DYSDKController : ISDK
     /// <param name="error"></param>
     public void CheckScene(Action<bool> success, Action complete, Action<int, string> error)
     {
-        StarkSDK.API.GetStarkSideBarManager().CheckScene( StarkSideBar.SceneEnum.SideBar,success,complete,error);
+        TT.CheckScene( TTSideBar.SceneEnum.SideBar,success,complete,error);
     }
 
     /// <summary>
@@ -132,7 +132,9 @@ public class DYSDKController : ISDK
     /// <param name="error"></param>
     public void NavigateToSideBarScene(Action success, Action complete, Action<int, string> error)
     {
-        StarkSDK.API.GetStarkSideBarManager().NavigateToScene(StarkSideBar.SceneEnum.SideBar, success, complete, error);
+        JsonData json = new JsonData();
+        json["scene"] = "sidebar";
+        TT.NavigateToScene(json, success, complete, error);
     }
 
     /// <summary>
@@ -142,7 +144,7 @@ public class DYSDKController : ISDK
     /// </summary>
     public void ListenerScene(OnShowEventWithDict action)
     {
-        StarkSDK.API.GetStarkAppLifeCycle().OnShowWithDict += action;
+        TT.GetAppLifeCycle().OnShow+= action;
     }
 
     private void OnShowOneParam(Dictionary<string, object> param)
@@ -161,8 +163,8 @@ public class DYSDKController : ISDK
 
         bool isLaunchFromSideBar = ((param.ContainsKey("launchFrom") && (string)param["launchFrom"] == "homepage"
              && param.ContainsKey("location") && (string)param["location"] == "sidebar_card")
-             || param.ContainsKey("scene") && (string)param["scene"] == "011004"
-             || param.ContainsKey("scene") && (string)param["scene"] == "021036");
+             || param.ContainsKey("scene") && (string)param["scene"] == "011004"//011004 我的 - 小程序列表 - 最近使用
+             || param.ContainsKey("scene") && (string)param["scene"] == "021036");//021036 抖音个人页我的小程序（个人简介下方）/ 抖音首页侧边栏
 
         if (isLaunchFromSideBar)
         {
@@ -189,8 +191,8 @@ public class DYSDKController : ISDK
     /// <returns></returns>
     public bool IsLaunchFromSlider()
     {
-        string launchForm = StarkSDK.s_ContainerEnv.GetLaunchFrom();
-        string location = StarkSDK.s_ContainerEnv.GetLocation();
+        string launchForm = TT.s_ContainerEnv.GetLaunchFrom();
+        string location = TT.s_ContainerEnv.GetLocation();
 
         Debug.Log($"launchForm:{launchForm},location:{location}");
 
@@ -207,7 +209,7 @@ public class DYSDKController : ISDK
     /// </summary>
     public void SetKeepScreenOn()
     {
-        StarkSDK.API.GetStarkScreenManager().SetKeepScreenOn(true, null, null);
+        TT.SetKeepScreenOn(true, null, null);
     }
 
     /// <summary>
@@ -217,7 +219,7 @@ public class DYSDKController : ISDK
     /// <param name="failCallback"></param>
     public void GetScreenBrightness(Action<double> successCallback,Action<string> failCallback)
     {
-        StarkSDK.API.GetStarkScreenManager().GetScreenBrightness(successCallback,failCallback);
+        TT.GetScreenBrightness(successCallback,failCallback);
     }
 
     /// <summary>
@@ -228,7 +230,7 @@ public class DYSDKController : ISDK
     /// <param name="failCallback"></param>
     public void SetScreenBrightness(float value,Action successCallback, Action<string> failCallback)
     {
-        StarkSDK.API.GetStarkScreenManager().SetScreenBrightness(value,successCallback, failCallback);
+        TT.SetScreenBrightness(value,successCallback, failCallback);
     }
 
     #endregion
@@ -256,12 +258,12 @@ public class DYSDKController : ISDK
         //json["extra"] = 0;
         //json["zoneId"] = 0;
 
-        StarkSDK.API.GetStarkRank().SetImRankDataV2(paramJson,callback);
+        TT.SetImRankData(paramJson,callback);
     }
 
     public void GetImRankListV2(JsonData paramJson, Action<bool, string> callback)
     {
-        StarkSDK.API.GetStarkRank().GetImRankListV2(paramJson,callback);
+        TT.GetImRankList(paramJson,callback);
     }
 
 
@@ -271,7 +273,7 @@ public class DYSDKController : ISDK
 
     public void Login(OnLoginSuccessCallback successCallback, OnLoginFailedCallback failedCallback, bool forceLogin = true)
     {
-        StarkSDK.API.GetAccountManager().Login(successCallback, failedCallback, forceLogin );
+        TT.Login(successCallback, failedCallback, forceLogin );
     }
 
     #endregion
@@ -284,12 +286,12 @@ public class DYSDKController : ISDK
     /// </summary>
     public void ShowShareMenu()
     {
-        StarkSDK.API.GetStarkShare().ShowShareMenu();
+        TT.ShowShareMenu();
     }
 
     public void HideShareMenu()
     {
-        StarkSDK.API.GetStarkShare().HideShareMenu();
+        TT.HideShareMenu();
     }
 
     /// <summary>
@@ -298,7 +300,7 @@ public class DYSDKController : ISDK
     /// <param name="videoId">抖音视频videoId，复制抖音视频链接到浏览器即可得到</param>
     public void NavigateToVideoView(string videoId)
     {
-        StarkSDK.API.NavigateToVideoView(videoId, JumpCallback);
+        TT.NavigateToVideoView(videoId, JumpCallback);
     }
 
     /// <summary>
@@ -311,63 +313,63 @@ public class DYSDKController : ISDK
     }
 
     /// <summary>
-    /// 注：如果只是视频分享，可以直接调用StarkSDK.API.GetStarkGameRecorder().ShareVideo、StarkSDK.API.GetStarkGameRecorder().ShareVideoWithTitleTopics接口。
-    /// 不需要调用StarkSDK.API.GetStarkShare()接口。
-    /// StarkSDK.API.GetStarkShare() 是一个通用的分享接口，它可以分享视频，也可以分享其它类型的内容，具体参考小程序开发文档，不过就需要自己封装Json参数。
+    /// 注：如果只是视频分享，可以直接调用TT.GetGameRecorder().ShareVideo、TT.GetGameRecorder().ShareVideoWithTitleTopics接口。
+    /// 不需要调用TT接口。
+    /// TT 是一个通用的分享接口，它可以分享视频，也可以分享其它类型的内容，具体参考小程序开发文档，不过就需要自己封装Json参数。
     /// </summary>
-    public StarkShare GetStarkShare()
-    {
-        return StarkSDK.API.GetStarkShare();
-    }
+    //public StarkShare GetStarkShare()
+    //{
+    //    return TT;
+    //}
 
     /// <summary>
     /// 
     /// </summary>
-    void ExampleShare()
-    {
-        /*//分享视频json数据格式
-         {
-            "channel": "video",
-            "title": "Some Title",
-            "extra": {
-                "videoPath": "/xxx/xxx.mp4",//OnRecordComplete拿到 录屏文件 所在路径
-                "videoTopics": ["Some Topic1", "Some Topic2"],
-                "hashtag_list": ["Some Topic1", "Some Topic2"],
-            }
-          }
+    //void ExampleShare()
+    //{
+    //    /*//分享视频json数据格式
+    //     {
+    //        "channel": "video",
+    //        "title": "Some Title",
+    //        "extra": {
+    //            "videoPath": "/xxx/xxx.mp4",//OnRecordComplete拿到 录屏文件 所在路径
+    //            "videoTopics": ["Some Topic1", "Some Topic2"],
+    //            "hashtag_list": ["Some Topic1", "Some Topic2"],
+    //        }
+    //      }
 
-         */
+    //     */
 
-        JsonData shareJson = new JsonData();
-        shareJson["channel"] = "video";
-        shareJson["title"] = "Some Title";
-        shareJson["extra"] = new JsonData();
-        shareJson["extra"]["videoPath"] = "/xxx/xxx.mp4";//OnRecordComplete拿到 录屏文件 所在路径
-        JsonData videoTopics = new JsonData();
-        videoTopics.SetJsonType(JsonType.Array);
-        videoTopics.Add("Some Topic1");
-        videoTopics.Add("Some Topic2");
-        shareJson["extra"]["videoTopics"] = videoTopics;
-        shareJson["extra"]["hashtag_list"] = videoTopics;
-        StarkSDK.API.GetStarkShare().ShareAppMessage((data) =>
-        {
-            // Share succeed
-        }, (errMsg) =>
-        {
-            // Share failed
-        }, () =>
-        {
-            // Share cancelled
-        },
-            shareJson);
-    }
+    //    JsonData shareJson = new JsonData();
+    //    shareJson["channel"] = "video";
+    //    shareJson["title"] = "Some Title";
+    //    shareJson["extra"] = new JsonData();
+    //    shareJson["extra"]["videoPath"] = "/xxx/xxx.mp4";//OnRecordComplete拿到 录屏文件 所在路径
+    //    JsonData videoTopics = new JsonData();
+    //    videoTopics.SetJsonType(JsonType.Array);
+    //    videoTopics.Add("Some Topic1");
+    //    videoTopics.Add("Some Topic2");
+    //    shareJson["extra"]["videoTopics"] = videoTopics;
+    //    shareJson["extra"]["hashtag_list"] = videoTopics;
+    //    TT.ShareAppMessage((data) =>
+    //    {
+    //        // Share succeed
+    //    }, (errMsg) =>
+    //    {
+    //        // Share failed
+    //    }, () =>
+    //    {
+    //        // Share cancelled
+    //    },
+    //        shareJson);
+    //}
 
     /// <summary>
     /// 带标题和话题的分享视频. 分享的视频文件是调用StopVideo后生成的文件。 注意：视频分享需要录制至少3s的视频，低于3s的视频将会分享失败。
     /// </summary>
     public void ShareVideoWithTitleTopics(string title, List<string> topics)
     {
-        StarkSDK.API.GetStarkGameRecorder().ShareVideoWithTitleTopics(SuccessCallback, FailedCallback, CancelledCallback,title,topics);
+        TT.GetGameRecorder().ShareVideoWithTitleTopics(SuccessCallback, FailedCallback, CancelledCallback,title,topics);
     }
 
     /// <summary>
@@ -375,7 +377,7 @@ public class DYSDKController : ISDK
     /// </summary>
     public void ShareVideo()
     {
-        StarkSDK.API.GetStarkGameRecorder().ShareVideo(SuccessCallback, FailedCallback, CancelledCallback);
+        TT.GetGameRecorder().ShareVideo(SuccessCallback, FailedCallback, CancelledCallback);
     }
 
     private void CancelledCallback()
@@ -400,7 +402,7 @@ public class DYSDKController : ISDK
 
     public void CreateShortcut()
     {
-        StarkSDK.API.CreateShortcut(OnCreateShortcut);
+        TT.AddShortcut(OnCreateShortcut);
     }
 
     private void OnCreateShortcut(bool bSuccess)
@@ -419,7 +421,7 @@ public class DYSDKController : ISDK
     /// </summary>
     public void FollowDouYinUserProfile()
     {
-        StarkSDK.API.FollowDouYinUserProfile(OnFollowAwemeCallback, OnFollowAwemeError);
+        TT.OpenAwemeUserProfile(OnFollowAwemeCallback, OnFollowAwemeError);
 
     }
 
@@ -439,12 +441,12 @@ public class DYSDKController : ISDK
 
     public void StartRecord()
     {
-        StarkSDK.API.GetStarkGameRecorder().StartRecord(m_IsRecordAudio, m_MaxRecordTime, OnRecordStart, OnRecordError, OnRecordTimeout);
+        TT.GetGameRecorder().Start(m_IsRecordAudio, m_MaxRecordTime, OnRecordStart, OnRecordError, OnRecordTimeout);
     }
 
     public void StopRecord()
     {
-        m_IsRecordAudio = StarkSDK.API.GetStarkGameRecorder().StopRecord();
+        m_IsRecordAudio = TT.GetGameRecorder().Stop();
     }
 
     private void OnRecordTimeout(string videoPath)
@@ -466,13 +468,21 @@ public class DYSDKController : ISDK
 
     #region VideoAD
 
+    public void ShowRewardedVideoAd()
+    {
+        if (m_RewardedVideoAd != null)
+        {
+            m_RewardedVideoAd.Show();
+        }
+    }
+
     /// <summary>
     /// 正常激励广告
     /// </summary>
     public void CreateVideoAD()
     {
-        var adManager = StarkSDK.API.GetStarkAdManager();
-        adManager.ShowVideoAdWithId(SDKManager.Instance.RewardedVideoADID, false,null,1,false, OnVideoCloseCallback, OnVideoErrorCallback);
+        m_RewardedVideoAd = TT.CreateRewardedVideoAd(SDKManager.Instance.RewardedVideoADID, OnVideoCloseCallback, OnVideoErrorCallback, false, null, 1, false);
+        
     }
     /// <summary>
     /// 连续观看激励广告
@@ -488,8 +498,7 @@ public class DYSDKController : ISDK
     /// <param name="errCallback"></param>
     public void CreateVideoAD(bool multiton, string[] multitonRewardMsg, int multitonRewardTime, bool progressTip, Action<bool, int> closeCallback = null, Action<int, string> errCallback = null)
     {
-        var adManager = StarkSDK.API.GetStarkAdManager();
-        adManager.ShowVideoAdWithId(SDKManager.Instance.RewardedVideoADID, multiton, multitonRewardMsg, multitonRewardTime, progressTip, closeCallback, errCallback);
+        m_RewardedVideoAd = TT.CreateRewardedVideoAd(SDKManager.Instance.RewardedVideoADID, closeCallback, errCallback, multiton, multitonRewardMsg, multitonRewardTime, progressTip);
     }
 
     private void OnVideoErrorCallback(int errCode, string errMsg)
@@ -517,8 +526,9 @@ public class DYSDKController : ISDK
 
     public void CreateInterstitialAd()
     {
-        var adManager = StarkSDK.API.GetStarkAdManager();
-        m_InterstitialAD = adManager.CreateInterstitialAd(SDKManager.Instance.InterstitialAdID, OnInterstitialErrorCallback, OnInterstitialCloseCallback, OnInterstitialLoadCallback);
+        CreateInterstitialAdParam param = new CreateInterstitialAdParam();
+        param.InterstitialAdId = SDKManager.Instance.InterstitialAdID;
+        m_InterstitialAD = TT.CreateInterstitialAd(param);
     }
 
     private void OnInterstitialCloseCallback()
@@ -573,13 +583,18 @@ public class DYSDKController : ISDK
 
     public void CreateBannerAD()
     {
-        var adManager = StarkSDK.API.GetStarkAdManager();
-        m_BannerAD = adManager.CreateBannerAd(SDKManager.Instance.BannerADID, new StarkAdManager.BannerStyle()
+        CreateBannerAdParam param = new CreateBannerAdParam();
+        param.BannerAdId = SDKManager.Instance.BannerADID;
+        param.Style = new TTBannerStyle()
         {
             left = 0,
             top = 0,
             width = 320
-        },60,OnBannerErrorCallback,OnBannerLoadCallback,OnBannerResizeCallback);
+        };
+        param.AdIntervals = 60;
+        
+
+        m_BannerAD = TT.CreateBannerAd(param);
     }
 
     private void OnBannerResizeCallback(int arg1, int arg2)
@@ -609,7 +624,7 @@ public class DYSDKController : ISDK
     public void ShowAllAD()
     {
         CreateInterstitialAd();
-        //CreateRewardVideoAd();
+        CreateRewardVideoAd();
         SetKeepScreenOn();
 
         ListenerScene(OnShowOneParam);
@@ -629,15 +644,17 @@ public class DYSDKController : ISDK
 
     public void CreateRewardVideoAd()
     {
-        //CreateVideoAD();
+        CreateVideoAD();
     }
     Action m_ShowRewardVideoAdSuccessAction;
     Action m_ShowRewardVideoAdFailedAction;
+    private TTSDK.TTRewardedVideoAd m_RewardedVideoAd;
+
     public void ShowRewardVideoAd(Action successAction, Action failedAction)
     {
         m_ShowRewardVideoAdSuccessAction = successAction;
         m_ShowRewardVideoAdFailedAction = failedAction;
-        CreateVideoAD();
+        ShowRewardedVideoAd();
     }
 
     public void Login()

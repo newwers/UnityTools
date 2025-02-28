@@ -1,14 +1,15 @@
-﻿#if USE_DY_SDK
+#if USE_DY_SDK
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TTSDK;
 using UnityEngine;
 using Z.SDK;
 
-public class DYSDKLogic 
+public class DYSDKLogic
 {
 
-    Main m_Main;
+    SDKManager m_Main;
     /// <summary>
     /// 是否支持侧边栏进入小游戏
     /// </summary>
@@ -20,7 +21,7 @@ public class DYSDKLogic
 
     DYSDKController m_DYSDK;
 
-    public void Awake(Main main)
+    public void Awake(SDKManager main)
     {
         m_Main = main;
 
@@ -29,42 +30,33 @@ public class DYSDKLogic
         {
 
             m_DYSDK.RefreshGuidePanelAction += RefreshGuidePanel;
-            //m_DYSDK.ListenerScene();
         }
+
+
+        m_Main.dySliderRewardButton.onClick.AddListener(OndySliderRewardButtonClick);
+
+        m_Main.dySliderRewardNavigationButton.onClick.AddListener(dySliderRewardNavigationButtonClick);
+
+
+        m_Main.dySliderRewardReceiveButton.onClick.AddListener(dySliderRewardReceiveButtonClick);
+
+        TT.InitSDK(OnInitSDK);
+        
+        
     }
 
-
-    private void OnShowOneParam(Dictionary<string, object> param)
+    private void OnInitSDK(int code, ContainerEnv env)
     {
-        foreach (var item in param)
-        {
-            Debug.Log($"OnShowOneParam--> key:{item.Key},value:{item.Value}");
-        }
-
-
-        //根据参数判断是否从侧边栏进入,是则切换成可以领取侧边栏奖励
-        //启动场景 （key）         launchFrom返回值     location返回值
-        //抖音首页侧边栏（value） "homepage"            sidebar_card
-        //启动场景值（「侧边栏」启动返回的场景值为：021036） 011004  我的-小程序列表-最近使用
-        //
-
-        bool isLaunchFromSideBar = ((param.ContainsKey("launchFrom") && (string)param["launchFrom"] == "homepage"
-             && param.ContainsKey("location") && (string)param["location"] == "sidebar_card")
-             || param.ContainsKey("scene") && (string)param["scene"] == "011004"
-             || param.ContainsKey("scene") && (string)param["scene"] == "021036");
-
-        if (isLaunchFromSideBar)
-        {
-            //侧边栏用户，处理发奖逻辑
-            RefreshGuidePanel(true);
-            Debug.Log("从侧边栏进入!");
-        }
-        else
-        {
-            RefreshGuidePanel(false);
-            Debug.Log("未侧边栏进入!!");
-        }
+        /*
+        callback：初始化完成的回调，类型为 OnTTContainerInitCallback，默认值为 null，非必填。 错误码：
+        0：无错误
+        1：TT Unity SDK 版本不支持
+        2：Unity Engine 版本不被支持 代码示例：
+         */
+        Debug.Log("Unity 初始化抖音sdk callback code:" + code);
+        OnGameStart();
     }
+
 
     public void OnGameStart()
     {
@@ -75,7 +67,7 @@ public class DYSDKLogic
         m_Main.dySliderRewardButton.gameObject.SetActive(false);
 
         //判断是否现实侧边栏
-        CheckDYSliderRweard();
+        CheckScene();
 
         Debug.Log($"分辨率:{Screen.width},{Screen.height}");
     }
@@ -83,21 +75,21 @@ public class DYSDKLogic
 
     public void Update()
     {
-        
+
     }
 
-
-    private void CheckDYSliderRweard()
+    /// <summary>
+    /// //判断是否现实侧边栏
+    /// </summary>
+    private void CheckScene()
     {
         //确认当前宿主版本是否支持跳转侧边栏小游戏入口场景。
         if (m_DYSDK != null)
         {
             m_DYSDK.CheckScene(OnCheckSceneSuccessCallback, OnCheckSceneCompleteCallback, OnCheckSceneErrorCallback);
         }
-            
 
-            
-         
+
     }
 
     private void OnCheckSceneErrorCallback(int arg1, string arg2)
@@ -115,6 +107,8 @@ public class DYSDKLogic
         //接口调用成功的回调函数, bool为true说明支持，false表示不支持
         m_IsSupportSideBar = result;
 
+        m_Main.dySliderRewardButton.gameObject.SetActive(m_IsSupportSideBar);
+
         if (m_IsReveivedSidebarReward == true)//已领取奖励
         {
             //todo:不显示领取按钮
@@ -123,12 +117,10 @@ public class DYSDKLogic
 
         if (result == false)//不支持抖音侧边栏打开
         {
-            return ;
+            return;
         }
 
         m_Main.dySliderRewardButton.gameObject.SetActive(true);
-        m_Main.dySliderRewardButton.onClick.RemoveAllListeners();
-        m_Main.dySliderRewardButton.onClick.AddListener(OndySliderRewardButtonClick);
 
         //未领取时,判断是否从抖音侧边栏打开
         bool isLaunchFromSlider = false;
@@ -145,12 +137,8 @@ public class DYSDKLogic
     {
         //是,显示可以领取按钮
         m_Main.dySliderRewardReceiveButton.gameObject.SetActive(isLaunchFromSlider);
-        m_Main.dySliderRewardReceiveButton.onClick.RemoveAllListeners();
-        m_Main.dySliderRewardReceiveButton.onClick.AddListener(dySliderRewardReceiveButtonClick);
         //不是,显示引导侧边栏跳转按钮
         m_Main.dySliderRewardNavigationButton.gameObject.SetActive(!isLaunchFromSlider);
-        m_Main.dySliderRewardNavigationButton.onClick.RemoveAllListeners();
-        m_Main.dySliderRewardNavigationButton.onClick.AddListener(dySliderRewardNavigationButtonClick);
     }
 
     private void dySliderRewardReceiveButtonClick()
@@ -158,7 +146,7 @@ public class DYSDKLogic
         //领取奖励
         ReceiveSidebarReward();
         Debug.Log("领取侧边栏进入奖励!");
-        
+
         m_Main.dySliderRewardButton.gameObject.SetActive(false);
         m_Main.dySideBarGuidePanel.gameObject.SetActive(false);
     }
@@ -166,6 +154,8 @@ public class DYSDKLogic
     void ReceiveSidebarReward()
     {
         //todo:下发奖励
+        var gm = GameObject.FindObjectOfType<GameManager>();
+        gm.itemManager.AddEnergy(100);
     }
 
     private void dySliderRewardNavigationButtonClick()
@@ -174,7 +164,7 @@ public class DYSDKLogic
         {
             m_DYSDK.NavigateToSideBarScene(NavigateToSideBarSceneSuccessCallback, null, null);
         }
-        
+
         m_Main.dySideBarGuidePanel.gameObject.SetActive(false);
     }
 
@@ -193,6 +183,26 @@ public class DYSDKLogic
     {
         //m_DYSDK?.ShowInterstitialAd();
         m_Main.dySliderRewardButton.gameObject.SetActive(false);
+    }
+
+    public void GamePause(bool pause)
+    {
+        
+    }
+
+    public void SetRankData(int index)
+    {
+        TT.SetImRankData(new TTSDK.UNBridgeLib.LitJson.JsonData(index));
+    }
+
+    public void GetRankData(TTRank.OnGetRankDataSuccessCallback success, TTRank.OnGetRankDataFailCallback fail)
+    {
+        TT.GetImRankData(new TTSDK.UNBridgeLib.LitJson.JsonData(),success,fail);
+    }
+
+    public void GetRankList(string json)
+    {
+        TT.GetImRankList(new TTSDK.UNBridgeLib.LitJson.JsonData(json));
     }
 }
 #endif

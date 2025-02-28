@@ -47,6 +47,7 @@ namespace zdq.UIEditor
             CreateText();
             CreateBtn();
             ImageConvertImageEX();
+            ReplaceTextWithTextMeshProUGUI();
             ConvertSelectEmptyImage();
             SetParticleOrder();
             SetParticleMasking();
@@ -59,6 +60,36 @@ namespace zdq.UIEditor
             EditorGUILayout.EndScrollView();
         }
 
+
+        private void ReplaceTextWithTextMeshProUGUI()
+        {
+            if (GUILayout.Button("替换Text为TextMeshProUGUI")){
+            // 获取所有选中的游戏对象
+                GameObject[] selectedObjects = Selection.gameObjects;
+                foreach (GameObject obj in selectedObjects)
+                {
+                    // 获取对象上的Text组件
+                    Text textComponent = obj.GetComponent<Text>();
+                    if (textComponent != null)
+                    {
+                        // 移除原有的Text组件
+                        DestroyImmediate(textComponent);
+
+                        // 添加TextMeshProUGUI组件
+                        TextMeshProUGUI tmpUGUI = obj.AddComponent<TextMeshProUGUI>();
+
+                        // 复制原Text组件的属性到TextMeshProUGUI组件
+                        tmpUGUI.text = textComponent.text;
+                        tmpUGUI.fontSize = textComponent.fontSize;
+                        tmpUGUI.color = textComponent.color;
+                        tmpUGUI.alignment = TextAlignmentOptions.Center; // 这里简单设置为居中对齐，可按需调整
+                        tmpUGUI.enableWordWrapping = false;
+                        tmpUGUI.font = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/font/SourceHanSansHWSC-Regular SDF.asset");
+                        // 可以根据需要复制更多属性
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// 让当前选中得RectTrasnform的锚点和Size一样大
