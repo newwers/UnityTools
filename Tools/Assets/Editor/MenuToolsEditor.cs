@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -8,7 +8,7 @@ namespace Project001.Editor
     public class MenuToolsEditor
     {
 
-        [MenuItem("Tools/Editor/Æô¶¯ÓÎÏ· _F5")]
+        [MenuItem("Tools/Editor/å¯åŠ¨æ¸¸æˆ _F5")]
         static void PlayGame()
         {
             if (EditorApplication.isPlaying)
@@ -17,11 +17,11 @@ namespace Project001.Editor
             }
             else
             {
-                //±£´æµ±Ç°³¡¾°
+                //ä¿å­˜å½“å‰åœºæ™¯
                 var scene = UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene();
                 if (scene != null && scene.isDirty && !string.IsNullOrWhiteSpace(scene.name) && !string.IsNullOrWhiteSpace(scene.path))
                 {
-                    if (UnityEditor.EditorUtility.DisplayDialog("ÌáÊ¾", "µ±Ç°³¡¾°Î´±£´æ,ÊÇ·ñ±£´æ?", "±£´æ", "²»±£´æ"))
+                    if (UnityEditor.EditorUtility.DisplayDialog("æç¤º", "å½“å‰åœºæ™¯æœªä¿å­˜,æ˜¯å¦ä¿å­˜?", "ä¿å­˜", "ä¸ä¿å­˜"))
                     {
                         UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
                     }
@@ -31,25 +31,34 @@ namespace Project001.Editor
             }
         }
 
-        [MenuItem("Tools/Editor/ÔİÍ£ÓÎÏ· _F6")]
+        [MenuItem("Tools/Editor/æš‚åœæ¸¸æˆ _F6")]
         static void PauseGame()
         {
             EditorApplication.isPaused = !EditorApplication.isPaused;
         }
 
-        [MenuItem("Tools/Editor/ÖğÖ¡ÓÎÏ· _F7")]
+        [MenuItem("Tools/Editor/é€å¸§æ¸¸æˆ _F7")]
         static void NextStep()
         {
             EditorApplication.Step();
         }
         //------------------------------------------------------
 
-        [MenuItem("Tools/Editor/Ë¢ĞÂ×ÊÔ´")]
+        [MenuItem("Tools/Editor/åˆ·æ–°èµ„æº")]
         static void RefreshAssets()
         {
             //EditorUtility.SetDirty(target);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+        }
+        [MenuItem("Assets/å¤åˆ¶æ–‡ä»¶è·¯å¾„")]
+        public static void CopyPath()
+        {
+            if (Selection.objects == null || Selection.objects.Length == 0)
+            {
+                return;
+            }
+            GUIUtility.systemCopyBuffer = AssetDatabase.GetAssetPath(Selection.objects[0]);
         }
     }
 }

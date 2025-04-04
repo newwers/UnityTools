@@ -1,7 +1,5 @@
-using System;
-using System.Collections;
+ï»¿using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Z.Data
 {
@@ -34,14 +32,33 @@ namespace Z.Data
         {
             bInited = false;
         }
-
-        public bool Init(string dataFile = "Assets/DataManager/DataConfig.asset")
+        /// <summary>
+        /// DataConfig demoé˜¶æ®µæ”¾Resourcesæ–‡ä»¶å¤¹ä¸‹
+        /// </summary>
+        /// <param name="dataFile"></param>
+        /// <returns></returns>
+        public bool Init(string dataFile = "DataConfig")
         {
-            //¼ÓÔØÎÄ¼ş
+            //åŠ è½½æ–‡ä»¶
 
 
-#if UNITY_EDITOR
-            //ÏÈÊ¹ÓÃ±à¼­Æ÷Ä£Ê½¼ÓÔØ
+            //#if UNITY_EDITOR
+            //            //å…ˆä½¿ç”¨ç¼–è¾‘å™¨æ¨¡å¼åŠ è½½
+            //            var cfg = ResourceLoadManager.Instance.ResourceLoad<DataConfig>(dataFile);
+            //            if (cfg != null && cfg.vConfigs != null)
+            //            {
+            //                m_nTotalCnt = cfg.vConfigs.Count;
+            //                m_nLoadCnt = 0;
+            //                CsvParser csvParser = new CsvParser();
+            //                for (int i = 0; i < cfg.vConfigs.Count; i++)
+            //                {
+            //                    var data = Parser(csvParser, cfg.vConfigs[i]);
+            //                    m_vDatas.Add(cfg.vConfigs[i].guid, data);
+            //                    m_nLoadCnt++;
+            //                }
+            //            }
+            //#else
+            //è¿™è¾¹éœ€è¦æ¥å…¥èµ„æºåŠ è½½æ¨¡å—,å¦åˆ™æ‰“åŒ…å,æ‰¾ä¸åˆ°é…ç½®æ–‡ä»¶
             var cfg = ResourceLoadManager.Instance.ResourceLoad<DataConfig>(dataFile);
             if (cfg != null && cfg.vConfigs != null)
             {
@@ -55,26 +72,11 @@ namespace Z.Data
                     m_nLoadCnt++;
                 }
             }
-#else
-            //Õâ±ßĞèÒª½ÓÈë×ÊÔ´¼ÓÔØÄ£¿é,·ñÔò´ò°üºó,ÕÒ²»µ½ÅäÖÃÎÄ¼ş
-            var cfg = ResourceLoadManager.Instance.ResourceLoad<DataConfig>(dataFile);
-            if (cfg != null && cfg.vConfigs != null)
-            {
-                m_nTotalCnt = cfg.vConfigs.Count;
-                m_nLoadCnt = 0;
-                CsvParser csvParser = new CsvParser();
-                for (int i = 0; i < cfg.vConfigs.Count; i++)
-                {
-                    var data = Parser(csvParser, cfg.vConfigs[i]);
-                    m_vDatas.Add(cfg.vConfigs[i].guid, data);
-                    m_nLoadCnt++;
-                }
-            }
-#endif
+            //#endif
 
 
 
-            //¸üĞÂ¼ÓÔØÊıÁ¿
+            //æ›´æ–°åŠ è½½æ•°é‡
 
             return true;
         }

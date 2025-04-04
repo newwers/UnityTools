@@ -1,10 +1,9 @@
-using System;
-using System.Collections;
+ï»¿using System;
 using System.Collections.Generic;
 
 namespace Z.Data
 {
-    public class CsvParser 
+    public class CsvParser
     {
         public class Cell
         {
@@ -15,15 +14,15 @@ namespace Z.Data
                 m_Content = content ?? throw new ArgumentNullException(nameof(content));
             }
 
-            //Ö§³ÖÅäÖÃÊı¾İ¸ñÊ½
+            //æ”¯æŒé…ç½®æ•°æ®æ ¼å¼
 
             public T Parse<T>()
             {
-                
+
                 var type = typeof(T);
                 if (type == typeof(UnityEngine.Vector2))
                 {
-                    return (T)(object)Vector2();//Õâ±ß´¦Àí vectorÀàĞÍ×ª»»
+                    return (T)(object)Vector2();//è¿™è¾¹å¤„ç† vectorç±»å‹è½¬æ¢
                 }
                 if (type == typeof(UnityEngine.Vector3))
                 {
@@ -34,7 +33,7 @@ namespace Z.Data
                     return (T)(object)Vector4();
                 }
                 //UnityEngine.Debug.Log($"type:{type},name:{type.Name}");
-                if (string.IsNullOrWhiteSpace(m_Content))//Ã»Ìî,Ä¬ÈÏÖµÉèÖÃ
+                if (string.IsNullOrWhiteSpace(m_Content))//æ²¡å¡«,é»˜è®¤å€¼è®¾ç½®
                 {
                     return default(T);
                 }
@@ -43,11 +42,19 @@ namespace Z.Data
 
             public T[] ParseArray<T>()
             {
-                if (string.IsNullOrWhiteSpace(m_Content))//Ã»Ìî,Ä¬ÈÏÖµÉèÖÃ
+                if (string.IsNullOrWhiteSpace(m_Content))//æ²¡å¡«,é»˜è®¤å€¼è®¾ç½®
                 {
                     return null;
                 }
-                var array = m_Content.Split('|');
+
+                string content_Replace = m_Content.Replace("\"", "");//å»æ‰å¼•å·
+
+                char split = '|';
+                if (content_Replace.Contains(','))
+                {
+                    split = ',';
+                }
+                var array = content_Replace.Split(split);
                 T[] result = new T[array.Length];
                 for (int i = 0; i < result.Length; i++)
                 {
@@ -58,7 +65,7 @@ namespace Z.Data
 
             public byte Byte()
             {
-                if (byte.TryParse(m_Content,out var value))
+                if (byte.TryParse(m_Content, out var value))
                 {
                     return value;
                 }
@@ -76,7 +83,7 @@ namespace Z.Data
 
             public UnityEngine.Vector4 Vector4()
             {
-                var array = m_Content.Trim('\"').Split(',');//È¥µôÇ°ºó"ºÅ,°´ÕÕ,ºÅ»®·Ö
+                var array = m_Content.Trim('\"').Split(',');//å»æ‰å‰å"å·,æŒ‰ç…§,å·åˆ’åˆ†
                 float x = 0;
                 if (array.Length > 0)
                 {
@@ -101,7 +108,7 @@ namespace Z.Data
                 }
 
 
-                return new UnityEngine.Vector4(x, y, z,w);
+                return new UnityEngine.Vector4(x, y, z, w);
             }
 
             public UnityEngine.Vector3 Vector3()
@@ -115,7 +122,7 @@ namespace Z.Data
                 float y = 0;
                 if (array.Length > 1)
                 {
-                    y =float.Parse(array[1]);
+                    y = float.Parse(array[1]);
                 }
 
                 float z = 0;
@@ -125,7 +132,7 @@ namespace Z.Data
                 }
 
 
-                return new UnityEngine.Vector3(x,y,z);
+                return new UnityEngine.Vector3(x, y, z);
             }
 
             public UnityEngine.Vector2 Vector2()
@@ -153,24 +160,24 @@ namespace Z.Data
 
             public Cell this[string key]
             {
-                get 
+                get
                 {
-                    if (m_vDatas.TryGetValue(key,out Cell value))
+                    if (m_vDatas.TryGetValue(key, out Cell value))
                     {
                         return value;
                     }
-                    return null; 
+                    return null;
                 }
             }
 
-            public void SetContent(string row,string[] keys)
+            public void SetContent(string row, string[] keys)
             {
-                //½«ĞĞ½âÎö³É×Öµä´æ´¢
+                //å°†è¡Œè§£ææˆå­—å…¸å­˜å‚¨
 
-                var fields = CsvParser.SplitData(row,',');//todo:Õâ±ß·Ö¸îÊ±,Èç¹û×Ö·û´®ÀïÃæ´æÔÚ¶à¸ö"Ê±,»á³öÏÖÎÊÌâ,ĞèÒªÓÅ»¯
+                var fields = CsvParser.SplitData(row, ',');//todo:è¿™è¾¹åˆ†å‰²æ—¶,å¦‚æœå­—ç¬¦ä¸²é‡Œé¢å­˜åœ¨å¤šä¸ª"æ—¶,ä¼šå‡ºç°é—®é¢˜,éœ€è¦ä¼˜åŒ–
                 for (int i = 0; i < fields.Count; i++)
                 {
-                    
+
                     if (i >= keys.Length || string.IsNullOrWhiteSpace(keys[i]))
                     {
                         continue;
@@ -178,11 +185,11 @@ namespace Z.Data
 
                     //UnityEngine.Debug.Log($"key:{keys[i]},value:{fields[i]}");
 
-                    m_vDatas[keys[i]] =new Cell(fields[i].Trim());
+                    m_vDatas[keys[i]] = new Cell(fields[i].Trim());
                 }
             }
 
-            
+
         }
 
         string m_Content;
@@ -190,7 +197,7 @@ namespace Z.Data
         List<Row> m_vRows;
 
         /// <summary>
-        /// ±êÌâĞĞÊı
+        /// æ ‡é¢˜è¡Œæ•°
         /// </summary>
         int m_nTitleLine = 4;
 
@@ -215,25 +222,25 @@ namespace Z.Data
             }
             m_vRows.Clear();
 
-            //½âÎöÄÚÈİ
-            var rows = CsvParser.SplitData(m_Content.Replace("\r\n", "\n"), '\n');//½«csvÎÄ±¾ÇĞ·ÖÎªĞĞ,²¢ÇÒÌæ»»µô\r\n,°´ÕÕ\n½øĞĞ»»ĞĞÅĞ¶Ï
-            var fieldRow = rows[m_nTitleLine-1].Split(',');
+            //è§£æå†…å®¹
+            var rows = CsvParser.SplitData(m_Content.Replace("\r\n", "\n"), '\n');//å°†csvæ–‡æœ¬åˆ‡åˆ†ä¸ºè¡Œ,å¹¶ä¸”æ›¿æ¢æ‰\r\n,æŒ‰ç…§\nè¿›è¡Œæ¢è¡Œåˆ¤æ–­
+            var fieldRow = rows[m_nTitleLine - 1].Split(',');
 
-            //»ñÈ¡Ã¿Ò»ĞĞÊı¾İ
-            for (int i = m_nTitleLine; i < rows.Count; i++)//4±íÊ¾ÌŞ³ıÇ°Ãæ¼¸ĞĞ±êÌâ
+            //è·å–æ¯ä¸€è¡Œæ•°æ®
+            for (int i = m_nTitleLine; i < rows.Count; i++)//4è¡¨ç¤ºå‰”é™¤å‰é¢å‡ è¡Œæ ‡é¢˜
             {
                 if (string.IsNullOrWhiteSpace(rows[i]))
                 {
                     continue;
                 }
-                //½«Êı¾İ×ª³Érow¸ñÊ½
+                //å°†æ•°æ®è½¬æˆrowæ ¼å¼
                 Row row = new Row();
 
                 row.SetContent(rows[i], fieldRow);
 
                 m_vRows.Add(row);
             }
-            
+
 
         }
         //------------------------------------------------------
@@ -247,7 +254,7 @@ namespace Z.Data
             return m_nTitleLine;
         }
         /// <summary>
-        /// ¸ù¾İ¶ººÅ½øĞĞ¸ô¿ª,Èç¹ûÊı¾İÊÇ×Ö·û´®,ºöÂÔ×Ö·û´®ÀïÃæµÄ¶ººÅ
+        /// æ ¹æ®é€—å·è¿›è¡Œéš”å¼€,å¦‚æœæ•°æ®æ˜¯å­—ç¬¦ä¸²,å¿½ç•¥å­—ç¬¦ä¸²é‡Œé¢çš„é€—å·
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
