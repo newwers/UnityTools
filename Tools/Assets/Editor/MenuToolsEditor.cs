@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 
 namespace Project001.Editor
@@ -26,7 +24,7 @@ namespace Project001.Editor
                         UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
                     }
                 }
-                UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/Main.unity");
+                UnityEditor.SceneManagement.EditorSceneManager.OpenScene(scene.path);
                 EditorApplication.isPlaying = true;
             }
         }

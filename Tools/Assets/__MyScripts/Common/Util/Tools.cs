@@ -278,6 +278,33 @@ namespace Tools
             sw.Close();
 
         }
+        /// <summary>
+/// 打开CMD窗口并执行命令
+/// </summary>
+/// <param name="command"></param>
+public static void Cmd(string command)
+{
+    print("cmd:" + command);
+    // 创建一个新的进程启动信息
+    ProcessStartInfo startInfo = new ProcessStartInfo();
+    // 设置要启动的进程为cmd.exe
+    startInfo.FileName = "cmd.exe";
+
+    startInfo.Arguments = "/k " + command;
+    // 显示窗口
+    startInfo.WindowStyle = ProcessWindowStyle.Normal;
+
+    try
+    {
+        // 启动新进程
+        Process.Start(startInfo);
+    }
+    catch (System.Exception e)
+    {
+        // 若启动进程时出现异常，打印错误信息
+        UnityEngine.Debug.LogError("Failed to open CMD: " + e.Message);
+    }
+}
     }
 }
 
