@@ -1,0 +1,119 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-5711197465372299863
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c7098bc36683d14e8829c57988b825c, type: 3}
+  m_Name: SequenceNode
+  m_EditorClassIdentifier: 
+  state: 0
+  started: 0
+  guid: ad7e4d2ad4d129440a8c276ea23b70f6
+  title: "SequenceNode\u8282\u70B9"
+  descript: "\u8282\u70B9\u63CF\u8FF0"
+  rect:
+    serializedVersion: 2
+    x: 591
+    y: 307
+    width: 150
+    height: 70
+  childNodes:
+  - {fileID: 188992874427239728}
+  - {fileID: 6961040125378173435}
+--- !u!114 &-2596216690680550375
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb9450ff0a11c31448d104bdb1925e2d, type: 3}
+  m_Name: RootNode
+  m_EditorClassIdentifier: 
+  state: 0
+  started: 0
+  guid: d2aede860b96afe4ba4d28c025c85359
+  title: "RootNode\u8282\u70B9"
+  descript: "\u8282\u70B9\u63CF\u8FF0"
+  rect:
+    serializedVersion: 2
+    x: 746
+    y: 196
+    width: 150
+    height: 70
+  childNode: {fileID: -5711197465372299863}
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bde9ccfe57642c4d95ad752820b817d, type: 3}
+  m_Name: 1
+  m_EditorClassIdentifier: 
+  rootNode: {fileID: -2596216690680550375}
+  state: 0
+  nodes:
+  - {fileID: -2596216690680550375}
+  - {fileID: 188992874427239728}
+  - {fileID: 6961040125378173435}
+  - {fileID: -5711197465372299863}
+--- !u!114 &188992874427239728
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ec67b837aa7b804594a89e4bf215c6a, type: 3}
+  m_Name: WaitNode
+  m_EditorClassIdentifier: 
+  state: 0
+  started: 0
+  guid: 16f28782a1fb5a1468ae1669e1d2b992
+  title: "WaitNode\u8282\u70B9"
+  descript: "\u8282\u70B9\u63CF\u8FF0"
+  rect:
+    serializedVersion: 2
+    x: 444
+    y: 496
+    width: 150
+    height: 70
+  waitTime: 1
+--- !u!114 &6961040125378173435
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7be2770e80a9e1b40b946feb18b6cd46, type: 3}
+  m_Name: LogNode
+  m_EditorClassIdentifier: 
+  state: 0
+  started: 0
+  guid: 4a0a39c1990d0fc4fb8ca411d93613ca
+  title: "LogNode\u8282\u70B9"
+  descript: "\u8282\u70B9\u63CF\u8FF0"
+  rect:
+    serializedVersion: 2
+    x: 669
+    y: 492
+    width: 150
+    height: 70
+  message: 111

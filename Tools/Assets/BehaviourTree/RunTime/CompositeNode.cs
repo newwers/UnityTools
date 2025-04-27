@@ -10,6 +10,33 @@ namespace Z.BehaviourTree
     /// </remarks>
     public abstract class CompositeNode : Node
     {
-        protected List<Node> childNodes = new List<Node>();
+        public List<Node> childNodes = new List<Node>();
+
+        public void AddChildrenNode(Node node)
+        {
+            childNodes.Add(node);
+        }
+
+        public void RemoveChildrenNode(Node node)
+        {
+            childNodes.Remove(node);
+        }
+
+        public void ClearChildrenNode()
+        {
+            childNodes.Clear();
+        }
+
+        public List<Node> GetChildrenNode()
+        {
+            return childNodes;
+        }
+
+        public override Node Clone()
+        {
+            CompositeNode node = Instantiate(this);
+            node.childNodes = childNodes.ConvertAll(x => x.Clone());//克隆数组,而不是引用
+            return node;
+        }
     }
 }

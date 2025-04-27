@@ -7,5 +7,17 @@
     public abstract class DecoratorNode : Node
     {
         public Node childNode;
+
+        public void SetChild(Node node)
+        {
+            childNode = node;
+        }
+
+        public override Node Clone()
+        {
+            DecoratorNode node = Instantiate(this);
+            node.childNode = childNode.Clone();
+            return node;
+        }
     }
 }

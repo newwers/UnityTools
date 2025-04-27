@@ -12,7 +12,7 @@
 
         protected override void OnStop()
         {
-            throw new System.NotImplementedException();
+
         }
 
         protected override State OnUpdate()
