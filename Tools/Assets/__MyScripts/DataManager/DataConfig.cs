@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -8,7 +7,7 @@ using System;
 
 namespace Z.Data
 {
-    [CreateAssetMenu(fileName = "Config", menuName = "ScriptableObjects/CreateDataConfig")]
+    [CreateAssetMenu(fileName = "CsvConfig", menuName = "Csv/CreateDataConfig")]
     public class DataConfig : ScriptableObject
     {
         [Serializable]

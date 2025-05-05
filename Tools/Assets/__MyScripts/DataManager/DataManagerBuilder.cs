@@ -1,13 +1,10 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Text;
-using UnityEngine;
 
 namespace Z.Data
 {
-    public class DataManagerBuilder 
+    public class DataManagerBuilder
     {
         const string tab = "\t";
 
@@ -17,7 +14,7 @@ namespace Z.Data
         int m_nTabNum;
         StringBuilder m_pStringBuilder;
 
-        public DataManagerBuilder(DataConfig configs,string filePath, string name="DataManager_Auto")
+        public DataManagerBuilder(DataConfig configs, string filePath, string name = "DataManager_Auto")
         {
             m_Configs = configs;
             m_FileName = name;
@@ -33,13 +30,12 @@ namespace Z.Data
                 return;
             }
 
+            m_pStringBuilder.Clear();
+
             //生成文件
             var fs = BuilderFile(m_FileName);
 
             BuilderAutoCode(m_FileName);
-            
-
-
 
             byte[] byteData = System.Text.Encoding.UTF8.GetBytes(m_pStringBuilder.ToString());
             fs.Write(byteData, 0, byteData.Length);
@@ -59,7 +55,7 @@ namespace Z.Data
             {
                 Directory.CreateDirectory(m_FilePath);
             }
-            FileStream fs = File.OpenWrite(filePath);
+            FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
 
             return fs;
         }
@@ -77,7 +73,7 @@ namespace Z.Data
             AddString("{");
 
             m_nTabNum++;
-            
+
             //根据配置文件生成每个配置的字段
             for (int i = 0; i < m_Configs.vConfigs.Count; i++)
             {

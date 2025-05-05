@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -34,6 +33,8 @@ namespace Z.SDK
 
     public interface ISDK
     {
+        void OnClear();
+        void Init(Action action);
         void ShowAllAD();
         void CreateBannerAdAndShow();
         void CreateCustomAdAndShow(string adID, CustomStyle_Z customStyle);
@@ -118,16 +119,6 @@ namespace Z.SDK
         public Button m_dySliderRewardButton;
         public Button m_dySliderRewardReceiveButton;
         public Button m_dySliderRewardNavigationButton;
-#endif
-
-        public ISDK CurSDK
-        {
-            get
-            {
-                return m_CurrentSDK;
-            }
-        }
-        public static SDKManager Instance { set; get; }
 
         public GameObject dySideBarGuidePanel
         {
@@ -148,6 +139,18 @@ namespace Z.SDK
         public Button dySliderRewardReceiveButton => m_dySliderRewardReceiveButton;
 
         public Button dySliderRewardNavigationButton => m_dySliderRewardNavigationButton;
+#endif
+
+        public ISDK CurSDK
+        {
+            get
+            {
+                return m_CurrentSDK;
+            }
+        }
+        public static SDKManager Instance { set; get; }
+
+
 
         private void Awake()
         {
@@ -166,9 +169,15 @@ namespace Z.SDK
 
         private void Start()
         {
-#if !UNITY_EDITOR
-            Invoke("ShowAllAD", 4f);
-#endif
+            //#if !UNITY_EDITOR//这边能够控制什么时候显示广告
+            //            Invoke("ShowAllAD", 4f);
+            //#endif
+        }
+
+
+        public void Init(Action action)
+        {
+
         }
 
         public void ShowAllAD()
@@ -183,16 +192,24 @@ namespace Z.SDK
         {
             //根据宏确定使用平台
 #if USE_DY_SDK
-        m_CurrentSDK = new DYSDKController();
-            Init();
-#else
+            m_CurrentSDK = new DYSDKController();
+            m_DYSDKLogic = new DYSDKLogic();
+            {
+                m_DYSDKLogic.Awake(this);
+            }
+#elif USE_WX_SDK
             m_CurrentSDK = new WXAdController();
+#elif USE_GOOGLE_SDK
+            m_CurrentSDK = new GoogleSDKManager();
 #endif
+            m_CurrentSDK.Init(OnInitCallback);
 
         }
 
-
-
+        private void OnInitCallback()
+        {
+            ShowAllAD();//这边初始化完成就显示广告
+        }
 
         public void CreateBannerAdAndShow()
         {
@@ -230,7 +247,7 @@ namespace Z.SDK
                 return;
             }
 
-            m_CurrentSDK.ShowRewardVideoAd(successAction,failedAction);
+            m_CurrentSDK.ShowRewardVideoAd(successAction, failedAction);
         }
 
 
@@ -267,45 +284,62 @@ namespace Z.SDK
 
         public void SetRankData()
         {
-            
+
         }
 
         public void GetRankData()
         {
-            
+
         }
 
         public void Init()
         {
-            m_DYSDKLogic = new DYSDKLogic();
-            {
-                m_DYSDKLogic.Awake(this);
-            }
+
         }
 
         public void GameStart()
         {
+#if USE_DY_SDK
             if (m_DYSDKLogic != null)
             {
                 m_DYSDKLogic.OnGameStart();
             }
+#endif
         }
 
         public void GamePause(bool pause)
         {
+#if USE_DY_SDK
             if (m_DYSDKLogic != null)
             {
                 m_DYSDKLogic.GamePause(pause);
             }
+#endif
         }
 
         public void GameEnd()
         {
+#if USE_DY_SDK
             if (m_DYSDKLogic != null)
             {
                 m_DYSDKLogic.OnGameEnd();
             }
+#endif
         }
+
+        public void OnClear()
+        {
+            if (m_CurrentSDK != null)
+            {
+                m_CurrentSDK.OnClear();
+            }
+        }
+
+        private void OnDestroy()
+        {
+            OnClear();
+        }
+
 
 
 

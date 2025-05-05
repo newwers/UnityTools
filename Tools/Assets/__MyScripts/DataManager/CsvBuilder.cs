@@ -10,7 +10,6 @@ group类型可以存在同id,多数据格式
 其中value 是以 CsvData_csv名称 进行命名,作为一行csv数据格式
  
  */
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -43,7 +42,7 @@ namespace Z.Data
         StringBuilder m_pStringBuilder;
         private string m_FilePath;
 
-        public CsvBuilder(string str, string name, string filePath) 
+        public CsvBuilder(string str, string name, string filePath)
         {
             m_Content = str;
             m_FileName = name.First().ToString().ToUpper() + name.Substring(1);
@@ -77,7 +76,7 @@ namespace Z.Data
             BuilderFile(fields, m_FileName);
         }
         //------------------------------------------------------
-        void BuilderFile(List<SingleField> fields,string fileName)
+        void BuilderFile(List<SingleField> fields, string fileName)
         {
             //判断是否存在文件
             var filePath = Path.Combine(m_FilePath, "CsvData_" + fileName + ".cs");
@@ -88,14 +87,14 @@ namespace Z.Data
             //{
             //    //Directory.CreateDirectory(Application.dataPath + "/DataManager/AutoCode/");//如何修改创建文件夹
             //}
-            FileStream fs = File.OpenWrite(filePath);
+            FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
 
-
+            m_pStringBuilder.Clear();
             BuilderAutoCode(fileName, fields);
-            
+
 
             byte[] byteData = System.Text.Encoding.UTF8.GetBytes(m_pStringBuilder.ToString());
-            fs.Write(byteData,0, byteData.Length);
+            fs.Write(byteData, 0, byteData.Length);
 
             fs.Dispose();
             m_pStringBuilder.Length = 0;
@@ -119,8 +118,8 @@ namespace Z.Data
 
             //生成配置字段对应数据类型
             m_nTabNum++;
-            
-            for (int i = 0;i < fields.Count; i++)
+
+            for (int i = 0; i < fields.Count; i++)
             {
                 var field = fields[i];
                 if (string.IsNullOrWhiteSpace(field.type) || string.IsNullOrWhiteSpace(field.field))
@@ -178,7 +177,7 @@ namespace Z.Data
             {
                 AddString($"public {value} GetData({key} id)");
             }
-            
+
             AddString("{");
             m_nTabNum++;
 
@@ -190,7 +189,7 @@ namespace Z.Data
             {
                 AddString($"{value} data;");
             }
-            
+
             AddString("if(m_vData.TryGetValue(id, out data))");
             m_nTabNum++;
             AddString("return data;");
@@ -227,7 +226,7 @@ namespace Z.Data
                 }
                 if (field.type.Contains("[]"))//数组解析
                 {
-                    AddString($"data.{field.field} = csv[i][\"{field.field}\"].ParseArray<{field.type.Replace("[]","")}>();");
+                    AddString($"data.{field.field} = csv[i][\"{field.field}\"].ParseArray<{field.type.Replace("[]", "")}>();");
                 }
                 //else if (field.type.Contains("Vector3"))
                 //{
@@ -264,7 +263,7 @@ namespace Z.Data
             {
                 AddString($"m_vData.Add(data.{id}, data);");
             }
-            
+
             AddString("OnAddData(data);");
 
             m_nTabNum--;
