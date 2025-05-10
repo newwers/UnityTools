@@ -1,4 +1,4 @@
-/********************************************************************
+﻿/********************************************************************
 生成日期:	1:11:2020 10:06
 类    名: 	UIUtil
 作    者:	zdq
@@ -24,7 +24,7 @@ namespace Z.UI
             graphic.color = color;
         }
         //------------------------------------------------------
-        public static void ReplayPlayableDirector(UnityEngine.Playables.PlayableDirector playable,bool rebuild = false)
+        public static void ReplayPlayableDirector(UnityEngine.Playables.PlayableDirector playable, bool rebuild = false)
         {
             if (playable)
             {
@@ -32,7 +32,7 @@ namespace Z.UI
                 {
                     playable.RebuildGraph();
                 }
-                
+
                 playable.time = 0;
                 playable.Play();
             }
@@ -102,7 +102,7 @@ namespace Z.UI
             //}
         }
         //-----------------------------------------------------
-        public static void SetGrayUI(Transform root, bool gray,Color color)
+        public static void SetGrayUI(Transform root, bool gray, Color color)
         {
             //Material mat = Data.PermanentAssetsUtil.GetAsset<Material>(EPermanentAssetType.GrayMat);
             //Graphic[] childs = root.GetComponentsInChildren<Graphic>(true);
@@ -176,15 +176,15 @@ namespace Z.UI
             transform.position = toPos;
         }
         //------------------------------------------------------
-        public static void SetFillAmount(Image img,float progress)
+        public static void SetFillAmount(Image img, float progress)
         {
             if (img)
             {
-                img.fillAmount= progress;
+                img.fillAmount = progress;
             }
         }
         //------------------------------------------------------
-        public static void PlayTween(MonoBehaviour tween, bool bRewind = false,int index = 0)
+        public static void PlayTween(MonoBehaviour tween, bool bRewind = false, int index = 0)
         {
             if (tween == null) return;
             //if(tween is DG.Tweening.DOTweenAnimation)
@@ -226,7 +226,7 @@ namespace Z.UI
             List<RaycastResult> results = ListPool<RaycastResult>.Get();
             EventSystem.current.RaycastAll(pointerEventData, results);
             int count = results.Count;
-            ListPool < RaycastResult >.Release(results);
+            ListPool<RaycastResult>.Release(results);
             //foreach (var item in results)
             //{
             //    Debug.Log(item.gameObject.name);
@@ -258,7 +258,7 @@ namespace Z.UI
             LayoutRebuilder.ForceRebuildLayoutImmediate(transform);
         }
         //------------------------------------------------------
-        public static void SetActive(Component go,bool active)
+        public static void SetActive(Component go, bool active)
         {
             if (go)
             {
@@ -273,13 +273,13 @@ namespace Z.UI
                 go.SetActive(active);
             }
         }
-        
+
         //------------------------------------------------------
-        public static void SetAnchorPosition(RectTransform rect,Vector2 pos)
+        public static void SetAnchorPosition(RectTransform rect, Vector2 pos)
         {
             if (rect)
             {
-                rect.anchoredPosition= pos;
+                rect.anchoredPosition = pos;
             }
         }
         //------------------------------------------------------
@@ -390,6 +390,15 @@ namespace Z.UI
             float radio = (OriginScreenSize.x / OriginScreenSize.y) / (Screen.width / (float)Screen.height);
             //Debug.Log("radio:" + radio);
             return radio;
+        }
+
+
+        public static void SetImage(UnityEngine.UI.Image img, string path)
+        {
+            if (img)
+            {
+                img.sprite = ResourceLoadManager.Instance.ResourceLoad<Sprite>(path);
+            }
         }
     }
 }

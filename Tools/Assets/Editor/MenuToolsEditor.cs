@@ -58,5 +58,30 @@ namespace Project001.Editor
             }
             GUIUtility.systemCopyBuffer = AssetDatabase.GetAssetPath(Selection.objects[0]);
         }
+        [MenuItem("Assets/复制文件Resources路径")]
+        public static void CopyResourcesPath()
+        {
+            if (Selection.objects == null || Selection.objects.Length == 0)
+            {
+                return;
+            }
+            //Assets/Resources/Icon/gem_6.png 将路径中的Assets/Resources/去掉
+            string path = AssetDatabase.GetAssetPath(Selection.objects[0]);
+            path = path.Replace("Assets/Resources/", "");
+            path = path.Replace(".png", "");
+            path = path.Replace(".prefab", "");
+            path = path.Replace(".mat", "");
+            path = path.Replace(".fbx", "");
+            path = path.Replace(".mp3", "");
+            path = path.Replace(".wav", "");
+            path = path.Replace(".txt", "");
+            path = path.Replace(".csv", "");
+            path = path.Replace(".json", "");
+            path = path.Replace(".xml", "");
+
+
+
+            GUIUtility.systemCopyBuffer = path;
+        }
     }
 }

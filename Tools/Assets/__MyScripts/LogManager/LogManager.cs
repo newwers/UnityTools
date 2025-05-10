@@ -1,7 +1,5 @@
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Text;
-using UnityEditor;
 using UnityEngine;
 
 
@@ -40,7 +38,8 @@ public enum LogLevel
 /// Log除了可以管理是否打印外,还可以将打印写到硬盘中
 /// 在开发阶段使用Test等级的打印,当开发结束不需要log打印时,可以切换到none或者其他等级来过滤不需要的打印
 /// </summary>
-public class LogManager :MonoBehaviour {
+public class LogManager : MonoBehaviour
+{
 
 
 
@@ -83,7 +82,7 @@ public class LogManager :MonoBehaviour {
             Application.logMessageReceived -= DebugHandles;
             Application.logMessageReceived += DebugHandles;
         }
-        
+
     }
     /// <summary>
     /// 当Inspector面板属性发生改变,
@@ -117,10 +116,10 @@ public class LogManager :MonoBehaviour {
 
     private void DebugHandles(string logString, string stackTrace, LogType type)
     {
-        WriteNormalLog(logString,LogLevel.Normal);
+        WriteNormalLog(logString, LogLevel.Normal);
         if (type == LogType.Error || type == LogType.Exception)
         {
-            WriteErrorLog(string.Format("异常log: {0} ,堆栈记录: {1} ", logString, stackTrace),LogLevel.Error);
+            WriteErrorLog(string.Format("异常log: {0} ,堆栈记录: {1} ", logString, stackTrace), LogLevel.Error);
         }
     }
 
@@ -145,10 +144,10 @@ public class LogManager :MonoBehaviour {
             default:
                 break;
         }
-        
+
     }
 
-    public static void LogError(string log,LogLevel logLevel = LogLevel.Error)
+    public static void LogError(string log, LogLevel logLevel = LogLevel.Error)
     {
         if (m_CurrentLogLevelStatic > logLevel)//当前设置打印等级大于log打印等级,就不进行打印
         {
@@ -174,7 +173,7 @@ public class LogManager :MonoBehaviour {
     /// </summary>
     /// <param name="log"></param>
     /// <param name="logLevel"></param>
-    private static void NormalLog(string log,LogLevel logLevel)
+    private static void NormalLog(string log, LogLevel logLevel)
     {
         Debug.Log(log);
     }
@@ -241,7 +240,7 @@ public class LogManager :MonoBehaviour {
             return;
         }
         Z.FileTool.FileTools.WriteFile(Application.streamingAssetsPath + "/Log.txt", log, Encoding.UTF8, true);
-        
+
     }
 
 
@@ -271,7 +270,7 @@ public class LogManager :MonoBehaviour {
                 Debug.Log(log);
                 break;
         }
-        
+
     }
 
 

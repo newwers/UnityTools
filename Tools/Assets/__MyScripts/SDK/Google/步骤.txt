@@ -1,0 +1,5 @@
+注册google play 开发者后台 需要有个网站设置设置隐私权限政策   https://app-privacy-policy-generator.firebaseapp.com/#
+注册 admob 实现广告接入,需要有个网站设置 app-ads.txt 可访问  可以用gitee
+注册unity 后台,设置Project ID 和Google 许可证密钥  https://cloud.unity.com/home
+开启项目IAP 在PackageManager中添加In App Purchase包,然后再里面设置购买的产品id和价格
+如果使用无代码购买就默认勾上自动初始化,否则需要取消自动初始化,不然购买报错

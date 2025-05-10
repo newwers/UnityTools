@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 namespace Z.UI
 {
@@ -85,7 +81,7 @@ namespace Z.UI
 
         }
         //------------------------------------------------------
-        public void SetAnchoredPosition(Vector2 poz)
+        public void SetAnchoredPosition(Vector3 poz)
         {
             if (m_pRectTrans == null)
             {

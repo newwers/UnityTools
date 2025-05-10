@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace Z.UI
@@ -18,7 +16,7 @@ namespace Z.UI
         public Canvas DynamicCanvas;
         public Camera UICamera;
 
-        Vector3 m_HidePos = new Vector3(9999f, 9999f, 9999f);
+        Vector3 m_HidePos = new Vector3(9999f, 9999f, 0);
         Vector3 m_ShowPos = new Vector3(0, 0, 0);
 
 
@@ -35,7 +33,11 @@ namespace Z.UI
         private void OnDestroy()
         {
             //todo:销毁所有UI界面
-            m_AllInstantiateUI.Clear();
+            if (m_AllInstantiateUI != null)
+            {
+                m_AllInstantiateUI.Clear();
+            }
+
         }
         //------------------------------------------------------
         public static void Show(EUIInstanceID uiInstanceID)
@@ -62,6 +64,11 @@ namespace Z.UI
         /// <param name="args">传递参数</param>
         public BaseUIController ShowUI(EUIInstanceID uiInstanceID)
         {
+            if (m_AllInstantiateUI == null)
+            {
+                Debug.LogError("未进行初始化,请执行 UIManager.Instance.Init();");
+                return null;
+            }
             if (!m_AllInstantiateUI.ContainsKey(uiInstanceID))//如果界面没有生成过
             {
                 //根据界面枚举找到对应加载预制体的路径

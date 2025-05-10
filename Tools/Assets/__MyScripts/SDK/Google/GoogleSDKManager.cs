@@ -1,5 +1,7 @@
 ﻿using GoogleMobileAds.Api;
 using System;
+using Unity.Services.Core;
+using Unity.Services.Core.Environments;
 using UnityEngine;
 using UnityEngine.Purchasing;
 using UnityEngine.Purchasing.Extension;
@@ -12,7 +14,7 @@ public class GoogleSDKManager : ISDK, IDetailedStoreListener
     private static IStoreController m_StoreController;          // 控制整个IAP系统
     private static IExtensionProvider m_StoreExtensionProvider; // 提供特定平台的扩展功能
 
-    public string noAdsProductId = "免广告商品的id";    // 替换为你在Unity IAP中设置的产品ID
+    public string noAdsProductId = "noAD";    // 替换为你在Unity IAP中设置的产品ID
 
     private BannerView bannerView;
     private InterstitialAd _interstitialAd;
@@ -44,15 +46,15 @@ public class GoogleSDKManager : ISDK, IDetailedStoreListener
 
     public void Init(Action action)
     {
+        SDKManager.Instance.NoAdBuyBtn.onClick.AddListener(BuyNoAds);
+
         // 初始化移动广告SDK
         m_OnInitCallback = action;
+        //Initialize(OnSuccess, OnError);
+
         MobileAds.Initialize(OnInit);
 
-        // 如果IAP系统还未初始化，则进行初始化
-        if (m_StoreController == null)
-        {
-            InitializePurchasing();
-        }
+        InitializePurchasing();
 
     }
 
@@ -60,7 +62,9 @@ public class GoogleSDKManager : ISDK, IDetailedStoreListener
     {
         m_OnInitCallback?.Invoke();
     }
-
+    /// <summary>
+    /// 初始化IAP系统
+    /// </summary>
     public void InitializePurchasing()
     {
         if (IsInitialized())
@@ -74,7 +78,42 @@ public class GoogleSDKManager : ISDK, IDetailedStoreListener
         builder.AddProduct(noAdsProductId, ProductType.NonConsumable);
 
         UnityPurchasing.Initialize(this, builder);
+
     }
+
+    void Initialize(Action onSuccess, Action<string> onError)
+    {
+        try
+        {
+            var options = new InitializationOptions().SetEnvironmentName(noAdsProductId);
+
+            UnityServices.InitializeAsync(options).ContinueWith(task => onSuccess());
+        }
+        catch (Exception exception)
+        {
+            onError(exception.Message);
+        }
+    }
+
+    void OnSuccess()
+    {
+        var text = "Congratulations!\nUnity Gaming Services has been successfully initialized.";
+        Debug.Log(text);
+
+
+        // 如果IAP系统还未初始化，则进行初始化
+        if (m_StoreController == null)
+        {
+            InitializePurchasing();
+        }
+    }
+
+    void OnError(string message)
+    {
+        var text = $"Unity Gaming Services failed to initialize with error: {message}.";
+        Debug.LogError(text);
+    }
+
 
     private bool IsInitialized()
     {
@@ -89,8 +128,9 @@ public class GoogleSDKManager : ISDK, IDetailedStoreListener
 
             if (product != null && product.availableToPurchase)
             {
-                Debug.Log(string.Format("Purchasing product asychronously: '{0}'", product.definition.id));
-                m_StoreController.InitiatePurchase(product);
+                Debug.Log(string.Format("异步购买产品id: '{0}'", product.definition.id));
+                //m_StoreController.InitiatePurchase(product);
+                m_StoreController.InitiatePurchase(noAdsProductId);
             }
             else
             {
@@ -149,7 +189,7 @@ public class GoogleSDKManager : ISDK, IDetailedStoreListener
             _interstitialAd = null;
         }
 
-        Debug.Log("Loading the interstitial ad.");
+        Debug.Log("加载 interstitial ad.");
 
         // create our request used to load the ad.
         var adRequest = new AdRequest();
@@ -166,7 +206,7 @@ public class GoogleSDKManager : ISDK, IDetailedStoreListener
                     return;
                 }
 
-                Debug.Log("Interstitial ad loaded with response : "
+                Debug.Log("Interstitial 加载完成 : "
                           + ad.GetResponseInfo());
 
                 _interstitialAd = ad;
@@ -182,13 +222,21 @@ public class GoogleSDKManager : ISDK, IDetailedStoreListener
 
         if (_interstitialAd != null && _interstitialAd.CanShowAd())
         {
-            Debug.Log("Showing interstitial ad.");
+            Debug.Log("展示 interstitial ad.");
             _interstitialAd.Show();
+            _interstitialAd.OnAdFullScreenContentClosed += _interstitialAd_OnAdFullScreenContentClosed;
+
         }
         else
         {
             Debug.LogError("Interstitial ad is not ready yet.");
         }
+    }
+
+    private void _interstitialAd_OnAdFullScreenContentClosed()
+    {
+        Debug.Log("interstitial ad.关闭");
+        CreateInterstitialAd();
     }
 
     public void CreateRewardVideoAd()
@@ -230,6 +278,7 @@ public class GoogleSDKManager : ISDK, IDetailedStoreListener
     {
         if (IsNoAdsPurchased() == true)
         {
+            successAction?.Invoke();
             return;
         }
 
@@ -238,8 +287,8 @@ public class GoogleSDKManager : ISDK, IDetailedStoreListener
             _rewardedAd.Show((Reward reward) =>
             {
                 // TODO: 在回调中设置用户奖励
-                //Debug.Log(String.Format(rewardMsg, reward.Type, reward.Amount));
                 successAction?.Invoke();
+                CreateRewardVideoAd();
             });
         }
     }
@@ -263,29 +312,31 @@ public class GoogleSDKManager : ISDK, IDetailedStoreListener
     #region IDetailedStoreListener接口实现
     public void OnPurchaseFailed(Product product, PurchaseFailureDescription failureReason)
     {
-        Debug.Log(string.Format("OnPurchaseFailed: FAIL. Product: '{0}', PurchaseFailureReason: {1}", product.definition.id, failureReason));
+        Debug.Log(string.Format("支付失败. 产品id: '{0}', 支付失败原因: {1}", product.definition.id, failureReason));
     }
 
     public void OnInitializeFailed(InitializationFailureReason error)
     {
-        Debug.Log("OnInitializeFailed InitializationFailureReason:" + error);
+        Debug.Log("IAP初始化失败 原因:" + error);
     }
 
     public void OnInitializeFailed(InitializationFailureReason error, string message)
     {
-        Debug.Log("OnInitializeFailed InitializationFailureReason:" + error + ",message:" + message);
+        Debug.Log("IAP初始化失败 原因:" + error + ",消息:" + message);
     }
 
     public PurchaseProcessingResult ProcessPurchase(PurchaseEventArgs args)
     {
         if (string.Equals(args.purchasedProduct.definition.id, noAdsProductId, System.StringComparison.Ordinal))
         {
-            Debug.Log(string.Format("ProcessPurchase: PASS. Product: '{0}'", args.purchasedProduct.definition.id));
+            Debug.Log(string.Format("处理支付id : '{0}'", args.purchasedProduct.definition.id));
             DisableAds();
+            SDKManager.Instance.NoAdBtn.gameObject.SetActive(false);
+            SDKManager.Instance.BuyWindow.gameObject.SetActive(false);
         }
         else
         {
-            Debug.Log(string.Format("ProcessPurchase: FAIL. Unrecognized product: '{0}'", args.purchasedProduct.definition.id));
+            Debug.Log(string.Format("支付过程失败 ProcessPurchase: FAIL. 未识别产品id: '{0}'", args.purchasedProduct.definition.id));
         }
 
         return PurchaseProcessingResult.Complete;
@@ -293,12 +344,12 @@ public class GoogleSDKManager : ISDK, IDetailedStoreListener
 
     public void OnPurchaseFailed(Product product, PurchaseFailureReason failureReason)
     {
-        Debug.Log(string.Format("OnPurchaseFailed: FAIL. Product: '{0}', PurchaseFailureReason: {1}", product.definition.id, failureReason));
+        Debug.Log(string.Format("支付失败 OnPurchaseFailed: FAIL. 产品id: '{0}', 支付失败原因: {1}", product.definition.id, failureReason));
     }
 
     public void OnInitialized(IStoreController controller, IExtensionProvider extensions)
     {
-        Debug.Log("OnInitialized: PASS");
+        Debug.Log("IAP初始化完成!");
 
         m_StoreController = controller;
         m_StoreExtensionProvider = extensions;
@@ -309,6 +360,10 @@ public class GoogleSDKManager : ISDK, IDetailedStoreListener
         {
             DisableAds();
         }
+
+
+
+        SDKManager.Instance.NoAdBtn.gameObject.SetActive(IsNoAdsPurchased() == false);
     }
 
 
@@ -316,12 +371,16 @@ public class GoogleSDKManager : ISDK, IDetailedStoreListener
     #endregion
 
 
-    private void DisableAds()
+    public void DisableAds()
     {
+        Debug.Log("去除广告!");
         OnClear();
     }
 
-    // 判断是否已经购买去除广告
+    /// <summary>
+    /// 判断是否已经购买去除广告
+    /// </summary>
+    /// <returns></returns>
     public bool IsNoAdsPurchased()
     {
         if (IsInitialized())

@@ -1,5 +1,7 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.Purchasing;
+using UnityEngine.Purchasing.Extension;
 using UnityEngine.UI;
 
 namespace Z.SDK
@@ -99,6 +101,9 @@ namespace Z.SDK
 #if USE_DY_SDK
         , IDY_SDK_UI
 #endif
+#if USE_GOOGLE_SDK
+        , IDetailedStoreListener
+#endif
     {
         public string BannerADID = "adunit-6169d57fcfe9fd13";
         public string RewardedVideoADID = "adunit-507f956db4fdd2a1";
@@ -108,6 +113,13 @@ namespace Z.SDK
         public string CustomAdID3 = "adunit-7682d9cd0694be14";//格子广告 原生1*5
 
         ISDK m_CurrentSDK;
+
+#if USE_GOOGLE_SDK
+        public Button NoAdBtn;
+        public Button NoAdBuyBtn;
+        public GameObject BuyWindow;
+#endif
+
 
 #if USE_WX_SDK
         public RectTransform GameClubBtnRectTransform;
@@ -340,22 +352,79 @@ namespace Z.SDK
             OnClear();
         }
 
+        public void DisableAds()
+        {
+#if USE_GOOGLE_SDK
+            var sdk = m_CurrentSDK as GoogleSDKManager;
+            if (sdk != null)
+            {
+                sdk.DisableAds();
+            }
+#endif
+        }
+#if USE_GOOGLE_SDK
 
+        public void OnPurchaseFailed(Product product, PurchaseFailureDescription failureDescription)
+        {
+            //支付失败
+            var sdk = m_CurrentSDK as GoogleSDKManager;
+            if (sdk != null)
+            {
+                sdk.OnPurchaseFailed(product, failureDescription);
+            }
+        }
 
+        public void OnInitializeFailed(InitializationFailureReason error)
+        {
+            //初始化失败
+            var sdk = m_CurrentSDK as GoogleSDKManager;
+            if (sdk != null)
+            {
+                sdk.OnInitializeFailed(error);
+            }
+        }
 
-        //广告
-        //激励
-        //插屏
-        //格子
+        public void OnInitializeFailed(InitializationFailureReason error, string message)
+        {
+            //初始化失败
+            var sdk = m_CurrentSDK as GoogleSDKManager;
+            if (sdk != null)
+            {
+                sdk.OnInitializeFailed(error);
+            }
+        }
 
-        //登陆
+        public PurchaseProcessingResult ProcessPurchase(PurchaseEventArgs purchaseEvent)
+        {
+            //处理支付过程
+            var sdk = m_CurrentSDK as GoogleSDKManager;
+            if (sdk != null)
+            {
+                return sdk.ProcessPurchase(purchaseEvent);
+            }
+            return PurchaseProcessingResult.Complete;
+        }
 
-        //排行榜
+        public void OnPurchaseFailed(Product product, PurchaseFailureReason failureReason)
+        {
+            //支付失败
+            var sdk = m_CurrentSDK as GoogleSDKManager;
+            if (sdk != null)
+            {
+                sdk.OnPurchaseFailed(product, failureReason);
+            }
+        }
 
-        //分享?
-
-        //录制视频?
-
+        public void OnInitialized(IStoreController controller, IExtensionProvider extensions)
+        {
+            //初始化完成
+            var sdk = m_CurrentSDK as GoogleSDKManager;
+            if (sdk != null)
+            {
+                sdk.OnInitialized(controller, extensions);
+            }
+        }
+#endif
     }
 
 }

@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "UIConfig", menuName = "ScriptableObjects/CreateUIConfig", order = 1)]
+[CreateAssetMenu(fileName = "UIConfig", menuName = "UI配置表/创建UI配置表", order = 1)]
 public class UIScriptable : ScriptableObject
 {
     [Serializable]
