@@ -392,12 +392,39 @@ namespace Z.UI
             return radio;
         }
 
-
-        public static void SetImage(UnityEngine.UI.Image img, string path)
+        /// <summary>
+        /// 设置图片
+        /// 例如 Csv/DataConfig 不需要后缀
+        /// </summary>
+        /// <param name="img"></param>
+        /// <param name="path">路径需要放到Resources底下 例如 Csv/DataConfig 不需要后缀</param>
+        public static void SetImageByResourcesLoad(UnityEngine.UI.Image img, string path)
         {
             if (img)
             {
                 img.sprite = ResourceLoadManager.Instance.ResourceLoad<Sprite>(path);
+            }
+        }
+        /// <summary>
+        /// 设置图片
+        /// 例如:Assets/Textures/myTexture.png
+        /// </summary>
+        /// <param name="img"></param>
+        /// <param name="path">例如:Assets/Textures/myTexture.png</param>
+        public static void SetImage(UnityEngine.UI.Image img, string path)
+        {
+            if (img)
+            {
+                img.sprite = ResourceLoadManager.Instance.Load<Sprite>(path);
+            }
+        }
+
+        public static void PlayParticleSystem(ParticleSystem particleSystem)
+        {
+            if (particleSystem)
+            {
+                particleSystem.time = 0f; // 重置粒子系统的时间
+                particleSystem.Play();
             }
         }
     }
