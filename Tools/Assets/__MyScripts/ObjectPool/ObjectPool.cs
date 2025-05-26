@@ -1,7 +1,7 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine.Events;
 
-namespace zdq.Pool
+namespace Z.Pool
 {
     public class ObjectPool<T> where T : new()
     {

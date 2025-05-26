@@ -28,7 +28,7 @@ public class WXAdController : ISDK
     WXRewardedVideoAd m_RewardedVideoAd;
     WXInterstitialAd m_InterstitialAd;
 
-    
+
 
     public WXAdController()
     {
@@ -38,12 +38,23 @@ public class WXAdController : ISDK
             SDKManager.Instance.ShareBtn.onClick.RemoveAllListeners();
             SDKManager.Instance.ShareBtn.onClick.AddListener(OnShareBtnClick);
         }
-        
+
     }
 
     private void OnShareBtnClick()
     {
-        ShareDirect("好运消扑克");
+        ShareDirect("分享给好友");
+    }
+
+
+    public void OnClear()
+    {
+        OnDestroy();
+    }
+
+    public void Init(Action action)
+    {
+        ShowAllAD();
     }
 
     private void OnInitCallback(int obj)
@@ -152,10 +163,10 @@ public class WXAdController : ISDK
 
     public void CreateBannerAdAndShow()
     {
-        CreateBannerAd(null,null,true);
+        CreateBannerAd(null, null, true);
     }
 
-    public WXBannerAd CreateBannerAd(Action<WXADLoadResponse> OnLoadAction, System.Action<WXADErrorResponse> OnErrorAction,bool isShow = false)
+    public WXBannerAd CreateBannerAd(Action<WXADLoadResponse> OnLoadAction, System.Action<WXADErrorResponse> OnErrorAction, bool isShow = false)
     {
         //每次创建banner都需要销毁旧banner,
         if (m_BannerAD != null)
@@ -228,10 +239,13 @@ public class WXAdController : ISDK
         m_ShowRewardVideoAdSuccessAction = successAction;
         m_ShowRewardVideoAdFailedAction = failedAction;
 
-        ShowRewardedVideoAD(m_RewardedVideoAd, (a) => { 
+        ShowRewardedVideoAD(m_RewardedVideoAd, (a) =>
+        {
             //successAction?.Invoke();
-            Debug.Log("显示激励广告成功回调"); }, 
-            (a) => { 
+            Debug.Log("显示激励广告成功回调");
+        },
+            (a) =>
+            {
                 //failedAction?.Invoke();
                 Debug.Log("显示激励广告失败回调");
             }
@@ -338,7 +352,7 @@ public class WXAdController : ISDK
     /// </summary>
     public void CreateInterstitialAd()
     {
-        CreateInterstitialAd(null,null);
+        CreateInterstitialAd(null, null);
     }
 
     /// <summary>
@@ -410,7 +424,7 @@ public class WXAdController : ISDK
     }
 
 
-    public void CreateCustomAdAndShow(string adID,Z.SDK.CustomStyle_Z customStyle)
+    public void CreateCustomAdAndShow(string adID, Z.SDK.CustomStyle_Z customStyle)
     {
         CreateCustomAd(null, customStyle, adID, null, null);
     }
@@ -478,7 +492,7 @@ public class WXAdController : ISDK
 
     private void OnLoginSuccess(LoginSuccessCallbackResult result)
     {
-        Debug.Log("OnLoginSuccess.code: " + result.code + ",errMsg:" +  result.errMsg);//这将生成一个登录凭证（code），您可以使用该凭证换取用户信息
+        Debug.Log("OnLoginSuccess.code: " + result.code + ",errMsg:" + result.errMsg);//这将生成一个登录凭证（code），您可以使用该凭证换取用户信息
         //查看授权：在获取用户信息之前，您需要检查用户是否已经授权您的游戏获取其信息。使用WX.GetSetting()接口查询用户的授权情况：
         //WX.auth
     }
@@ -508,7 +522,7 @@ public class WXAdController : ISDK
     /// </summary>
     /// <param name="btnRectTransform">传入unity按钮RectTransform</param>
     /// <param name="openlink">打开链接</param>
-    public void CreateGameClub(RectTransform btnRectTransform,string openlink=null)
+    public void CreateGameClub(RectTransform btnRectTransform, string openlink = null)
     {
         WXCreateGameClubButtonParam param = new WXCreateGameClubButtonParam();
         // param.type = GameClubButtonType.image;
@@ -582,7 +596,8 @@ public class WXAdController : ISDK
                     {
                         Debug.Log("分享成功");
                     },
-                    fail = (r) => {
+                    fail = (r) =>
+                    {
                         Debug.Log("分享失败");
                     }
                 });
@@ -599,7 +614,7 @@ public class WXAdController : ISDK
     [Obsolete("微信没有直接分享到朋友圈的接口,可以用右上角三个点进行分享")]
     public void ShareToFriendClub(string title)
     {
-        
+
     }
 
 }

@@ -1,12 +1,11 @@
-#if USE_DY_SDK
+﻿#if USE_DY_SDK
 
-using TTSDK.UNBridgeLib.LitJson;
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using TTSDK;
+using TTSDK.UNBridgeLib.LitJson;
 using UnityEngine;
 using Z.SDK;
-using TTSDK;
 using static TTSDK.TTAccount;
 using static TTSDK.TTAppLifeCycle;
 
@@ -82,7 +81,7 @@ public class DYSDKController : ISDK
     /// <param name="onOpenSettingFail"></param>
     public void OpenSetting(OnOpenSettingSuccess onOpenSettingSuccess, OnOpenSettingFail onOpenSettingFail)
     {
-        TT.OpenSetting(onOpenSettingSuccess,onOpenSettingFail);
+        TT.OpenSetting(onOpenSettingSuccess, onOpenSettingFail);
     }
 
     /// <summary>
@@ -103,7 +102,7 @@ public class DYSDKController : ISDK
         },
          
          */
-        TT.ShowDouyinOpenAuth(scopes,successCallback,failedCallback);
+        TT.ShowDouyinOpenAuth(scopes, successCallback, failedCallback);
     }
 
     #endregion
@@ -119,7 +118,7 @@ public class DYSDKController : ISDK
     /// <param name="error"></param>
     public void CheckScene(Action<bool> success, Action complete, Action<int, string> error)
     {
-        TT.CheckScene( TTSideBar.SceneEnum.SideBar,success,complete,error);
+        TT.CheckScene(TTSideBar.SceneEnum.SideBar, success, complete, error);
     }
 
     /// <summary>
@@ -144,7 +143,7 @@ public class DYSDKController : ISDK
     /// </summary>
     public void ListenerScene(OnShowEventWithDict action)
     {
-        TT.GetAppLifeCycle().OnShow+= action;
+        TT.GetAppLifeCycle().OnShow += action;
     }
 
     private void OnShowOneParam(Dictionary<string, object> param)
@@ -217,9 +216,9 @@ public class DYSDKController : ISDK
     /// </summary>
     /// <param name="successCallback">在回调函数的参数中获取亮度值</param>
     /// <param name="failCallback"></param>
-    public void GetScreenBrightness(Action<double> successCallback,Action<string> failCallback)
+    public void GetScreenBrightness(Action<double> successCallback, Action<string> failCallback)
     {
-        TT.GetScreenBrightness(successCallback,failCallback);
+        TT.GetScreenBrightness(successCallback, failCallback);
     }
 
     /// <summary>
@@ -228,9 +227,9 @@ public class DYSDKController : ISDK
     /// <param name="value"></param>
     /// <param name="successCallback"></param>
     /// <param name="failCallback"></param>
-    public void SetScreenBrightness(float value,Action successCallback, Action<string> failCallback)
+    public void SetScreenBrightness(float value, Action successCallback, Action<string> failCallback)
     {
-        TT.SetScreenBrightness(value,successCallback, failCallback);
+        TT.SetScreenBrightness(value, successCallback, failCallback);
     }
 
     #endregion
@@ -258,12 +257,12 @@ public class DYSDKController : ISDK
         //json["extra"] = 0;
         //json["zoneId"] = 0;
 
-        TT.SetImRankData(paramJson,callback);
+        TT.SetImRankData(paramJson, callback);
     }
 
     public void GetImRankListV2(JsonData paramJson, Action<bool, string> callback)
     {
-        TT.GetImRankList(paramJson,callback);
+        TT.GetImRankList(paramJson, callback);
     }
 
 
@@ -273,7 +272,7 @@ public class DYSDKController : ISDK
 
     public void Login(OnLoginSuccessCallback successCallback, OnLoginFailedCallback failedCallback, bool forceLogin = true)
     {
-        TT.Login(successCallback, failedCallback, forceLogin );
+        TT.Login(successCallback, failedCallback, forceLogin);
     }
 
     #endregion
@@ -309,7 +308,7 @@ public class DYSDKController : ISDK
     /// <param name="result"></param>
     private void JumpCallback(bool result)
     {
-        
+
     }
 
     /// <summary>
@@ -369,7 +368,7 @@ public class DYSDKController : ISDK
     /// </summary>
     public void ShareVideoWithTitleTopics(string title, List<string> topics)
     {
-        TT.GetGameRecorder().ShareVideoWithTitleTopics(SuccessCallback, FailedCallback, CancelledCallback,title,topics);
+        TT.GetGameRecorder().ShareVideoWithTitleTopics(SuccessCallback, FailedCallback, CancelledCallback, title, topics);
     }
 
     /// <summary>
@@ -382,17 +381,17 @@ public class DYSDKController : ISDK
 
     private void CancelledCallback()
     {
-        
+
     }
 
     private void FailedCallback(string errMsg)
     {
-        
+
     }
 
     private void SuccessCallback(Dictionary<string, object> result)
     {
-        
+
     }
 
     #endregion
@@ -427,12 +426,12 @@ public class DYSDKController : ISDK
 
     private void OnFollowAwemeError(int arg1, string arg2)
     {
-        
+
     }
 
     private void OnFollowAwemeCallback()
     {
-        
+
     }
 
     #endregion
@@ -451,12 +450,12 @@ public class DYSDKController : ISDK
 
     private void OnRecordTimeout(string videoPath)
     {
-        
+
     }
 
     private void OnRecordError(int errCode, string errMsg)
     {
-        
+
     }
 
     private void OnRecordStart()
@@ -470,9 +469,14 @@ public class DYSDKController : ISDK
 
     public void ShowRewardedVideoAd()
     {
+        Debug.Log("请求显示激励视频广告");
         if (m_RewardedVideoAd != null)
         {
             m_RewardedVideoAd.Show();
+        }
+        else
+        {
+            Debug.Log("激励视频广告未创建");
         }
     }
 
@@ -482,7 +486,8 @@ public class DYSDKController : ISDK
     public void CreateVideoAD()
     {
         m_RewardedVideoAd = TT.CreateRewardedVideoAd(SDKManager.Instance.RewardedVideoADID, OnVideoCloseCallback, OnVideoErrorCallback, false, null, 1, false);
-        
+        Debug.Log("创建激励视频广告");
+
     }
     /// <summary>
     /// 连续观看激励广告
@@ -499,6 +504,7 @@ public class DYSDKController : ISDK
     public void CreateVideoAD(bool multiton, string[] multitonRewardMsg, int multitonRewardTime, bool progressTip, Action<bool, int> closeCallback = null, Action<int, string> errCallback = null)
     {
         m_RewardedVideoAd = TT.CreateRewardedVideoAd(SDKManager.Instance.RewardedVideoADID, closeCallback, errCallback, multiton, multitonRewardMsg, multitonRewardTime, progressTip);
+        Debug.Log("创建激励视频广告");
     }
 
     private void OnVideoErrorCallback(int errCode, string errMsg)
@@ -507,7 +513,7 @@ public class DYSDKController : ISDK
         m_ShowRewardVideoAdFailedAction?.Invoke();
     }
 
-    private void OnVideoCloseCallback(bool isCompleted,int code)
+    private void OnVideoCloseCallback(bool isCompleted, int code)
     {
         if (isCompleted)
         {
@@ -529,21 +535,22 @@ public class DYSDKController : ISDK
         CreateInterstitialAdParam param = new CreateInterstitialAdParam();
         param.InterstitialAdId = SDKManager.Instance.InterstitialAdID;
         m_InterstitialAD = TT.CreateInterstitialAd(param);
+        Debug.Log("创建插屏AD");
     }
 
     private void OnInterstitialCloseCallback()
     {
-        
+
     }
 
     private void OnInterstitialLoadCallback()
     {
-        
+
     }
 
     private void OnInterstitialErrorCallback(int arg1, string arg2)
     {
-        
+
     }
 
     void DestoryInterstitialAd()
@@ -592,14 +599,14 @@ public class DYSDKController : ISDK
             width = 320
         };
         param.AdIntervals = 60;
-        
+
 
         m_BannerAD = TT.CreateBannerAd(param);
     }
 
     private void OnBannerResizeCallback(int arg1, int arg2)
     {
-        
+
     }
 
     private void OnBannerLoadCallback()
@@ -612,7 +619,7 @@ public class DYSDKController : ISDK
 
     private void OnBannerErrorCallback(int arg1, string arg2)
     {
-        
+
     }
 
 
@@ -670,6 +677,16 @@ public class DYSDKController : ISDK
     public void GetRankData()
     {
         throw new NotImplementedException();
+    }
+
+    public void OnClear()
+    {
+
+    }
+
+    public void Init(Action action)
+    {
+        action?.Invoke();
     }
 
     #endregion
