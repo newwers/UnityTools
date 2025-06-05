@@ -18,7 +18,7 @@ exports.main = async (event, context) => {
       'gamedata.nickName':db.command.neq(""),//确保nick不为空
     });
     //使用构造除的字段名进行查询和排序,限制返回的结果数量为50
-    let data = await query.orderBy(levelField,'desc').limit(50).get();
+    let data = await query.orderBy(levelField,'desc').limit(100).get();
     //检查获取的数据是否为空
     if(data.length == 0){
       return{
