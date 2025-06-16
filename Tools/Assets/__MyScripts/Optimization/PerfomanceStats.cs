@@ -13,6 +13,7 @@ public class PerfomanceStats : MonoBehaviour
     private string totalMemoryText;
     private string gpuMemoryText;
     private string fpsText;
+    private string resolutionText; // 新增变量来存储分辨率信息
 
     public Text m_FPS;
     public Text m_Memory;
@@ -33,9 +34,12 @@ public class PerfomanceStats : MonoBehaviour
         long gpuMem = Profiler.GetAllocatedMemoryForGraphicsDriver();
         gpuMemoryText = string.Format("{0}MB", ((float)gpuMem / 1000000).ToString("##.00"));
 
-        m_FPS.text = fpsText;
-        m_Memory.text = totalMemoryText;
-        m_GPUMemory.text = gpuMemoryText;
+        // 获取当前分辨率信息
+        resolutionText = string.Format("{0}x{1}", Screen.width, Screen.height);
+
+        //m_FPS.text = fpsText;
+        //m_Memory.text = totalMemoryText;
+        //m_GPUMemory.text = gpuMemoryText;
     }
 
     void UpdateFrametime()
@@ -50,13 +54,15 @@ public class PerfomanceStats : MonoBehaviour
         fpsText = (1f / avgFrametime).ToString("###.00");
     }
 
-    //private void OnGUI()
-    //{
-    //    GUIStyle style = new GUIStyle();
-    //    style.normal.textColor = Color.red;
-    //    style.fontSize = 40;
-    //    GUI.TextArea(new Rect(10, 10, 200, 30), fpsText, style);
-    //    GUI.TextArea(new Rect(10, 80, 200, 30), totalMemoryText, style);
-    //    GUI.TextArea(new Rect(10, 150, 200, 30), gpuMemoryText, style);
-    //}
+    private void OnGUI()
+    {
+        GUIStyle style = new GUIStyle();
+        style.normal.textColor = Color.red;
+        style.fontSize = 40;
+        GUI.TextArea(new Rect(10, 10, 200, 30), fpsText, style);
+        GUI.TextArea(new Rect(10, 80, 200, 30), totalMemoryText, style);
+        GUI.TextArea(new Rect(10, 150, 200, 30), gpuMemoryText, style);
+        // 显示分辨率信息
+        GUI.TextArea(new Rect(10, 220, 200, 30), resolutionText, style);
+    }
 }

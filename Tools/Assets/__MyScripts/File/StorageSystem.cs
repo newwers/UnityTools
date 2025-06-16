@@ -23,12 +23,16 @@ using System.IO;
 using System.Text;
 using UnityEngine;
 
+
+
 /// <summary>
 /// 储存系统,管理 streamingAssetsPath,persistentDataPath,PlayerPrefs的存储和读取
 /// 
 /// </summary>
-public static class StorageSystem 
+public static class StorageSystem
 {
+    // 加密密钥（可以更复杂）
+    private static readonly string encryptionKey = "your-encryption-key";
 
     public static string streamingAssetsPath
     {
@@ -65,7 +69,11 @@ public static class StorageSystem
 
     public static void SaveStringToPersistentDataPath(string data, string filename)
     {
+        // 可选：加密
+        //data = EncryptDecrypt(data);
+
         string path = Path.Combine(Application.persistentDataPath, filename);
+        Debug.Log($"Saving data to persistent path: {path}");
         File.WriteAllText(path, data, Encoding.UTF8);
     }
 
@@ -74,7 +82,10 @@ public static class StorageSystem
         string path = Path.Combine(Application.persistentDataPath, filename);
         if (File.Exists(path))
         {
-            return File.ReadAllText(path, Encoding.UTF8);
+            var data = File.ReadAllText(path, Encoding.UTF8);
+            // 可选：解密
+            //jsonData = EncryptDecrypt(jsonData);
+            return data;
         }
         return null;
     }
@@ -126,5 +137,16 @@ public static class StorageSystem
         }
 
         return null;
+    }
+
+    // 简单的加密解密方法（异或加密）
+    private static string EncryptDecrypt(string data)
+    {
+        char[] dataChars = data.ToCharArray();
+        for (int i = 0; i < dataChars.Length; i++)
+        {
+            dataChars[i] = (char)(dataChars[i] ^ encryptionKey[i % encryptionKey.Length]);
+        }
+        return new string(dataChars);
     }
 }

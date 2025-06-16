@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -42,24 +42,24 @@ public class DelayAction : MonoBehaviour
     void Update()
     {
         //print("update Time.unscaledDeltaTime:" + Time.unscaledDeltaTime + ",Time.deltaTime:" + Time.deltaTime);
-        for (int i = m_vActions.Count-1; i >=0; i--)
+        for (int i = m_vActions.Count - 1; i >= 0; i--)
         {
             if (i >= m_vActions.Count)
             {
-                continue;//ÓĞ¿ÉÄÜÒ»´ÎĞÔÉ¾³ı¶à¸öÊı¾İÇé¿ö,ĞèÒªÅĞ¶Ï
+                continue;//æœ‰å¯èƒ½ä¸€æ¬¡æ€§åˆ é™¤å¤šä¸ªæ•°æ®æƒ…å†µ,éœ€è¦åˆ¤æ–­
             }
             //UnityEngine.Debug.Log("index:" + i);
             ActionData data = m_vActions[i];
             if (data.IsUnscaledDeltaTime)
             {
-                data.time -= Time.unscaledDeltaTime;//ÊÜµ½ÓÎÏ·ºóÌ¨ÔİÍ£Ó°Ïì
+                data.time -= Time.unscaledDeltaTime;//å—åˆ°æ¸¸æˆåå°æš‚åœå½±å“
             }
             else
             {
-                data.time -= Time.deltaTime;//ÔİÍ£ºó,Ê±¼ä¼ÆÊ±Ò²ÔİÍ£
+                data.time -= Time.deltaTime;//æš‚åœå,æ—¶é—´è®¡æ—¶ä¹Ÿæš‚åœ
             }
-            
-            
+
+
             if (data.time <= 0)
             {
                 m_vActions.RemoveAt(i);
@@ -77,7 +77,7 @@ public class DelayAction : MonoBehaviour
         m_vActions.Clear();
     }
 
-    public static string AddAction(Action aciton,float time,bool isUnscaledDeltaTime = false)
+    public static string AddAction(Action aciton, float time, bool isUnscaledDeltaTime = false)
     {
         ActionData data = new ActionData();
         data.id = Instance.ID.ToString();
@@ -88,7 +88,7 @@ public class DelayAction : MonoBehaviour
         return data.id;
     }
 
-    public static void RemoveAction(string id) 
+    public static void RemoveAction(string id)
     {
         var actions = Instance.m_vActions;
         for (int i = 0; i < actions.Count; i++)
@@ -115,25 +115,25 @@ public class DelayAction : MonoBehaviour
     }
 
     /// <summary>
-    /// ¸ù¾İµ÷ÓÃÀàÃûºÍº¯ÊıÃû,½øĞĞÅĞ¶Ï,Ö»ÓĞÎ¨Ò»
+    /// æ ¹æ®è°ƒç”¨ç±»åå’Œå‡½æ•°å,è¿›è¡Œåˆ¤æ–­,åªæœ‰å”¯ä¸€
     /// </summary>
     /// <param name="action"></param>
     /// <param name="time"></param>
     /// <returns></returns>
     public static string AddUniqueAction(Action action, float time, bool isUnscaledDeltaTime = false)
     {
-        // »ñÈ¡µ±Ç°·½·¨µÄÃû³ÆºÍÀàÃû
-        // »ñÈ¡µ÷ÓÃÕßµÄÀàÃûºÍ·½·¨Ãû
+        // è·å–å½“å‰æ–¹æ³•çš„åç§°å’Œç±»å
+        // è·å–è°ƒç”¨è€…çš„ç±»åå’Œæ–¹æ³•å
         string callerClassName = GetCallingClassName();
         string callerMethodName = MethodBase.GetCurrentMethod().Name;
 
         string identifier = callerClassName + "." + callerMethodName;
         //print("AddUniqueAction: identifier:" + identifier);
 
-        // ÒÆ³ıÒÑ´æÔÚµÄÏàÍ¬±êÊ¶·ûµÄÑÓ³Ùº¯Êı
+        // ç§»é™¤å·²å­˜åœ¨çš„ç›¸åŒæ ‡è¯†ç¬¦çš„å»¶è¿Ÿå‡½æ•°
         RemoveAction(identifier);
 
-        // Ìí¼ÓĞÂµÄÑÓ³Ùº¯Êı
+        // æ·»åŠ æ–°çš„å»¶è¿Ÿå‡½æ•°
         ActionData data = new ActionData();
         data.id = identifier;
         data.time = time;
@@ -143,21 +143,36 @@ public class DelayAction : MonoBehaviour
         return data.id;
     }
 
-    // ĞÂÔö·½·¨£¬»ñÈ¡µ÷ÓÃÕßµÄÀàÃû
+    // æ–°å¢æ–¹æ³•ï¼Œè·å–è°ƒç”¨è€…çš„ç±»å
     private static string GetCallingClassName()
     {
-        // »ñÈ¡µ±Ç°¶ÑÕ»¸ú×Ù
+        // è·å–å½“å‰å †æ ˆè·Ÿè¸ª
         StackTrace stackTrace = new StackTrace();
-        // »ñÈ¡¶ÑÕ»Ö¡Êı×é
+        // è·å–å †æ ˆå¸§æ•°ç»„
         StackFrame[] frames = stackTrace.GetFrames();
-        if (frames != null && frames.Length > 2) // Ìø¹ıGetCallingClassNameºÍAddUniqueAction·½·¨
+        if (frames != null && frames.Length > 2) // è·³è¿‡GetCallingClassNameå’ŒAddUniqueActionæ–¹æ³•
         {
-            // »ñÈ¡µ÷ÓÃÕßµÄ¶ÑÕ»Ö¡
+            // è·å–è°ƒç”¨è€…çš„å †æ ˆå¸§
             StackFrame callerFrame = frames[2];
-            // »ñÈ¡µ÷ÓÃÕßµÄÀàÃû
+            // è·å–è°ƒç”¨è€…çš„ç±»å
             MethodBase method = callerFrame.GetMethod();
             return method.DeclaringType.FullName;
         }
         return null;
+    }
+
+    public static void DelayOneFrame(Action action)
+    {
+        if (action == null)
+        {
+            return;
+        }
+        Instance.StartCoroutine(Instance.DelayOneFrameCoroutine(action));
+    }
+
+    IEnumerator DelayOneFrameCoroutine(Action action)
+    {
+        yield return null;
+        action?.Invoke();
     }
 }
