@@ -19,10 +19,90 @@ persistentDataPath的替代方案是使用WX.env.USER_DATA_PATH
 
  */
 
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
 
+
+/// <summary>
+/// 数据接口
+/// 在需要保存或加载数据的类中实现此接口
+/// </summary>
+public interface IDataSaver
+{
+    void OnSave(SaveData saveData);
+    void OnLoad(SaveData saveData);
+}
+
+/// <summary>
+/// 基础数据结构
+/// 需要使用Newtonsoft.Json来处理复杂类型的序列化和反序列化
+/// 使用包管理器加载 Newtonsoft.Json  地址 com.unity.nuget.newtonsoft-json
+/// 需要自己管理所有实现了IDataSaver接口的类,然后调用实现存档和加载的功能
+/// </summary>
+[System.Serializable]
+public class SaveData
+{
+    public int version = 1; // 版本控制
+    public Dictionary<string, object> data = new Dictionary<string, object>();
+
+    // 添加类型安全的存取方法
+    public void Set<T>(string key, T value) => data[key] = value;
+
+    public T Get<T>(string key, T defaultValue = default)
+    {
+        if (data.TryGetValue(key, out var value))
+        {
+            //UnityEngine.Debug.Log($"Get key: {key}, value: {value}, type: {value.GetType()}");
+
+            // 特殊处理数组类型
+            if (typeof(T).IsArray)
+            {
+                var elementType = typeof(T).GetElementType();
+
+                // 处理 JArray (JSON 数组)
+                if (value is Newtonsoft.Json.Linq.JArray jArray)
+                {
+                    var array = Array.CreateInstance(elementType, jArray.Count);
+                    for (int i = 0; i < jArray.Count; i++)
+                    {
+                        array.SetValue(Convert.ChangeType(jArray[i], elementType), i);
+                    }
+                    return (T)(object)array;
+                }
+
+                // 处理普通数组
+                if (value is Array originalArray)
+                {
+                    var array = Array.CreateInstance(elementType, originalArray.Length);
+                    for (int i = 0; i < originalArray.Length; i++)
+                    {
+                        array.SetValue(Convert.ChangeType(originalArray.GetValue(i), elementType), i);
+                    }
+                    return (T)(object)array;
+                }
+            }
+
+            // 普通类型转换
+            return (T)Convert.ChangeType(value, typeof(T));
+        }
+
+        return defaultValue;
+    }
+
+    public Vector2 GetVector2(string key, Vector2 defaultValue = default)
+    {
+        float[] array = Get<float[]>(key);
+        if (array != null && array.Length >= 2)
+        {
+            return new Vector2(array[0], array[1]);
+        }
+        return defaultValue;
+    }
+}
 
 
 /// <summary>
@@ -49,6 +129,8 @@ public static class StorageSystem
             return Application.persistentDataPath;
         }
     }
+
+
 
 
     public static void SaveStringToStreamingAssets(string data, string filename)
@@ -148,5 +230,62 @@ public static class StorageSystem
             dataChars[i] = (char)(dataChars[i] ^ encryptionKey[i % encryptionKey.Length]);
         }
         return new string(dataChars);
+    }
+
+    // 5. 加密解密
+    private static string Encrypt(string input)
+    {
+        // AES加密实现
+        using var aes = new AesManaged();
+        aes.Key = Encoding.UTF8.GetBytes(encryptionKey.PadRight(32, '*'));
+        aes.Mode = CipherMode.CBC;
+
+        using var encryptor = aes.CreateEncryptor();
+        using var ms = new MemoryStream();
+        using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+        using (var sw = new StreamWriter(cs))
+        {
+            sw.Write(input);
+        }
+        return Convert.ToBase64String(ms.ToArray());
+    }
+
+    private static string Decrypt(string input)
+    {
+        // AES解密实现
+        byte[] buffer = Convert.FromBase64String(input);
+        using var aes = new AesManaged();
+        aes.Key = Encoding.UTF8.GetBytes(encryptionKey.PadRight(32, '*'));
+        aes.Mode = CipherMode.CBC;
+
+        using var decryptor = aes.CreateDecryptor();
+        using var ms = new MemoryStream(buffer);
+        using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
+        using var sr = new StreamReader(cs);
+        return sr.ReadToEnd();
+    }
+
+    /// <summary>
+    /// 获取场景中所有实现了特定接口的组件
+    /// 包括激活和未激活的对象
+    /// </summary>
+    /// <typeparam name="T">接口类型</typeparam>
+    public static List<T> FindImplementers<T>(bool includeInactive = true) where T : class
+    {
+        // 使用Object.FindObjectsByType替代过时的Object.FindObjectsOfType
+        var components = UnityEngine.Object.FindObjectsByType<Component>(
+            includeInactive ? FindObjectsInactive.Include : FindObjectsInactive.Exclude,
+            FindObjectsSortMode.None);
+
+        var result = new List<T>();
+        foreach (var component in components)
+        {
+            // 检查组件是否实现了该接口
+            if (component is T implementer)
+            {
+                result.Add(implementer);
+            }
+        }
+        return result;
     }
 }
