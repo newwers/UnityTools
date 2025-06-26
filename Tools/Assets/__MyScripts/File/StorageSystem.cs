@@ -47,7 +47,11 @@ public interface IDataSaver
 public class SaveData
 {
     public int version = 1; // 版本控制
-    public Dictionary<string, object> data = new Dictionary<string, object>();
+    public Dictionary<string, object> data = new Dictionary<string, object>();//通用数据
+    public Dictionary<string, BalloonRuntimeData> balloonData = new Dictionary<string, BalloonRuntimeData>();//气球等级经验数据
+    public List<SceneItemSaveData> sceneItemSaveData = new List<SceneItemSaveData>();//物体场景中状态数据
+    public Dictionary<string, ItemUnlockData> itemUnlockData = new Dictionary<string, ItemUnlockData>();//物体解锁状态数据
+
 
     // 添加类型安全的存取方法
     public void Set<T>(string key, T value) => data[key] = value;
@@ -102,6 +106,55 @@ public class SaveData
         }
         return defaultValue;
     }
+    public Vector3 GetVector3(string key, Vector3 defaultValue = default)
+    {
+        float[] array = Get<float[]>(key);
+        if (array != null && array.Length >= 2)
+        {
+            return new Vector3(array[0], array[1], array[2]);
+        }
+        return defaultValue;
+    }
+
+    public void SetVector2(string key, Vector2 value)
+    {
+        Set(key, new float[] { value.x, value.y });
+    }
+
+    public void SetVector3(string key, Vector3 value)
+    {
+        Set(key, new float[] { value.x, value.y, value.z });
+    }
+
+    public void SetBalloonData(Dictionary<string, BalloonRuntimeData> data)
+    {
+        balloonData = data;
+    }
+
+    public Dictionary<string, BalloonRuntimeData> GetBalloonData()
+    {
+        return balloonData;
+    }
+
+    public void SetItemUnlockSaveData(Dictionary<string, ItemUnlockData> data)
+    {
+        itemUnlockData = data;
+    }
+
+    public Dictionary<string, ItemUnlockData> GetItemUnlockSaveData()
+    {
+        return itemUnlockData;
+    }
+
+    public void SetSceneItemSaveData(List<SceneItemSaveData> data)
+    {
+        sceneItemSaveData = data;
+    }
+    public List<SceneItemSaveData> GetSceneItemSaveData()
+    {
+        return sceneItemSaveData;
+    }
+
 }
 
 
