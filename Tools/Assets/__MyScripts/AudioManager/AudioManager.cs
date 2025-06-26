@@ -2,21 +2,15 @@
 	newwer
     管理音频的加载和播放
 */
-using Greet;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using Unity.VisualScripting;
-//using Tools.FileTool;
 using UnityEngine;
-using UnityEngine.Networking;
 
 namespace Asset.Core
 {
     /// <summary>
     /// 管理所有音频
     /// 在一开始加载所有的音频,
-    /// todo:如果音频是不常用音频,可以在后面打开某个场景的时候进行加载(未实现)
+    /// todo:在某些需要播放时额外设置audiosource参数的时候,需要使用scriptableobject进行配置
     /// </summary>
 	public class AudioManager : BaseMonoSingleClass<AudioManager>
     {
@@ -26,35 +20,36 @@ namespace Asset.Core
         [Header("BGM初始化时,音量大小")]
         public float m_BGMvInitVolume = 0.5f;
 
+        public float AudioEffectVolume = 1.0f;
+
         public List<AudioSource> m_AudioSources;
 
-        [Header("打招呼音频")]
-        public GreetAudioClips GreetAudioClips;
+        public AudioClip SpawnGiftAduio;
+        public AudioClip ClickGiftAduio;
+        public AudioClip PickItemAduio;
+        public AudioClip DropItemAduio;
+        public AudioClip ClickBalloonAduio;
 
-        GreetLogic m_pGreetLogic = null;
+        [Header("图鉴UI")]
+        public AudioClip OpenCollectionAudio;
+        public AudioClip ClickBalloonPageAduio;
+        public AudioClip ClickButtonAduio;
+        public AudioClip ClickBuyBtnAduio;
 
-        public GreetLogic greetLogic
-        {
-            get
-            {
-                return m_pGreetLogic;
-            }
-        }
+
+
+
 
         protected override void Awake()
         {
             base.Awake();
-            if (m_pGreetLogic == null)
-            {
-                m_pGreetLogic = new GreetLogic();
-                m_pGreetLogic.Awake();
-            }
+
 
             DontDestroyOnLoad(this.gameObject);
         }
 
-        void Start () {
-            m_pGreetLogic?.Start();
+        void Start()
+        {
             PlayBackgroundMusic();
         }
 
@@ -67,7 +62,6 @@ namespace Asset.Core
 
         private void OnDestroy()
         {
-            m_pGreetLogic?.OnDestroy();
             Dispose();
         }
 
@@ -83,7 +77,7 @@ namespace Asset.Core
             audioSource.loop = true;
             audioSource.volume *= m_BGMvInitVolume;
             audioSource.Play();
-            
+
         }
 
 
@@ -95,7 +89,7 @@ namespace Asset.Core
         public AudioSource GetAudioSource()
         {
             AudioSource audioSource = null;
-            if(m_AudioSources != null)
+            if (m_AudioSources != null)
             {
                 foreach (var item in m_AudioSources)
                 {
@@ -106,12 +100,15 @@ namespace Asset.Core
                     }
                 }
             }
-            
+
 
             //所有 AudioSource 都播放的情况下,新增一个 AudioSource 组件
             if (audioSource == null)
             {
-                audioSource = gameObject.AddComponent<AudioSource>();
+                GameObject newSourceObject = new GameObject($"AudioSource_{m_AudioSources.Count + 1}");
+                newSourceObject.transform.SetParent(transform);
+
+                audioSource = newSourceObject.AddComponent<AudioSource>();
                 if (m_AudioSources == null)
                 {
                     m_AudioSources = new List<AudioSource>();
@@ -126,16 +123,27 @@ namespace Asset.Core
         /// 直接播放一个音频片段,调用者无需处理AudioSource的组件
         /// 只需要传递进来要播放的音频即可
         /// </summary>
-        public void PlayAudio(AudioClip audioClip,float deley = 0)
+        public void PlayAudio(AudioClip audioClip, float deley = 0)
         {
             var audioSource = GetAudioSource();
             audioSource.clip = audioClip;
             audioSource.loop = false;
-            audioSource.Play((ulong)(audioClip.frequency * deley));
+            //audioSource.Play((ulong)(audioClip.frequency * deley));
+            audioSource.PlayDelayed(deley);
+        }
+
+        public void PlayAudio(AudioClip audioClip, Vector3 pos)
+        {
+            var audioSource = GetAudioSource();
+            audioSource.clip = audioClip;
+            audioSource.loop = false;
+            audioSource.transform.position = pos;//设置位置
+            audioSource.spatialBlend = 1;//3D音效
+            audioSource.Play();
         }
 
 
-       
+
     }
 
     /// <summary>
