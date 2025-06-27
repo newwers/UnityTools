@@ -23,34 +23,6 @@ public class BaseSingleClass<T> where T : new()//约束子类必须有无参构�
     #endregion
 
 
-    #region Logic
-    System.Collections.Generic.Dictionary<int, Logic.AbsLogic> m_Logics = new System.Collections.Generic.Dictionary<int, Logic.AbsLogic>();
-
-    public T AddLogic<T>(Logic.AbsLogic logic) where T : Logic.AbsLogic
-    {
-        m_Logics.Add(logic.GetType().GetHashCode(), logic);
-        return logic as T;
-    }
-
-    public T GetLogic<T>(Logic.AbsLogic logic) where T : Logic.AbsLogic
-    {
-        if (m_Logics.ContainsKey(logic.GetType().GetHashCode()))
-        {
-            return m_Logics[logic.GetType().GetHashCode()] as T;
-        }
-        return AddLogic<T>(logic) as T;
-    }
-
-    public void RemoveLogic(Logic.AbsLogic logic)
-    {
-        if (m_Logics.ContainsKey(logic.GetType().GetHashCode()))
-        {
-            m_Logics[logic.GetType().GetHashCode()].OnDisable();
-            m_Logics[logic.GetType().GetHashCode()].OnDestroy();
-            m_Logics.Remove(logic.GetType().GetHashCode());
-        }
-    }
-    #endregion
 }
 
 /// <summary>
@@ -60,7 +32,7 @@ public class BaseSingleClass<T> where T : new()//约束子类必须有无参构�
 /// 注意:针对单例场景切换回来后,重复存在问题,单例物体不能重复加载,需要单独提取出来,而且单例身上引用的组件,也需要一起设置为dontDestroy才行,否则场景重复加载时,丢失引用
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class BaseMonoSingleClass<T> : MonoBehaviour  where T:MonoBehaviour
+public class BaseMonoSingleClass<T> : MonoBehaviour where T : MonoBehaviour
 {
     #region Single
 
@@ -72,6 +44,7 @@ public class BaseMonoSingleClass<T> : MonoBehaviour  where T:MonoBehaviour
             return;
         }
         mInstance = this as T;
+        DontDestroyOnLoad(this.gameObject);
     }
 
     protected static T mInstance;
@@ -82,50 +55,19 @@ public class BaseMonoSingleClass<T> : MonoBehaviour  where T:MonoBehaviour
         {
             if (mInstance == null)
             {
-                var t = GameObject.FindObjectOfType<T>();
+                var t = Object.FindFirstObjectByType<T>();
                 if (t != null)
                 {
                     mInstance = t;
-                    UnityEngine.Object.DontDestroyOnLoad(t);
                 }
                 else
                 {
                     GameObject go = new GameObject(typeof(T).ToString());
-                    //UnityEngine.Object.DontDestroyOnLoad(go);
                     mInstance = go.AddComponent<T>();
                 }
             }
             UnityEngine.Object.DontDestroyOnLoad(mInstance.gameObject);
             return mInstance;
-        }
-    }
-    #endregion
-
-    #region Logic
-    System.Collections.Generic.Dictionary<int, Logic.AbsLogic> m_Logics = new System.Collections.Generic.Dictionary<int, Logic.AbsLogic>();
-
-    public T AddLogic<T>(Logic.AbsLogic logic) where T : Logic.AbsLogic
-    {
-        m_Logics.Add(logic.GetType().GetHashCode(), logic);
-        return logic as T;
-    }
-
-    public T GetLogic<T>(Logic.AbsLogic logic) where T : Logic.AbsLogic
-    {
-        if (m_Logics.ContainsKey(logic.GetType().GetHashCode()))
-        {
-            return m_Logics[logic.GetType().GetHashCode()] as T;
-        }
-        return AddLogic<T>(logic) as T;
-    }
-
-    public void RemoveLogic(Logic.AbsLogic logic)
-    {
-        if (m_Logics.ContainsKey(logic.GetType().GetHashCode()))
-        {
-            m_Logics[logic.GetType().GetHashCode()].OnDisable();
-            m_Logics[logic.GetType().GetHashCode()].OnDestroy();
-            m_Logics.Remove(logic.GetType().GetHashCode());
         }
     }
     #endregion

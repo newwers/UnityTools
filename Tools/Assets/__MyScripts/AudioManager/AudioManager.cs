@@ -1,29 +1,34 @@
 ﻿/*
-	newwer
     管理音频的加载和播放
 */
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Asset.Core
+namespace Z.Core.Audio
 {
     /// <summary>
     /// 管理所有音频
-    /// 在一开始加载所有的音频,
-    /// todo:在某些需要播放时额外设置audiosource参数的时候,需要使用scriptableobject进行配置
+    /// 在一开始加载所有的音频
+    /// 区分音乐和音效播放类型，实现分开单独控制
     /// </summary>
-	public class AudioManager : BaseMonoSingleClass<AudioManager>
+    public class AudioManager : BaseMonoSingleClass<AudioManager>
     {
+        [Header("BGM音乐音量大小")]
+        [Range(0f, 1f)]
+        public float m_BGMVolume = 0.5f;
 
-
-
-        [Header("BGM初始化时,音量大小")]
-        public float m_BGMvInitVolume = 0.5f;
-
+        [Header("音效音量")]
+        [Range(0f, 1f)]
         public float AudioEffectVolume = 1.0f;
 
-        public List<AudioSource> m_AudioSources;
+        [Header("总音量")]
+        [Range(0f, 1f)]
+        public float TotalVolume = 1.0f;
 
+        private List<AudioSource> m_MusicSources = new List<AudioSource>();
+        private List<AudioSource> m_EffectSources = new List<AudioSource>();
+
+        [Header("音效")]
         public AudioClip SpawnGiftAduio;
         public AudioClip ClickGiftAduio;
         public AudioClip PickItemAduio;
@@ -36,28 +41,9 @@ namespace Asset.Core
         public AudioClip ClickButtonAduio;
         public AudioClip ClickBuyBtnAduio;
 
-
-
-
-
-        protected override void Awake()
-        {
-            base.Awake();
-
-
-            DontDestroyOnLoad(this.gameObject);
-        }
-
-        void Start()
+        private void Start()
         {
             PlayBackgroundMusic();
-        }
-
-        public void Dispose()
-        {
-            m_AudioSources.Clear();
-            m_AudioSources = null;
-            mInstance = null;
         }
 
         private void OnDestroy()
@@ -65,85 +51,176 @@ namespace Asset.Core
             Dispose();
         }
 
+        public void Dispose()
+        {
+            m_MusicSources.Clear();
+            m_MusicSources = null;
+            m_EffectSources.Clear();
+            m_EffectSources = null;
+            mInstance = null;
+        }
+
+        /// <summary>
+        /// 设置总音量
+        /// </summary>
+        public void SetTotalVolumeValue(float volume)
+        {
+            volume = Mathf.Clamp01(volume);
+            if (TotalVolume == volume)
+            {
+                return;
+            }
+
+            TotalVolume = volume;
+            UpdateAllVolumes();
+        }
+
+        /// <summary>
+        /// 设置BGM音量
+        /// </summary>
+        public void SetBGMVolume(float volume)
+        {
+            volume = Mathf.Clamp01(volume);
+            if (m_BGMVolume == volume)
+            {
+                return;
+            }
+
+            m_BGMVolume = volume;
+            UpdateMusicVolumes();
+        }
+
+        /// <summary>
+        /// 设置音效音量
+        /// </summary>
+        public void SetAudioEffectVolume(float volume)
+        {
+            volume = Mathf.Clamp01(volume);
+            if (AudioEffectVolume == volume)
+            {
+                return;
+            }
+
+            AudioEffectVolume = volume;
+            UpdateEffectVolumes();
+        }
 
         /// <summary>
         /// 播放背景音乐
         /// </summary>
         private void PlayBackgroundMusic()
         {
-            //获取audiosource组件
-            var audioSource = GetAudioSource();
-
+            var audioSource = GetMusicSource();
             audioSource.loop = true;
-            audioSource.volume *= m_BGMvInitVolume;
+            audioSource.volume = m_BGMVolume * TotalVolume;
             audioSource.Play();
-
         }
 
-
         /// <summary>
-        /// AudioSource组件管理
-        /// 获取一个未播放状态的AudioSource
+        /// 获取一个未播放状态的音乐AudioSource
         /// </summary>
-        /// <returns></returns>
-        public AudioSource GetAudioSource()
+        private AudioSource GetMusicSource()
         {
             AudioSource audioSource = null;
-            if (m_AudioSources != null)
+            foreach (var item in m_MusicSources)
             {
-                foreach (var item in m_AudioSources)
+                if (!item.isPlaying)
                 {
-                    if (item.isPlaying == false)
-                    {
-                        audioSource = item;//如果有空闲的 AudioSource 组件,就取
-                        break;
-                    }
+                    audioSource = item;
+                    break;
                 }
             }
 
-
-            //所有 AudioSource 都播放的情况下,新增一个 AudioSource 组件
             if (audioSource == null)
             {
-                GameObject newSourceObject = new GameObject($"AudioSource_{m_AudioSources.Count + 1}");
+                GameObject newSourceObject = new GameObject($"MusicSource_{m_MusicSources.Count + 1}");
                 newSourceObject.transform.SetParent(transform);
-
                 audioSource = newSourceObject.AddComponent<AudioSource>();
-                if (m_AudioSources == null)
-                {
-                    m_AudioSources = new List<AudioSource>();
-                }
-                m_AudioSources.Add(audioSource);
+                m_MusicSources.Add(audioSource);
             }
             return audioSource;
         }
 
-
         /// <summary>
-        /// 直接播放一个音频片段,调用者无需处理AudioSource的组件
-        /// 只需要传递进来要播放的音频即可
+        /// 获取一个未播放状态的音效AudioSource
         /// </summary>
-        public void PlayAudio(AudioClip audioClip, float deley = 0)
+        private AudioSource GetEffectSource()
         {
-            var audioSource = GetAudioSource();
-            audioSource.clip = audioClip;
-            audioSource.loop = false;
-            //audioSource.Play((ulong)(audioClip.frequency * deley));
-            audioSource.PlayDelayed(deley);
+            AudioSource audioSource = null;
+            foreach (var item in m_EffectSources)
+            {
+                if (!item.isPlaying)
+                {
+                    audioSource = item;
+                    break;
+                }
+            }
+
+            if (audioSource == null)
+            {
+                GameObject newSourceObject = new GameObject($"EffectSource_{m_EffectSources.Count + 1}");
+                newSourceObject.transform.SetParent(transform);
+                audioSource = newSourceObject.AddComponent<AudioSource>();
+                m_EffectSources.Add(audioSource);
+            }
+            return audioSource;
         }
 
-        public void PlayAudio(AudioClip audioClip, Vector3 pos)
+        /// <summary>
+        /// 直接播放一个音效片段
+        /// </summary>
+        public void PlayAudioEffect(AudioClip audioClip, float delay = 0)
         {
-            var audioSource = GetAudioSource();
+            var audioSource = GetEffectSource();
             audioSource.clip = audioClip;
             audioSource.loop = false;
-            audioSource.transform.position = pos;//设置位置
-            audioSource.spatialBlend = 1;//3D音效
+            audioSource.volume = AudioEffectVolume * TotalVolume;
+            audioSource.PlayDelayed(delay);
+        }
+
+        /// <summary>
+        /// 在指定位置播放一个音效片段
+        /// </summary>
+        public void PlayAudioEffect(AudioClip audioClip, Vector3 pos)
+        {
+            var audioSource = GetEffectSource();
+            audioSource.clip = audioClip;
+            audioSource.loop = false;
+            audioSource.transform.position = pos;
+            audioSource.spatialBlend = 1;
             audioSource.Play();
         }
 
+        /// <summary>
+        /// 更新所有音乐的音量
+        /// </summary>
+        private void UpdateMusicVolumes()
+        {
+            foreach (var source in m_MusicSources)
+            {
+                source.volume = m_BGMVolume * TotalVolume;
+            }
+        }
 
+        /// <summary>
+        /// 更新所有音效的音量
+        /// </summary>
+        private void UpdateEffectVolumes()
+        {
+            foreach (var source in m_EffectSources)
+            {
+                source.volume = AudioEffectVolume * TotalVolume;
+            }
+        }
 
+        /// <summary>
+        /// 更新所有音频源的音量
+        /// </summary>
+        private void UpdateAllVolumes()
+        {
+            UpdateMusicVolumes();
+            UpdateEffectVolumes();
+        }
     }
 
     /// <summary>

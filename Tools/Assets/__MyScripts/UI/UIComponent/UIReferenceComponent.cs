@@ -5,10 +5,11 @@
 描    述:	UI控件引用获取组件,避免每次获取组件都通过Find的方式进行
 *********************************************************************/
 
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using static Z.UI.UIReferenceComponent;
+using System.Text;
+
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -26,7 +27,7 @@ namespace Z.UI
         }
 
         public List<UIReferenceData> Datas = new List<UIReferenceData>();
-        Dictionary<string,UIReferenceData> m_vUiReferences = new Dictionary<string, UIReferenceData>();
+        Dictionary<string, UIReferenceData> m_vUiReferences = new Dictionary<string, UIReferenceData>();
 
         private void Awake()
         {
@@ -54,7 +55,7 @@ namespace Z.UI
             {
                 Awake();
             }
-            if (m_vUiReferences.TryGetValue(name,out var value))
+            if (m_vUiReferences.TryGetValue(name, out var value))
             {
                 return value.component as T;
             }
@@ -97,10 +98,10 @@ namespace Z.UI
             {
                 for (int i = 0; i < m_ui.Datas.Count; i++)
                 {
-                    m_vPreviousDatas.Add(new UIReferenceData() { component = m_ui.Datas[i] .component});
+                    m_vPreviousDatas.Add(new UIReferenceData() { component = m_ui.Datas[i].component });
                 }
             }
-            
+
         }
 
         public override void OnInspectorGUI()
@@ -171,7 +172,21 @@ namespace Z.UI
                 UnityEditor.EditorUtility.SetDirty(target);
             }
 
-            
+            if (GUILayout.Button("复制所有"))
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (var item in m_ui.Datas)
+                {
+                    if (item.component != null)
+                    {
+                        var typeName = item.component.GetType().FullName;
+                        sb.AppendLine(typeName + " " + item.name.ToLower() + " = ui.GetUI<" + typeName + ">(\"" + item.name + "\");");
+                    }
+                }
+                GUIUtility.systemCopyBuffer = sb.ToString();
+            }
+
+
 
             if (UnityEngine.Event.current.type == EventType.DragExited) // 只有在拖拽操作完成后才显示GenericMenu
             {
@@ -190,16 +205,17 @@ namespace Z.UI
                     }
                     else
                     {
-                        comps = new Component[] { obj as Component};
+                        comps = new Component[] { obj as Component };
                     }
 
                     GenericMenu menu = new GenericMenu();
 
                     foreach (var comp in comps)
                     {
-                        menu.AddItem(new GUIContent(comp.GetType().Name), false, () => {
+                        menu.AddItem(new GUIContent(comp.GetType().Name), false, () =>
+                        {
                             item.component = comp;
-                            item.name = $"{comp.name.Replace(' ','_')}_{comp.GetType().Name}";
+                            item.name = $"{comp.name.Replace(' ', '_')}_{comp.GetType().Name}";
                         });
                     }
 
