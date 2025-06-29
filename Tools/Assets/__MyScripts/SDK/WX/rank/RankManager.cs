@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using WeChatWASM;
@@ -14,11 +12,13 @@ public class OpenDataMessage
 
 public class RankManager : MonoBehaviour
 {
-    
+
 
     public RawImage RankRawImage;
     public CanvasScaler RankCanvasScaler;
     public WXCloundFunc wXCloundFunc;
+
+    public bool isShow = false;
 
     void Start()
     {
@@ -29,8 +29,8 @@ public class RankManager : MonoBehaviour
     private void Callback(int code)
     {
         print("初始化 code:" + code);
-        int CurChapterIndex = StorageSystem.LoadIntFromPlayerPrefs("当前游戏关卡",1);
-        SetRankData(CurChapterIndex);
+        int CurChapterIndex = StorageSystem.LoadIntFromPlayerPrefs("ChapterIndex");
+        //SetRankData(CurChapterIndex);//初始默认数据
     }
 
     // 显示排行榜
@@ -39,13 +39,17 @@ public class RankManager : MonoBehaviour
         RankRawImage.gameObject.SetActive(true);
         var resolution = RankCanvasScaler.referenceResolution;
         var p = RankRawImage.transform.position;
-        print($"width:{(int)RankRawImage.rectTransform.rect.width},height:{(int)RankRawImage.rectTransform.rect.height}");
-        WX.ShowOpenData(RankRawImage.texture, (int)p.x, Screen.height - (int)p.y, (int)RankRawImage.rectTransform.rect.width, (int)RankRawImage.rectTransform.rect.height);
+        int width = (int)RankRawImage.rectTransform.rect.width;
+        int height = (int)RankRawImage.rectTransform.rect.height;
+        int y = Screen.height - (int)p.y - height / 2;
+        int x = (int)p.x - width / 2;
+        WX.ShowOpenData(RankRawImage.texture, x, y, width, height);
         OpenDataMessage data = new OpenDataMessage();
         data.type = "showFriendsRank";
         string json = JsonUtility.ToJson(data);
         WX.GetOpenDataContext().PostMessage(json);
-        print("ShowRank");
+        print($"ShowRank x:{x},y:{y},width:{width},height:{height}");
+        isShow = true;
     }
 
     public void HideRank()
@@ -53,6 +57,7 @@ public class RankManager : MonoBehaviour
         RankRawImage.gameObject.SetActive(false);
         WX.HideOpenData();
         print("HideRank");
+        isShow = false;
     }
 
     // 设置排行榜数据
@@ -60,7 +65,7 @@ public class RankManager : MonoBehaviour
     {
         OpenDataMessage data = new OpenDataMessage();
         data.type = "setUserRecord";
-        data.score = curChapterIndex;
+        data.score = curChapterIndex + 1;
 
         string json = JsonUtility.ToJson(data);
         WX.GetOpenDataContext().PostMessage(json);
