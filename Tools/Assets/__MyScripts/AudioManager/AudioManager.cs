@@ -34,6 +34,7 @@ namespace Z.Core.Audio
         public AudioClip PickItemAduio;
         public AudioClip DropItemAduio;
         public AudioClip ClickBalloonAduio;
+        public AudioClip PickCoinAduio;
 
         [Header("图鉴UI")]
         public AudioClip OpenCollectionAudio;
@@ -176,6 +177,25 @@ namespace Z.Core.Audio
             audioSource.loop = false;
             audioSource.volume = AudioEffectVolume * TotalVolume;
             audioSource.PlayDelayed(delay);
+        }
+
+        /// <summary>
+        /// 播放同一个音频，但随机音量大小和pitch
+        /// </summary>
+        public void PlayAudioEffectRandomized(AudioClip audioClip, float volumeMin = 0.8f, float volumeMax = 1f, float pitchMin = 0.8f, float pitchMax = 1f)
+        {
+            var audioSource = GetEffectSource();
+            audioSource.clip = audioClip;
+            audioSource.loop = false;
+
+            // 随机设置音量
+            float randomVolume = Random.Range(volumeMin, volumeMax) * AudioEffectVolume * TotalVolume;
+            audioSource.volume = Mathf.Clamp(randomVolume, 0f, 1f);
+
+            // 随机设置pitch
+            audioSource.pitch = Random.Range(pitchMin, pitchMax);
+
+            audioSource.Play();
         }
 
         /// <summary>
