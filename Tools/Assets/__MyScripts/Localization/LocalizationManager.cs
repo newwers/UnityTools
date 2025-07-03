@@ -5,11 +5,11 @@
 描    述:	多语言管理器
 *********************************************************************/
 
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Z.Data;
 
-namespace TopGame.Core
+namespace Z.Core.Localization
 {
     public class LocalizationManager
     {
@@ -48,41 +48,25 @@ namespace TopGame.Core
         public void Awake()
         {
             //获取默认的语言类型
-            //var cfg = SystemSettingManager.getInstance().GetSystemSettingData();
-            //if (cfg != null)
-            //{
-            //    if (cfg.Language >= (int)ELanguageType.Count)
-            //    {
-            //        m_eLanguageType = ELanguageType.CN;//默认中文
-            //    }
-            //    else
-            //    {
-            //        m_eLanguageType = (ELanguageType)cfg.Language;
-            //    }
-            //}
-            //else
-            //{
-            //    m_eLanguageType = ELanguageType.CN;//默认中文
-            //}
-            SetCurrentLanguage(m_eLanguageType);
+            SetCurrentLanguage(ELanguageType.CN);//默认中文
 
             m_vLanguageDic = new Dictionary<uint, List<string>>();
             //获取多语言表
-            //var datas = DataManager.getInstance().Text.datas;
+            var datas = DataManager.Instance.Text.datas;
 
-            //CsvData_Text.TextData data;
-            //List<string> tempList;
-            //foreach (var dataID in datas.Keys)
-            //{
-            //    data = DataManager.getInstance().Text.GetData(dataID);
-            //    if (data != null)
-            //    {
-            //        tempList = new List<string>();
-            //        tempList.Add(data.textCN);
-            //        tempList.Add(data.textEN);//如果新增语言类型,这边要新增对应字段,要注意数组添加顺序,会影响到后面读取
-            //        m_vLanguageDic.Add(dataID, tempList);
-            //    }
-            //}
+            CsvData_Text.TextData data;
+            List<string> tempList;
+            foreach (var dataID in datas.Keys)
+            {
+                data = DataManager.Instance.Text.GetData(dataID);
+                if (data != null)
+                {
+                    tempList = new List<string>();
+                    tempList.Add(data.textCN);
+                    tempList.Add(data.textEN);//如果新增语言类型,这边要新增对应字段,要注意数组添加顺序,会影响到后面读取
+                    m_vLanguageDic.Add(dataID, tempList);
+                }
+            }
         }
         //------------------------------------------------------
         public void Destroy()
@@ -119,7 +103,7 @@ namespace TopGame.Core
             List<string> tempList = new List<string>();
             if (m_vLanguageDic.TryGetValue(id, out tempList))
             {
-                int index = ((int)m_eLanguageType) -1;//根据枚举类型id,取对应语言,-1是枚举第一个类型是None
+                int index = ((int)m_eLanguageType) - 1;//根据枚举类型id,取对应语言,-1是枚举第一个类型是None
                 if (tempList.Count > index)
                 {
                     return tempList[index];

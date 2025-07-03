@@ -11,8 +11,6 @@ using UnityEngine;
 /// </summary>
 public class TranspareWindows : MonoBehaviour
 {
-    public int TranspareColor = 0x00080808;
-    //public Material m_Material;
     private struct MARGINS
     {
         public int cxLeftWidth;
@@ -97,7 +95,6 @@ public class TranspareWindows : MonoBehaviour
     /// 分层或透明窗口,该样式可使用混合特效
     /// </summary>
     const uint WS_EX_LAYERED = 0x80000;
-    const uint WS_EX_TRANSPARENT = 0x00000020;
     /// <summary>
     /// 当前窗体句柄
     /// </summary>
@@ -174,7 +171,7 @@ public class TranspareWindows : MonoBehaviour
         //参数3:透明度,设置成255就是全透明
         //参数4:透明方式,1表示将该窗口颜色为0的部分设置为透明,2表示根据透明度设置窗体的透明度
         //SetLayeredWindowAttributes(hwnd, 0, 255, 1);
-        SetLayeredWindowAttributes(hwnd, TranspareColor, 255, 1);//相机设置为solid color 并且颜色设置为080808
+        SetLayeredWindowAttributes(hwnd, 0x00080808, 255, 1);
     }
     /// <summary>
     /// 设置刚开启窗体的位置,默认左上角坐标为0,0
@@ -184,15 +181,7 @@ public class TranspareWindows : MonoBehaviour
         //MoveWindow(hwnd, config.InitializationPositionX, config.InitializationPositionY, Screen.width, Screen.height, true);
     }
 
-    /// <summary>
-    /// 在所有渲染完成后,对图片进行额外的渲染
-    /// </summary>
-    /// <param name="source"></param>
-    /// <param name="destination"></param>
-    //private void OnRenderImage(RenderTexture source, RenderTexture destination)
-    //{
-    //    Graphics.Blit(source, destination, m_Material);
-    //}
+
 
 
 }

@@ -3,44 +3,51 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SimpleGameObjectPool
+public class SimpleGameObjectPool<T> where T : UnityEngine.Object
 {
-    private List<GameObject> pool;
-    private GameObject prefab;
-    private int initialSize;
+    private List<T> pool;
+    private T prefab;
+    Transform m_Root;
 
-    public SimpleGameObjectPool(GameObject prefab, int initialSize)
+    public SimpleGameObjectPool(T prefab, int initialSize, Transform root)
     {
         this.prefab = prefab;
-        this.initialSize = initialSize;
-        pool = new List<GameObject>();
+        m_Root = root;
+        pool = new List<T>();
 
         for (int i = 0; i < initialSize; i++)
         {
-            GameObject obj = GameObject.Instantiate(prefab);
+            T obj = Object.Instantiate(prefab, m_Root);
             pool.Add(obj);
         }
     }
 
-    public GameObject GetObject()
+    public T GetObject()
     {
-        foreach (GameObject obj in pool)
+        foreach (T obj in pool)
         {
-            if (!obj.activeSelf)
+            if (obj is Component gameObj && !gameObj.gameObject.activeSelf)
             {
-                obj.SetActive(true);
+                gameObj.gameObject.SetActive(true);
                 return obj;
             }
         }
 
         // 如果池中没有可用对象，创建一个新的
-        GameObject newObj = GameObject.Instantiate(prefab);
+        T newObj = Object.Instantiate(prefab, m_Root);
+        if (newObj is Component com)
+        {
+            com.gameObject.SetActive(true);
+        }
         pool.Add(newObj);
         return newObj;
     }
 
-    public void ReturnObject(GameObject obj)
+    public void ReturnObject(T obj)
     {
-        obj.SetActive(false);
+        if (obj is Component com)
+        {
+            com.gameObject.SetActive(false);
+        }
     }
 }

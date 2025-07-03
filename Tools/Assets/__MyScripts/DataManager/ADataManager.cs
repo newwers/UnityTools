@@ -37,7 +37,7 @@ namespace Z.Data
         /// </summary>
         /// <param name="dataFile"></param>
         /// <returns></returns>
-        public bool Init(string dataFile = "DataConfig")
+        public bool Init(string dataFile = "CsvConfig")
         {
             //加载文件
 
@@ -71,6 +71,10 @@ namespace Z.Data
                     m_vDatas.Add(cfg.vConfigs[i].guid, data);
                     m_nLoadCnt++;
                 }
+            }
+            else
+            {
+                UnityEngine.Debug.LogError("找不到配置文件!");
             }
             //#endif
 
