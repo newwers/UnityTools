@@ -5,10 +5,10 @@ Shader "Custom/SpriteProgressBar"
     Properties
     {
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {} // 主纹理（支持图集）
-        _Color ("Tint", Color) = (1,1,1,1) // 色调颜色（与原始颜色相乘）
-        [MaterialToggle] _Horizontal ("Horizontal Direction", Float) = 1 // 方向开关：1=水平，0=垂直
-        [MaterialToggle] _Invert ("Invert Mask", Float) = 0 // 反转遮罩：1=反转范围，0=正常范围
-        _Progress ("Progress", Range(0, 1)) = 0.5 // 进度值（0-1，控制显示范围）
+        [PerRendererData] _Color ("Tint", Color) = (1,1,1,1) // 色调颜色（与原始颜色相乘）
+        [PerRendererData] [MaterialToggle] _Horizontal ("Horizontal Direction", Float) = 1 // 方向开关：1=水平，0=垂直
+        [PerRendererData] [MaterialToggle] _Invert ("Invert Mask", Float) = 0 // 反转遮罩：1=反转范围，0=正常范围
+        [PerRendererData] _Progress ("Progress", Range(0, 1)) = 0.5 // 进度值（0-1，控制显示范围）
         
         // 新增：图集适配参数（由渲染器自动传入，用于处理精灵在图集中的位置）
         [PerRendererData] _SpriteOffset ("Sprite Atlas Offset", Vector) = (0,0,0,0) // 精灵在图集中的UV偏移

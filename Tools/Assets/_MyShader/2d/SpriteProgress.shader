@@ -4,15 +4,16 @@ Shader "Custom/SpriteProgress"
 {
     Properties
     {
+        //PerRendererData 在着色器中使用 [PerRendererData] 标记属性，这样每个渲染器可以有自己的属性值，而不会相互干扰。可以共用一个材质球
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {} 
         // 主纹理，通常关联精灵图片（可能来自图集）
-        _Color ("Mask Color", Color) = (1,1,1,1) 
+        [PerRendererData] _Color ("Mask Color", Color) = (1,1,1,1) 
         // 遮罩颜色，进度范围内的区域会应用此颜色
-        _MaskProgress ("Mask Progress", Range(0, 1)) = 0 
+        [PerRendererData] _MaskProgress ("Mask Progress", Range(0, 1)) = 0 
         // 遮罩进度（0-1），控制显示区域大小
-        _IsHorizontal ("Is Horizontal", Int) = 1 
+        [PerRendererData] _IsHorizontal ("Is Horizontal", Int) = 1 
         // 遮罩方向：1=水平方向，0=垂直方向
-        [MaterialToggle] PixelSnap ("Pixel snap", Float) = 0 
+        [PerRendererData] [MaterialToggle] PixelSnap ("Pixel snap", Float) = 0 
         // 像素对齐开关，启用后使渲染与像素网格对齐（适合像素艺术）
         
         // 新增属性：适配精灵图集的关键参数
