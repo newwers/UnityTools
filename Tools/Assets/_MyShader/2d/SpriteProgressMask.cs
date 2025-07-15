@@ -4,6 +4,7 @@
 
 using UnityEngine;
 
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -13,6 +14,10 @@ using UnityEditor;
 public class SpriteShaderMaskHelper : MonoBehaviour
 {
     private SpriteRenderer _spriteRenderer;
+    /// <summary>
+    /// 用于临时修改材质属性而不创建新的材质实例。
+    /// 这一点很重要，因为直接修改材质会影响所有使用该材质的对象，而 MaterialPropertyBlock 可以避免这种情况，同时节省内存
+    /// </summary>
     private MaterialPropertyBlock _materialPropertyBlock;
 
     // 缓存上一次的精灵引用和材质，用于检测变化
@@ -46,6 +51,26 @@ public class SpriteShaderMaskHelper : MonoBehaviour
             }
         }
 #endif
+    }
+
+    public void SetProgress(float progress)
+    {
+        if (_spriteRenderer == null)
+        {
+            Debug.LogWarning("SpriteRenderer is missing", this);
+            return;
+        }
+        if (_materialPropertyBlock == null)
+        {
+            _materialPropertyBlock = new MaterialPropertyBlock();
+        }
+        _materialPropertyBlock.Clear();
+        _spriteRenderer.GetPropertyBlock(_materialPropertyBlock);
+        if (_materialPropertyBlock != null)
+        {
+            _materialPropertyBlock.SetFloat("_MaskProgress", Mathf.Clamp01(progress));
+            _spriteRenderer.SetPropertyBlock(_materialPropertyBlock);
+        }
     }
 
     // 更新着色器属性
