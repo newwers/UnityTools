@@ -35,7 +35,9 @@ public class BaseSingleClass<T> where T : new()//约束子类必须有无参构�
 public class BaseMonoSingleClass<T> : MonoBehaviour where T : MonoBehaviour
 {
     #region Single
-
+    /// <summary>
+    /// 不要在Awake方法中访问其他单例实例（初始化顺序不确定）
+    /// </summary>
     protected virtual void Awake()
     {
         if (mInstance)//如果已经有了该对象,销毁新创建的对象

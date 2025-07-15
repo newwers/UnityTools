@@ -50,15 +50,30 @@ public class SaveData
     public Dictionary<string, object> data = new Dictionary<string, object>();//通用数据
     public Dictionary<string, BalloonRuntimeData> balloonData = new Dictionary<string, BalloonRuntimeData>();//气球等级经验数据
     public List<SceneItemSaveData> sceneItemSaveData = new List<SceneItemSaveData>();//物体场景中状态数据
+    public List<SceneGoldSaveData> sceneGoldSaveData = new List<SceneGoldSaveData>();//物体场景中状态数据
     public Dictionary<string, ItemUnlockData> itemUnlockData = new Dictionary<string, ItemUnlockData>();//物体解锁状态数据
+    public Dictionary<string, object> SettingData = new Dictionary<string, object>();//设置数据
+
 
 
     // 添加类型安全的存取方法
-    public void Set<T>(string key, T value) => data[key] = value;
-
-    public T Get<T>(string key, T defaultValue = default)
+    public void Set<T>(string key, T value, Dictionary<string, object> dic = null)
     {
-        if (data.TryGetValue(key, out var value))
+        if (dic == null)
+        {
+            dic = data;
+        }
+        dic[key] = value;
+    }
+
+    public T Get<T>(string key, T defaultValue = default, Dictionary<string, object> dic = null)
+    {
+        if (dic == null)
+        {
+            dic = data;
+        }
+
+        if (dic.TryGetValue(key, out var value))
         {
             //UnityEngine.Debug.Log($"Get key: {key}, value: {value}, type: {value.GetType()}");
 
@@ -155,6 +170,15 @@ public class SaveData
         return sceneItemSaveData;
     }
 
+    public void SetSceneGoldSaveData(List<SceneGoldSaveData> data)
+    {
+        sceneGoldSaveData = data;
+    }
+    public List<SceneGoldSaveData> GetSceneGoldSaveData()
+    {
+        return sceneGoldSaveData;
+    }
+
 }
 
 
@@ -223,6 +247,13 @@ public static class StorageSystem
             return data;
         }
         return null;
+    }
+
+
+    public static void DeleteFileFromPersistentDataPath(string filename)
+    {
+        string path = Path.Combine(Application.persistentDataPath, filename);
+        File.Delete(path);
     }
 
     public static void SaveStringToPlayerPrefs(string data, string key)
@@ -341,4 +372,5 @@ public static class StorageSystem
         }
         return result;
     }
+
 }
