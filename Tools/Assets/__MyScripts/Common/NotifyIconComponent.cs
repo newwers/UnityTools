@@ -45,20 +45,15 @@ public class NotifyIconComponent : MonoBehaviour
     }
 
 
+
     private void OnDisable()
     {
         EventsSystem.StopListening("RefreshContextMenu", LoadContextMenu);
-
-        if (notifyIcon != null)
+        if (this.notifyIcon != null)
         {
-            //notifyIcon.Visible = false;
-            //notifyIcon.Dispose();
-            notifyIcon = null;
-            //GC.Collect();
-            print("NotifyIconComponent.OnDisable");
+            this.notifyIcon.Visible = false;
+            this.notifyIcon.Dispose();
         }
-
-
     }
 
     //void OnDestroy()
