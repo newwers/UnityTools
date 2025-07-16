@@ -27,6 +27,8 @@ namespace Z.Core.Audio
 
         private List<AudioSource> m_MusicSources = new List<AudioSource>();
         private List<AudioSource> m_EffectSources = new List<AudioSource>();
+        // 存储音频片段的最后播放时间，用于限制播放频率
+        private Dictionary<AudioClip, float> _audioLastPlayTime = new Dictionary<AudioClip, float>();
 
         [Header("音效")]
         public AudioClip SpawnGiftAduio;
@@ -35,6 +37,7 @@ namespace Z.Core.Audio
         public AudioClip DropItemAduio;
         public AudioClip ClickBalloonAduio;
         public AudioClip PickCoinAduio;
+        public AudioClip DragRopeAudio;
 
         [Header("图鉴UI")]
         public AudioClip OpenCollectionAudio;
@@ -42,6 +45,11 @@ namespace Z.Core.Audio
         public AudioClip ClickButtonAduio;
         public AudioClip ClickBuyBtnAduio;
 
+        protected override void Awake()
+        {
+            base.Awake();
+            _audioLastPlayTime = new Dictionary<AudioClip, float>();
+        }
         private void Start()
         {
             PlayBackgroundMusic();
@@ -58,6 +66,8 @@ namespace Z.Core.Audio
             m_MusicSources = null;
             m_EffectSources.Clear();
             m_EffectSources = null;
+            _audioLastPlayTime.Clear();
+            _audioLastPlayTime = null;
             mInstance = null;
         }
 
@@ -182,7 +192,7 @@ namespace Z.Core.Audio
         /// <summary>
         /// 播放同一个音频，但随机音量大小和pitch
         /// </summary>
-        public void PlayAudioEffectRandomized(AudioClip audioClip, float volumeMin = 0.8f, float volumeMax = 1f, float pitchMin = 0.8f, float pitchMax = 1f)
+        public void PlayAudioEffectRandomized(AudioClip audioClip, float volumeMin = 0.6f, float volumeMax = 1f, float pitchMin = 0.6f, float pitchMax = 1f)
         {
             var audioSource = GetEffectSource();
             audioSource.clip = audioClip;
@@ -209,6 +219,51 @@ namespace Z.Core.Audio
             audioSource.transform.position = pos;
             audioSource.spatialBlend = 1;
             audioSource.Play();
+        }
+
+        /// <summary>
+        /// 带冷却时间的音效播放（限制播放频率）
+        /// </summary>
+        /// <param name="audioClip">音效片段</param>
+        /// <param name="cooldown">冷却时间（秒）</param>
+        /// <param name="delay">延迟播放时间（秒）</param>
+        /// <param name="volumeMin">最小音量比例</param>
+        /// <param name="volumeMax">最大音量比例</param>
+        /// <returns>是否成功播放</returns>
+        public bool PlayAudioEffectWithCooldown(AudioClip audioClip, float cooldown, float delay = 0, float volumeMin = 1f, float volumeMax = 1f)
+        {
+            if (audioClip == null) return false;
+
+            float currentTime = Time.time;
+            // 检查是否在冷却时间内
+            if (_audioLastPlayTime.TryGetValue(audioClip, out float lastPlayTime))
+            {
+                if (currentTime - lastPlayTime < cooldown)
+                {
+                    return false; // 冷却中，不播放
+                }
+            }
+
+            // 更新最后播放时间（加上延迟时间，确保冷却从实际播放时开始计算）
+            _audioLastPlayTime[audioClip] = currentTime + delay;
+
+            // 播放音效
+            var audioSource = GetEffectSource();
+            audioSource.clip = audioClip;
+            audioSource.loop = false;
+            audioSource.volume = Random.Range(volumeMin, volumeMax) * AudioEffectVolume * TotalVolume;
+            audioSource.volume = Mathf.Clamp(audioSource.volume, 0f, 1f);
+
+            if (delay > 0)
+            {
+                audioSource.PlayDelayed(delay);
+            }
+            else
+            {
+                audioSource.Play();
+            }
+
+            return true;
         }
 
         /// <summary>
