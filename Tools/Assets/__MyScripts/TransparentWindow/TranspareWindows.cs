@@ -195,7 +195,7 @@ public class TranspareWindows : MonoBehaviour
         ApplyDwmFix(1);
     }
 
-    private static void ApplyDwmFix(int inset)
+    private void ApplyDwmFix(int inset)
     {
         MARGINS margins = new MARGINS
         {
@@ -204,7 +204,7 @@ public class TranspareWindows : MonoBehaviour
             cyTopHeight = inset,
             cyBottomHeight = inset
         };
-        DwmExtendFrameIntoClientArea(WindowController.myintptr, ref margins);
+        DwmExtendFrameIntoClientArea(hwnd, ref margins);
     }
 
     private void SetClickThrough(bool SetClickthrouth)
@@ -212,13 +212,13 @@ public class TranspareWindows : MonoBehaviour
         if (SetClickthrouth)
         {
             SetWindowLong(hwnd, GWL_EXSTYLE, WS_EX_LAYERED | WS_EX_TRANSPARENT);
-            Debug.Log("点击透传已启用");
+            //Debug.Log("点击透传已启用");
 
         }
         else
         {
             SetWindowLong(hwnd, GWL_EXSTYLE, WS_EX_LAYERED);
-            Debug.Log("点击透传已禁用");
+            //Debug.Log("点击透传已禁用");
 
         }
     }
