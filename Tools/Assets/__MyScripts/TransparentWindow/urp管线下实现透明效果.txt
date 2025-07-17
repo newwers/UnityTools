@@ -1,0 +1,1 @@
+URP管线下,点击场景中的相机,在里面的Output中,HDR选项选择Off即可,或者在对应的Rander Pipeline Asset中默认文件名称 UniversalRP 找到里面的Quality ,把里面的HDR关闭即可
