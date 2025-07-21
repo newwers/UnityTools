@@ -22,6 +22,7 @@ persistentDataPath的替代方案是使用WX.env.USER_DATA_PATH
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
@@ -373,4 +374,158 @@ public static class StorageSystem
         return result;
     }
 
+
+    /// <summary>
+    /// 将persistentDataPath下的文件夹压缩为log.zip并保存到应用程序根目录，完成后自动打开文件夹并选中文件
+    /// 改进：处理文件共享冲突问题
+    /// </summary>
+    /// <returns>是否压缩成功</returns>
+    public static bool CompressPersistentDataToLogZip()
+    {
+        try
+        {
+            // 获取源文件夹路径
+            string sourcePath = Application.persistentDataPath;
+
+            // 验证源路径是否存在
+            if (!Directory.Exists(sourcePath))
+            {
+                Debug.LogError($"源文件夹不存在: {sourcePath}");
+                return false;
+            }
+
+            // 创建临时目录用于处理可能被占用的文件
+            string tempPath = Path.Combine(Path.GetTempPath(), "LogCompressorTemp_" + Guid.NewGuid().ToString());
+            Directory.CreateDirectory(tempPath);
+
+            try
+            {
+                // 复制文件到临时目录，跳过无法访问的文件
+                CopyDirectoryWithExceptionHandling(sourcePath, tempPath);
+
+                // 获取应用程序根目录路径(Windows平台)
+                string targetDirectory = Path.GetDirectoryName(Application.dataPath);
+                string targetPath = Path.Combine(targetDirectory, "log.zip");
+
+                // 如果已存在同名压缩文件则删除
+                if (File.Exists(targetPath))
+                {
+                    File.Delete(targetPath);
+                    Debug.Log("已删除现有log.zip文件");
+                }
+
+                // 从临时目录创建压缩文件
+                ZipFile.CreateFromDirectory(tempPath, targetPath, System.IO.Compression.CompressionLevel.Optimal, true);
+
+                // 验证压缩文件是否创建成功
+                if (File.Exists(targetPath))
+                {
+                    Debug.Log($"压缩成功，文件保存至: {targetPath}");
+
+                    // 打开文件夹并选中文件
+                    OpenFolderAndSelectFile(targetPath);
+
+                    return true;
+                }
+                else
+                {
+                    Debug.LogError("压缩失败，未生成log.zip文件");
+                    return false;
+                }
+            }
+            finally
+            {
+                // 清理临时目录
+                if (Directory.Exists(tempPath))
+                {
+                    try
+                    {
+                        Directory.Delete(tempPath, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"清理临时文件失败: {ex.Message}");
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"压缩过程中发生错误: {e.Message}\n{e.StackTrace}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 复制目录，处理可能的文件访问异常
+    /// </summary>
+    private static void CopyDirectoryWithExceptionHandling(string sourceDir, string destDir)
+    {
+        // 创建目标目录
+        if (!Directory.Exists(destDir))
+        {
+            Directory.CreateDirectory(destDir);
+        }
+
+        // 复制所有文件
+        foreach (string file in Directory.GetFiles(sourceDir))
+        {
+            string fileName = Path.GetFileName(file);
+            string destFile = Path.Combine(destDir, fileName);
+
+            try
+            {
+                // 尝试复制文件，使用FileOptions防止锁定
+                File.Copy(file, destFile, true);
+                Debug.Log($"已复制文件: {fileName}");
+            }
+            catch (IOException ex) when (ex.Message.Contains("正由另一进程使用") ||
+                                        ex.Message.Contains("Sharing violation"))
+            {
+                Debug.LogWarning($"文件正被使用，已跳过: {fileName} - {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"复制文件失败 {fileName}: {ex.Message}");
+            }
+        }
+
+        // 递归复制子目录
+        foreach (string subDir in Directory.GetDirectories(sourceDir))
+        {
+            string subDirName = Path.GetFileName(subDir);
+            string destSubDir = Path.Combine(destDir, subDirName);
+            CopyDirectoryWithExceptionHandling(subDir, destSubDir);
+        }
+    }
+
+    /// <summary>
+    /// 打开文件夹并选中指定文件
+    /// </summary>
+    /// <param name="filePath">文件完整路径</param>
+    private static void OpenFolderAndSelectFile(string filePath)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+            {
+                Debug.LogError("文件路径无效或文件不存在");
+                return;
+            }
+
+            // Windows资源管理器命令：/select 参数用于选中指定文件
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"/select,\"{filePath}\"",
+                UseShellExecute = true
+            });
+
+            Debug.Log("已打开文件夹并选中文件");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"打开文件夹时发生错误: {e.Message}");
+        }
+    }
 }
