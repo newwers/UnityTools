@@ -1,290 +1,58 @@
-﻿using System;
-using System.Text;
-using UnityEngine;
+﻿using UnityEngine;
 
-
-/// <summary>
-/// 打印等级
-/// </summary>
-public enum LogLevel
+public static class LogManager
 {
-    /// <summary>
-    /// 不打印所有打印
-    /// </summary>
-    None,
-    /// <summary>
-    /// 打印测试log
-    /// </summary>
-    Test,
-    /// <summary>
-    /// 打印普通log
-    /// </summary>
-    Normal,
-    /// <summary>
-    /// 打印错误log
-    /// </summary>
-    Error,
-    /// <summary>
-    /// 打印错误log和普通log
-    /// </summary>
-    ErrorAndNormal,
-    /// <summary>
-    /// 所有打印
-    /// </summary>
-    All
-}
+    // 日志开关设置
+    public static bool EnableLogs { get; set; } = true;      // 控制普通日志
+    public static bool EnableWarnings { get; set; } = true;   // 控制警告日志
+    public static bool EnableErrors { get; set; } = true;     // 控制错误日志
 
-/// <summary>
-/// Log除了可以管理是否打印外,还可以将打印写到硬盘中
-/// 在开发阶段使用Test等级的打印,当开发结束不需要log打印时,可以切换到none或者其他等级来过滤不需要的打印
-/// </summary>
-public class LogManager : MonoBehaviour
-{
+    // 初始化方法（在游戏启动时自动调用）
+    //    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    //    private static void Initialize()
+    //    {
+    //#if !UNITY_EDITOR
+    //        // 发布版本默认关闭普通日志（可通过代码动态开启）
+    //        EnableLogs = false;
+    //#endif
+    //    }
 
-
-
-    public static LogManager Instance;
-    /// <summary>
-    /// 当前打印的log等级
-    /// </summary>
-    public LogLevel m_CurrentLogLevel = LogLevel.Test;
-    public static LogLevel m_CurrentLogLevelStatic = LogLevel.Test;
-
-    /// <summary>
-    /// 是否将log写到文件
-    /// </summary>
-    public static bool m_IsWriteLogStatic = true;
-
-    public bool m_IsWriteLog = true;
-
-
-
-    /// <summary>
-    /// 当打印log的时候,进行存储,当达到一定次数的时候,写入到硬盘
-    /// </summary>
-    private static StringBuilder m_StringBuilder = new StringBuilder();
-    /// <summary>
-    /// 写入log频率
-    /// </summary>
-    public int WriteLogFrequency = 5;
-    public static int WriteLogFrequencyStatic = 5;
-    /// <summary>
-    /// 记录写入次数,当满足写入频率时,清空
-    /// </summary>
-    private static int m_WriteLogCount = 0;
-
-
-    private void Awake()
+    // 普通日志输出
+    public static void Log(object message)
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            Application.logMessageReceived -= DebugHandles;
-            Application.logMessageReceived += DebugHandles;
-        }
-
-    }
-    /// <summary>
-    /// 当Inspector面板属性发生改变,
-    /// </summary>
-    private void OnValidate()
-    {
-        if (WriteLogFrequency != WriteLogFrequencyStatic)
-        {
-            WriteLogFrequencyStatic = WriteLogFrequency;
-            Debug.Log("设置打印次数,WriteLogFrequencyStatic=" + WriteLogFrequencyStatic);
-        }
-        if (m_CurrentLogLevel != m_CurrentLogLevelStatic)
-        {
-            m_CurrentLogLevelStatic = m_CurrentLogLevel;
-            Debug.Log("设置打印次数,m_CurrentLogLevelStatic=" + m_CurrentLogLevelStatic);
-        }
-        if (m_IsWriteLog != m_IsWriteLogStatic)
-        {
-            m_IsWriteLogStatic = m_IsWriteLog;
-        }
+        if (EnableLogs) Debug.Log(message);
     }
 
-    private void OnDestroy()
+    public static void Log(object message, Object context)
     {
-        if (Instance != null)
-        {
-            Instance = null;
-        }
-        Application.logMessageReceived -= DebugHandles;
+        if (EnableLogs) Debug.Log(message, context);
     }
 
-    private void DebugHandles(string logString, string stackTrace, LogType type)
+    // 警告日志输出
+    public static void LogWarning(object message)
     {
-        WriteNormalLog(logString, LogLevel.Normal);
-        if (type == LogType.Error || type == LogType.Exception)
-        {
-            WriteErrorLog(string.Format("异常log: {0} ,堆栈记录: {1} ", logString, stackTrace), LogLevel.Error);
-        }
+        if (EnableWarnings) Debug.LogWarning(message);
     }
 
-
-    public static void Log(string log, LogLevel logLevel = LogLevel.Normal)
+    public static void LogWarning(object message, Object context)
     {
-        if (m_CurrentLogLevelStatic > logLevel)
-        {
-            return;
-        }
-        switch (logLevel)
-        {
-            case LogLevel.None:
-                break;
-            case LogLevel.Normal:
-            case LogLevel.Test:
-            case LogLevel.Error:
-            case LogLevel.ErrorAndNormal:
-            case LogLevel.All:
-                NormalLog(log, logLevel);
-                break;
-            default:
-                break;
-        }
-
+        if (EnableWarnings) Debug.LogWarning(message, context);
     }
 
-    public static void LogError(string log, LogLevel logLevel = LogLevel.Error)
+    // 错误日志输出
+    public static void LogError(object message)
     {
-        if (m_CurrentLogLevelStatic > logLevel)//当前设置打印等级大于log打印等级,就不进行打印
-        {
-            return;
-        }
-        switch (logLevel)
-        {
-            case LogLevel.None:
-                break;
-            case LogLevel.Test:
-            case LogLevel.Normal:
-            case LogLevel.Error:
-            case LogLevel.ErrorAndNormal:
-            case LogLevel.All:
-                ErrorLog(log, logLevel);
-                break;
-            default:
-                break;
-        }
-    }
-    /// <summary>
-    /// 打印log
-    /// </summary>
-    /// <param name="log"></param>
-    /// <param name="logLevel"></param>
-    private static void NormalLog(string log, LogLevel logLevel)
-    {
-        Debug.Log(log);
+        if (EnableErrors) Debug.LogError(message);
     }
 
-    /// <summary>
-    /// 普通log写入到本地
-    /// </summary>
-    /// <param name="log"></param>
-    /// <param name="logLevel"></param>
-    private static void WriteNormalLog(string log, LogLevel logLevel)
+    public static void LogError(object message, Object context)
     {
-        m_WriteLogCount++;
-
-        m_StringBuilder.Append(DateTime.Now.ToString());
-        m_StringBuilder.Append(" -> ");
-        m_StringBuilder.Append(logLevel.ToString());
-        m_StringBuilder.Append(" -> ");
-        m_StringBuilder.AppendLine(log);
-        if (m_WriteLogCount >= WriteLogFrequencyStatic)
-        {
-            WriteLog();
-            m_WriteLogCount = 0;
-        }
-    }
-    /// <summary>
-    /// 打印异常log
-    /// </summary>
-    /// <param name="log"></param>
-    /// <param name="logLevel"></param>
-    private static void ErrorLog(string log, LogLevel logLevel)
-    {
-        Debug.LogError(log);
-    }
-    /// <summary>
-    /// 异常log写入到本地
-    /// </summary>
-    /// <param name="log"></param>
-    /// <param name="logLevel"></param>
-    private static void WriteErrorLog(string log, LogLevel logLevel)
-    {
-        m_WriteLogCount++;
-
-        m_StringBuilder.Append(DateTime.Now.ToString());
-        m_StringBuilder.Append(" -> ");
-        m_StringBuilder.Append(logLevel.ToString());
-        m_StringBuilder.Append(" -> ");
-        m_StringBuilder.AppendLine(log);
-        if (m_WriteLogCount >= WriteLogFrequencyStatic)
-        {
-            WriteLog();
-            m_WriteLogCount = 0;
-        }
+        if (EnableErrors) Debug.LogError(message, context);
     }
 
-    /// <summary>
-    /// 写入log到硬盘
-    /// </summary>
-    private static void WriteLog()
+    // 带标签的日志方法（可选）
+    public static void TaggedLog(string tag, object message)
     {
-        string log = m_StringBuilder.ToString();
-        m_StringBuilder.Clear();//这边先清空,是为了防止在写入文件时,如果再次进行打印,会出现打印两遍的情况
-        if (m_IsWriteLogStatic == false)
-        {
-            return;
-        }
-        Z.FileTool.FileTools.WriteFile(Application.streamingAssetsPath + "/Log.txt", log, Encoding.UTF8, true);
-
+        if (EnableLogs) Debug.Log($"[{tag}] {message}");
     }
-
-
-    public static void LogColor(string log, LogColorEnum color)
-    {
-        switch (color)
-        {
-            case LogColorEnum.Red:
-                Debug.Log("<color=#ff0000>" + log + "</color>");
-                break;
-            case LogColorEnum.Green:
-                Debug.Log("<color=#00ff00>" + log + "</color>");
-                break;
-            case LogColorEnum.Blue:
-                Debug.Log("<color=#0000ff>" + log + "</color>");
-                break;
-            case LogColorEnum.Yellow:
-                Debug.Log("<color=#ffff00>" + log + "</color>");
-                break;
-            case LogColorEnum.White:
-                Debug.Log("<color=#ffffff>" + log + "</color>");
-                break;
-            case LogColorEnum.Gray:
-                Debug.Log("<color=#555555>" + log + "</color>");
-                break;
-            default:
-                Debug.Log(log);
-                break;
-        }
-
-    }
-
-
-}
-
-/// <summary>
-/// Log颜色枚举
-/// </summary>
-public enum LogColorEnum
-{
-    Red,
-    Green,
-    Blue,
-    Yellow,
-    White,
-    Gray
 }

@@ -12,11 +12,12 @@ using UnityEngine.EventSystems;
 /// </summary>
 public class TranspareWindows : MonoBehaviour
 {
-    public int TranspareColor = 0x00080808;
     // 忽略检测的层级设置
     [Header("忽略检测的层级")]
     [Tooltip("勾选的层级将被忽略检测")]
     public LayerMask ignoreLayers;  // 在Inspector面板设置需要忽略的层级
+
+    int TranspareColor = 0x00000000;
 
     private struct MARGINS
     {
@@ -135,6 +136,23 @@ public class TranspareWindows : MonoBehaviour
         return worldCamera.ScreenToWorldPoint(screenPosition);
     }
 
+
+    private void SetClickThrough(bool SetClickthrouth)
+    {
+        if (SetClickthrouth)
+        {
+            SetWindowLong(hwnd, GWL_EXSTYLE, WS_EX_LAYERED | WS_EX_TRANSPARENT);
+            //Debug.Log("点击透传已启用");
+
+        }
+        else
+        {
+            SetWindowLong(hwnd, GWL_EXSTYLE, WS_EX_LAYERED);
+            //Debug.Log("点击透传已禁用");
+
+        }
+    }
+
     public void SetWindowTop(bool isTop)
     {
         if (isTop)
@@ -161,7 +179,14 @@ public class TranspareWindows : MonoBehaviour
 
     private void SetWindowTranspareWithSetLayeredWindowAttributes()
     {
-        var margins = new MARGINS() { cxLeftWidth = -1 };
+        // 确保整个窗口区域透明
+        var margins = new MARGINS()
+        {
+            cxLeftWidth = -1,
+            cxRightWidth = -1,
+            cyTopHeight = -1,
+            cyBottomHeight = -1
+        };
         DwmExtendFrameIntoClientArea(hwnd, ref margins);
         SetLayeredWindowAttributes(hwnd, TranspareColor, 255, 2);
     }
@@ -207,19 +232,4 @@ public class TranspareWindows : MonoBehaviour
         DwmExtendFrameIntoClientArea(hwnd, ref margins);
     }
 
-    private void SetClickThrough(bool SetClickthrouth)
-    {
-        if (SetClickthrouth)
-        {
-            SetWindowLong(hwnd, GWL_EXSTYLE, WS_EX_LAYERED | WS_EX_TRANSPARENT);
-            //Debug.Log("点击透传已启用");
-
-        }
-        else
-        {
-            SetWindowLong(hwnd, GWL_EXSTYLE, WS_EX_LAYERED);
-            //Debug.Log("点击透传已禁用");
-
-        }
-    }
 }
