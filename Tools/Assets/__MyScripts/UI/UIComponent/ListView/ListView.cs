@@ -1744,15 +1744,21 @@ namespace Z.UI
         public void ScrollTo(float value)
         {
             //实现从0到1的滚动
+            value = Mathf.Clamp01(value); // 确保值在 0-1 范围内
+
             if (m_MotionType == MotionType.Horizontal)
             {
-                float x = Mathf.Lerp(m_ViewBounds.min.x, m_ViewBounds.max.x, value);
-                SetContentAnchoredPosition(new Vector2(x, m_Content.anchoredPosition.y));
+                // 水平滚动：从左侧(0)到右侧(1)
+                float contentWidth = m_ContentBounds.size.x - m_ViewBounds.size.x;
+                float targetX = Mathf.Lerp(-contentWidth, 0, value);//这边value0的时候是左边界，value1的时候是右边界
+                SetContentAnchoredPosition(new Vector2(targetX, m_Content.anchoredPosition.y));
             }
             else
             {
-                float y = Mathf.Lerp(m_ViewBounds.min.y, m_ViewBounds.max.y, value);
-                SetContentAnchoredPosition(new Vector2(m_Content.anchoredPosition.x, y));
+                // 垂直滚动：从顶部(0)到底部(1)
+                float contentHeight = m_ContentBounds.size.y - m_ViewBounds.size.y;
+                float targetY = Mathf.Lerp(contentHeight, 0, value);//这边value0的时候是上边界，value1的时候是下边界
+                SetContentAnchoredPosition(new Vector2(m_Content.anchoredPosition.x, targetY));
             }
         }
 
