@@ -402,7 +402,7 @@ namespace Z.UI
         {
             if (img)
             {
-                img.sprite = ResourceLoadManager.Instance.ResourceLoad<Sprite>(path);
+                //img.sprite = ResourceLoadManager.Instance.ResourceLoad<Sprite>(path);
             }
         }
         /// <summary>
@@ -415,7 +415,7 @@ namespace Z.UI
         {
             if (img)
             {
-                img.sprite = ResourceLoadManager.Instance.Load<Sprite>(path);
+                //img.sprite = ResourceLoadManager.Instance.Load<Sprite>(path);
             }
         }
 
@@ -426,6 +426,33 @@ namespace Z.UI
                 particleSystem.time = 0f; // 重置粒子系统的时间
                 particleSystem.Play();
             }
+        }
+
+        public static bool IsMouseInRecttransform(PointerEventData eventData, RectTransform rectTransform)
+        {
+            LogManager.Log("OnBeginDrag");
+            //判断鼠标是否在RectTransform内
+            if (!RectTransformUtility.RectangleContainsScreenPoint(rectTransform, eventData.position, eventData.pressEventCamera))
+            {
+                LogManager.Log("鼠标不在拖拽区域");
+                return false;
+            }
+            return true;
+        }
+
+        public static Vector3 MousePosToUIWorldPos(PointerEventData eventData, RectTransform rectTransform)
+        {
+            // 转换屏幕坐标到UI坐标
+            if (RectTransformUtility.ScreenPointToWorldPointInRectangle(
+                rectTransform,
+                eventData.position,
+                eventData.pressEventCamera,
+                out Vector3 worldPos))
+            {
+                return worldPos;
+            }
+            LogManager.Log("MousePosToUIWorldPos 转换失败");
+            return Vector3.zero;
         }
     }
 }

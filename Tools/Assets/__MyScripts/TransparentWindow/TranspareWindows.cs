@@ -110,9 +110,13 @@ public class TranspareWindows : MonoBehaviour
 #if UNITY_EDITOR
         return;
 #endif
+        if (EventSystem.current == null)
+        {
+            Debug.Log("请在场景中添加EventSystem,并且在Player Setting中,Active Input Handling 使用Input Manager Old ");
+        }
 
         // 检查UI和2D物体（忽略指定层级）
-        if (EventSystem.current.IsPointerOverGameObject())
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
         {
             SetClickThrough(false);
         }
@@ -189,6 +193,7 @@ public class TranspareWindows : MonoBehaviour
         };
         DwmExtendFrameIntoClientArea(hwnd, ref margins);
         SetLayeredWindowAttributes(hwnd, TranspareColor, 255, 2);
+        Debug.Log("TranspareColor:" + TranspareColor);
     }
 
     private void SetInitializationWindowPosition()

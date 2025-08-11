@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -101,7 +101,7 @@ namespace Z.UI
             public ItemInfo(RectTransform trans)
             {
                 transform = trans;
-                if(transform)
+                if (transform)
                 {
                     serialized = transform.GetComponent<UIReferenceComponent>();
                     if (serialized == null) serialized = transform.gameObject.AddComponent<UIReferenceComponent>();
@@ -143,7 +143,7 @@ namespace Z.UI
                     if (transform.gameObject.activeSelf != active)
                         transform.gameObject.SetActive(active);
                 }
-                else 
+                else
                 {
                     if (!transform.gameObject.activeSelf)
                         transform.gameObject.SetActive(true);
@@ -214,7 +214,7 @@ namespace Z.UI
         public RectTransform prefab { get { return m_Prefab; } set { SetPrefab(value); } }
 
         [SerializeField]
-        private int m_nInitMaxCount= 0;
+        private int m_nInitMaxCount = 0;
 
         [SerializeField]
         private bool m_OutsideUnActive = true;
@@ -230,7 +230,7 @@ namespace Z.UI
         [SerializeField]
         private MovementType m_MovementType = MovementType.Elastic;
         public MovementType movementType { get { return m_MovementType; } set { m_MovementType = value; } }
-        
+
         [SerializeField]
         private Corner m_StartCorner = Corner.Upper;
         public Corner startCorner { get { return m_StartCorner; } set { m_StartCorner = value; } }
@@ -252,7 +252,7 @@ namespace Z.UI
         public float scrollSensitivity { get { return m_ScrollSensitivity; } set { m_ScrollSensitivity = value; } }
 
         [SerializeField]
-        private Vector2 m_MinSize = new Vector2(0,0);
+        private Vector2 m_MinSize = new Vector2(0, 0);
         public Vector2 minSize { get { return m_MinSize; } set { m_MinSize = value; } }
 
         [SerializeField]
@@ -310,7 +310,7 @@ namespace Z.UI
 
         private byte m_bUpdateList = 1; //2 forceupdate
         private bool m_bFirstUpdate = true;
-        public bool FirstUpdate  { get { return m_bFirstUpdate; }}
+        public bool FirstUpdate { get { return m_bFirstUpdate; } }
 
         private bool m_bTriggerEnterScale = true;
         [SerializeField]
@@ -602,7 +602,7 @@ namespace Z.UI
                 if (Mathf.Abs(delta.x) > Mathf.Abs(delta.y))
                     delta.y = delta.x;
                 delta.x = 0;
-                if(m_MovementType == MovementType.SizeLimit)
+                if (m_MovementType == MovementType.SizeLimit)
                 {
                     if (m_Content.sizeDelta.y <= this.GetViewSize())
                         delta.y = 0;
@@ -620,7 +620,7 @@ namespace Z.UI
                 }
             }
 
-            if(delta.sqrMagnitude>0)
+            if (delta.sqrMagnitude > 0)
             {
                 Vector2 position = m_Content.anchoredPosition;
                 position += delta * m_ScrollSensitivity;
@@ -745,7 +745,7 @@ namespace Z.UI
             if (autoScrollState.Enable)//设置自动滚动
             {
                 float interp = 0;
-                if (autoScrollState.Duration>0)
+                if (autoScrollState.Duration > 0)
                 {
                     var alpha = Mathf.Clamp01((Time.unscaledTime - autoScrollState.StartTime) / Mathf.Max(autoScrollState.Duration, float.Epsilon));
                     interp = EaseInOutCubic(0, 1, alpha);
@@ -837,13 +837,13 @@ namespace Z.UI
             if (m_ViewBounds != m_PrevViewBounds || m_ContentBounds != m_PrevContentBounds || m_Content.anchoredPosition != m_PrevPosition)
             {
                 bUpdateBound = true;
-                if(m_bUpdateList<=0) m_bUpdateList = 1;
+                if (m_bUpdateList <= 0) m_bUpdateList = 1;
             }
-                
-            if (m_bUpdateList != 0 || bForceRender)
-                UpdatePosition(m_bUpdateList>1 || bForceRender);//这边的刷新,忽略携程缩放动画的检测,否则会导致重复添加,播放多次动画
 
-            if(bUpdateBound)
+            if (m_bUpdateList != 0 || bForceRender)
+                UpdatePosition(m_bUpdateList > 1 || bForceRender);//这边的刷新,忽略携程缩放动画的检测,否则会导致重复添加,播放多次动画
+
+            if (bUpdateBound)
             {
                 UpdateScrollbars(offset);
                 m_OnValueChanged.Invoke(normalizedPosition);
@@ -868,13 +868,13 @@ namespace Z.UI
 
             if (m_EnterScale)
             {
-                if(m_vEnterScale!=null)
+                if (m_vEnterScale != null)
                 {
                     float viewSize = GetViewSize();
                     float time = Time.time;
                     EnterScale enter;
-                    float curveTime = m_EnterScaleAnimation.keys[m_EnterScaleAnimation.keys.Length-1].time;
-                    for(int i = 0; i < m_vEnterScale.Count;)
+                    float curveTime = m_EnterScaleAnimation.keys[m_EnterScaleAnimation.keys.Length - 1].time;
+                    for (int i = 0; i < m_vEnterScale.Count;)
                     {
                         enter = m_vEnterScale[i];
                         if (enter.item.active)
@@ -1271,7 +1271,7 @@ namespace Z.UI
         #region 无限、虚拟列表重构
         private uint GetFixedCount()
         {
-            if(m_bAutoFit)
+            if (m_bAutoFit)
             {
                 uint preCnt = m_FixedCount;
                 if (m_MotionType == MotionType.Horizontal)
@@ -1281,7 +1281,7 @@ namespace Z.UI
                     float cell = GetCellSize(1);
                     m_FixedCount = (uint)Mathf.FloorToInt(height / cell);
                     if (m_FixedCount > 1)
-                        m_AutoSpace[1] = ((height - m_FixedCount * cell) / (float)(m_FixedCount-1)) * 0.5f;
+                        m_AutoSpace[1] = ((height - m_FixedCount * cell) / (float)(m_FixedCount - 1)) * 0.5f;
                 }
                 else
                 {
@@ -1289,8 +1289,8 @@ namespace Z.UI
                     float width = m_ViewPort.rect.width - m_Margin.left - m_Margin.right;
                     float cell = GetCellSize(0);
                     m_FixedCount = (uint)Mathf.FloorToInt(width / cell);
-                    if(m_FixedCount>1)
-                        m_AutoSpace[0] = ((width - m_FixedCount * cell) / (float)(m_FixedCount-1))*0.5f;
+                    if (m_FixedCount > 1)
+                        m_AutoSpace[0] = ((width - m_FixedCount * cell) / (float)(m_FixedCount - 1)) * 0.5f;
                 }
                 if (preCnt != m_FixedCount)
                 {
@@ -1310,10 +1310,10 @@ namespace Z.UI
             if (m_MotionType == MotionType.Horizontal)
             {
                 m_AutoSpace[0] = 0;
-                if (numItems>1 && m_bAutoFit && m_FixedCount >= 1)
+                if (numItems > 1 && m_bAutoFit && m_FixedCount >= 1)
                 {
                     uint num = (numItems - 1) / m_FixedCount;//这边计算当超过第二行开始加上自动高度适配
-                    if(num>1)
+                    if (num > 1)
                     {
                         float width = m_ViewPort.rect.width - m_Margin.left - m_Margin.right;
                         float realWidth = num * GetCellSize(0);
@@ -1328,7 +1328,7 @@ namespace Z.UI
                 m_AutoSpace[1] = 0;
                 if (numItems > 1 && m_bAutoFit && m_FixedCount >= 1)
                 {
-                    uint num = (numItems-1) / m_FixedCount;//这边计算当超过第二行开始加上自动高度适配
+                    uint num = (numItems - 1) / m_FixedCount;//这边计算当超过第二行开始加上自动高度适配
                     if (num > 1)
                     {
                         float height = m_ViewPort.rect.height - m_Margin.top - m_Margin.bottom;
@@ -1368,7 +1368,7 @@ namespace Z.UI
 
         private Vector2 GetItemOffset(int index)
         {
-            if(m_itemOffsets == null || m_itemOffsets.Count<=0) return Vector2.zero;
+            if (m_itemOffsets == null || m_itemOffsets.Count <= 0) return Vector2.zero;
             index = index % m_itemOffsets.Count;
             if (index >= 0 && index < m_itemOffsets.Count)
                 return m_itemOffsets[index];
@@ -1460,16 +1460,16 @@ namespace Z.UI
                             else
                                 item.position = new Vector2(0, margin.top) + offset;
                         }
-                        
+
 
                         item.UpdateIndex(virIdx, m_NumItems);
                         switch (m_StartCorner)
                         {
                             case Corner.Upper:
-                                item.transform.gameObject.name =  item.actualIndex.ToString();
+                                item.transform.gameObject.name = item.actualIndex.ToString();
                                 break;
                             case Corner.Lower:
-                                item.transform.gameObject.name = (m_NumItems -  item.actualIndex).ToString();
+                                item.transform.gameObject.name = (m_NumItems - item.actualIndex).ToString();
                                 break;
                         }
                         item.active = true;
@@ -1481,10 +1481,10 @@ namespace Z.UI
                         switch (m_StartCorner)
                         {
                             case Corner.Upper:
-                                item.transform.gameObject.name =  item.actualIndex.ToString();
+                                item.transform.gameObject.name = item.actualIndex.ToString();
                                 break;
                             case Corner.Lower:
-                                item.transform.gameObject.name = (m_NumItems -  item.actualIndex).ToString();
+                                item.transform.gameObject.name = (m_NumItems - item.actualIndex).ToString();
                                 break;
                         }
                         item.active = true;
@@ -1497,7 +1497,7 @@ namespace Z.UI
 
             #endregion
 
-        //    if (m_vCoroutineItems != null) m_vCoroutineItems.Clear();
+            //    if (m_vCoroutineItems != null) m_vCoroutineItems.Clear();
             for (int i = 0; i < num; i++)
             {
                 item = m_VirtualItems[i];
@@ -1506,11 +1506,11 @@ namespace Z.UI
                 // Render在Active后
                 if (item.renderable)
                 {
-                    if(m_bCoroutinesRefresh)
+                    if (m_bCoroutinesRefresh)
                     {
                         m_OnItemInit.Invoke(item.actualIndex, item.serialized);
                         if (m_vCoroutineItems == null) m_vCoroutineItems = new List<ItemInfo>();
-                        if(m_vCoroutineItems.IndexOf(item)<0) m_vCoroutineItems.Add(item);
+                        if (m_vCoroutineItems.IndexOf(item) < 0) m_vCoroutineItems.Add(item);
                     }
                     else
                     {
@@ -1555,9 +1555,9 @@ namespace Z.UI
                 m_IsInited = true;
                 OnInitCompletdAction?.Invoke();
             }
-            
+
             CheckCoroutinesRefreshList();
-            
+
             m_bTriggerEnterScale = false;
         }
         void CheckCoroutinesRefreshList()
@@ -1571,7 +1571,7 @@ namespace Z.UI
         {
             bool bTriggerEnterScale = m_bTriggerEnterScale;
             int index = 0;
-            while(m_vCoroutineItems.Count>0)
+            while (m_vCoroutineItems.Count > 0)
             {
                 ItemInfo item = m_vCoroutineItems[0];
                 m_vCoroutineItems.RemoveAt(0);
@@ -1615,7 +1615,7 @@ namespace Z.UI
             {
                 m_IsInited = true;//标记初始化完成
                 OnInitCompletdAction?.Invoke();
-            }            
+            }
         }
 
         void AddEnterScale(EnterScale enterS)
@@ -1691,7 +1691,7 @@ namespace Z.UI
                             offset.y = Mathf.Min(m_Content.rect.height - m_ViewPort.rect.height, offset.y);
                         }
                     }
-                    
+
                     offset.x = m_Content.anchoredPosition.x;
                 }
             }
@@ -1715,15 +1715,15 @@ namespace Z.UI
         public void InitItem()
         {
             if (m_VirtualItems == null) return;
-            for(int i = 0; i < m_VirtualItems.Count; ++i)
+            for (int i = 0; i < m_VirtualItems.Count; ++i)
             {
-                if(m_OnItemInit!=null) m_OnItemInit.Invoke(i, m_VirtualItems[i].serialized);
+                if (m_OnItemInit != null) m_OnItemInit.Invoke(i, m_VirtualItems[i].serialized);
             }
         }
 
         public void BackTop(float time, Action endCallback = null)
         {
-            ScrollTo(0, time, 0,endCallback);
+            ScrollTo(0, time, 0, endCallback);
         }
 
         public void ScrollTo(int index, float duration, float offset = 0, Action endCallback = null, bool isLimit = false)
@@ -1739,6 +1739,21 @@ namespace Z.UI
             else
                 autoScrollState.EndScrollPosition = CalculateClosestPosition(index, isLimit) + new Vector2(0, offset);
             autoScrollState.Callback = endCallback;
+        }
+
+        public void ScrollTo(float value)
+        {
+            //实现从0到1的滚动
+            if (m_MotionType == MotionType.Horizontal)
+            {
+                float x = Mathf.Lerp(m_ViewBounds.min.x, m_ViewBounds.max.x, value);
+                SetContentAnchoredPosition(new Vector2(x, m_Content.anchoredPosition.y));
+            }
+            else
+            {
+                float y = Mathf.Lerp(m_ViewBounds.min.y, m_ViewBounds.max.y, value);
+                SetContentAnchoredPosition(new Vector2(m_Content.anchoredPosition.x, y));
+            }
         }
 
         private int GetLoopPosition(int index, int length)
@@ -1773,7 +1788,7 @@ namespace Z.UI
                 }
             }
 
-            if(m_ItemSize.sqrMagnitude<=0)
+            if (m_ItemSize.sqrMagnitude <= 0)
             {
                 m_ItemSize = Vector2.zero;
             }
@@ -1783,7 +1798,7 @@ namespace Z.UI
                 return;
 
             rt.gameObject.SetActive(false);
-            if(m_ItemSize.sqrMagnitude<=0)
+            if (m_ItemSize.sqrMagnitude <= 0)
             {
                 Vector2 size = rt.sizeDelta;
                 m_ItemSize.x = m_ItemSize.x > 0 ? m_ItemSize.x : size.x;
@@ -1793,7 +1808,7 @@ namespace Z.UI
         private void SetNumItems(uint num)
         {
             m_NumItems = num;
-           // if(m_EnterScaleDelay>0)m_EnterScaleDelay = Mathf.Max(0.03f, m_EnterScaleDelay);
+            // if(m_EnterScaleDelay>0)m_EnterScaleDelay = Mathf.Max(0.03f, m_EnterScaleDelay);
 
             if (!Application.isPlaying || !m_HasInit || !m_Content || !m_Prefab || !m_ViewPort)
                 return;
@@ -1873,7 +1888,7 @@ namespace Z.UI
                     //往下移动一个循环
                     m_TotalLine *= 2;//每次扩展在当前基础上扩大2倍
                     UpdateContent((int)GetFixedCount());
-                    SetContentAnchoredPosition(pos - new Vector2(contentSize.x,0));
+                    SetContentAnchoredPosition(pos - new Vector2(contentSize.x, 0));
                     //print($"抵达上边界 pos:{pos},viewSize:{viewSize},contentSize:{contentSize}");
                     autoScrollState.Enable = false;//扩展时停止自动滚动
                 }
@@ -1983,11 +1998,11 @@ namespace Z.UI
         public void RefreshIndex(int index)
         {
             if (index < 0) return;
-            for(int i = 0; i < m_VirtualItems.Count; ++i)
+            for (int i = 0; i < m_VirtualItems.Count; ++i)
             {
-                if(m_VirtualItems[i].actualIndex == index)
+                if (m_VirtualItems[i].actualIndex == index)
                 {
-                    if((!m_OutsideUnActive || m_VirtualItems[i].active) && !m_VirtualItems[i].renderable)
+                    if ((!m_OutsideUnActive || m_VirtualItems[i].active) && !m_VirtualItems[i].renderable)
                         m_OnItemRender.Invoke(m_VirtualItems[i].actualIndex, m_VirtualItems[i].serialized);
                     return;
                 }
@@ -2093,10 +2108,10 @@ namespace Z.UI
             {
                 return null;
             }
-            
+
             for (int i = 0; i < m_VirtualItems.Count; ++i)
             {
-                if(m_VirtualItems[i].virtualIndex == index)
+                if (m_VirtualItems[i].virtualIndex == index)
                 {
                     return m_VirtualItems[i].transform;
                 }
@@ -2129,7 +2144,7 @@ namespace Z.UI
             int index = -1;
 
             int count = 0;
-            
+
             for (int i = 0; i < m_VirtualItems.Count; ++i)
             {
                 if (m_VirtualItems[i].virtualIndex == int.MaxValue || m_VirtualItems[i].active == false)//过滤掉未计算索引的格子
@@ -2146,7 +2161,7 @@ namespace Z.UI
                 return 0;
             }
 
-            return index / count-1;
+            return index / count - 1;
         }
         //------------------------------------------------------
         /// <summary>
@@ -2178,7 +2193,7 @@ namespace Z.UI
             {
                 return index;
             }
-            
+
             Vector2 pos = content.anchoredPosition;
 
             var itemSizeAndSpace = itemSize + space;
@@ -2195,7 +2210,7 @@ namespace Z.UI
                 {
                     curIndex++;
                 }
-                index = curIndex ;
+                index = curIndex;
             }
             else
             {
@@ -2220,7 +2235,7 @@ namespace Z.UI
             {
                 return null;
             }
-            for(int i = 0; i < m_VirtualItems.Count; ++i)
+            for (int i = 0; i < m_VirtualItems.Count; ++i)
             {
                 if (m_VirtualItems[i].actualIndex == actualIndex)
                     return m_VirtualItems[i].serialized;
