@@ -2,9 +2,11 @@
 	newwer
 */
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 
 /// <summary>
@@ -16,6 +18,10 @@ public class TranspareWindows : MonoBehaviour
     [Header("忽略检测的层级")]
     [Tooltip("勾选的层级将被忽略检测")]
     public LayerMask ignoreLayers;  // 在Inspector面板设置需要忽略的层级
+    [Header("UI 所有Canvas上的GraphicRaycaster")]
+    [Tooltip("用来检测鼠标是否在UI上,从而关闭鼠标穿透")]
+    public List<GraphicRaycaster> raycaster;
+    List<RaycastResult> results = new List<RaycastResult>();
 
     int TranspareColor = 0x00000000;
 
@@ -110,13 +116,9 @@ public class TranspareWindows : MonoBehaviour
 #if UNITY_EDITOR
         return;
 #endif
-        if (EventSystem.current == null)
-        {
-            Debug.Log("请在场景中添加EventSystem,并且在Player Setting中,Active Input Handling 使用Input Manager Old ");
-        }
 
         // 检查UI和2D物体（忽略指定层级）
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        if (IsPointerOverUI() /*|| EventSystem.current.IsPointerOverGameObject()*/)
         {
             SetClickThrough(false);
         }
@@ -125,6 +127,25 @@ public class TranspareWindows : MonoBehaviour
             // 使用层级掩码检测，只检测非忽略层级的物体
             SetClickThrough(Physics2D.OverlapPoint(GetMouseWorldPosition(), ~ignoreLayers.value) == null);
         }
+    }
+    private bool IsPointerOverUI()
+    {
+        //LogManager.Log("EventSystem.current: " + EventSystem.current + ",Input.mousePosition:" + Input.mousePosition);
+        if (EventSystem.current == null) return false;
+
+        PointerEventData eventData = new PointerEventData(EventSystem.current);
+        eventData.position = Input.mousePosition;
+        results.Clear();
+        if (raycaster != null && raycaster.Count > 0)
+        {
+            for (int i = 0; i < raycaster.Count; i++)
+            {
+                raycaster[i].Raycast(eventData, results);
+                LogManager.Log("检测到UI元素数量: " + results.Count);
+                if (results.Count > 0) return true;
+            }
+        }
+        return false;
     }
 
 
@@ -193,7 +214,6 @@ public class TranspareWindows : MonoBehaviour
         };
         DwmExtendFrameIntoClientArea(hwnd, ref margins);
         SetLayeredWindowAttributes(hwnd, TranspareColor, 255, 2);
-        Debug.Log("TranspareColor:" + TranspareColor);
     }
 
     private void SetInitializationWindowPosition()

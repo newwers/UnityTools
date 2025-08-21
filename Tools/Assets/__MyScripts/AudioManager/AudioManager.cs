@@ -25,31 +25,68 @@ namespace Z.Core.Audio
         [Range(0f, 1f)]
         public float TotalVolume = 1.0f;
 
-        private List<AudioSource> m_MusicSources = new List<AudioSource>();
-        private List<AudioSource> m_EffectSources = new List<AudioSource>();
-        // 存储音频片段的最后播放时间，用于限制播放频率
-        private Dictionary<AudioClip, float> _audioLastPlayTime = new Dictionary<AudioClip, float>();
+        [Header("BGM")]
+        public List<AudioClip> BGMAudioClips;
 
         [Header("音效")]
         public AudioClip SpawnGiftAduio;
-        public AudioClip ClickGiftAduio;
         public AudioClip PickItemAduio;
         public AudioClip DropItemAduio;
         public AudioClip ClickBalloonAduio;
         public AudioClip PickCoinAduio;
         public AudioClip DragRopeAudio;
+        public AudioClip LongClickAudio;
+        public AudioClip ItemPopAudio_Small;
+        public AudioClip ItemPopAudio_Large;
 
         [Header("图鉴UI")]
         public AudioClip OpenCollectionAudio;
         public AudioClip ClickBalloonPageAduio;
+        public AudioClip UnlockHideAudio;//Unlock消失音效
         public AudioClip ClickButtonAduio;
         public AudioClip ClickBuyBtnAduio;
+        public AudioClip NewHideAudio;
+
+        [Header("礼盒音效")]
+        public AudioClip BoxAudio1;
+        public AudioClip BoxAudio2;
+        public AudioClip BoxAudio3;
+        public AudioClip BoxAudio4;
+        public AudioClip GiftBoxAudio;
+
+        private List<AudioSource> m_MusicSources = new List<AudioSource>();
+        private List<AudioSource> m_EffectSources = new List<AudioSource>();
+        // 存储音频片段的最后播放时间，用于限制播放频率
+        private Dictionary<AudioClip, float> _audioLastPlayTime = new Dictionary<AudioClip, float>();
+
+        // 添加BGM相关变量
+        private AudioSource m_BGMSource;
+        private int m_CurrentBGMIndex = -1;
+        private AudioClip m_LastPlayedBGM;
+
 
         protected override void Awake()
         {
             base.Awake();
             _audioLastPlayTime = new Dictionary<AudioClip, float>();
+
+            // 创建专用的BGM AudioSource
+            GameObject bgmSourceObject = new GameObject("BGM_Source");
+            bgmSourceObject.transform.SetParent(transform);
+            m_BGMSource = bgmSourceObject.AddComponent<AudioSource>();
+            m_BGMSource.loop = false; // 不循环，我们将手动控制播放下一首
+            m_BGMSource.volume = m_BGMVolume * TotalVolume;
         }
+
+        private void Update()
+        {
+            // 检查BGM是否播放完毕，如果完毕则播放下一首
+            if (m_BGMSource != null && !m_BGMSource.isPlaying && m_BGMSource.time >= m_BGMSource.clip.length - 0.1f)
+            {
+                PlayNextBGM();
+            }
+        }
+
         private void Start()
         {
             PlayBackgroundMusic();
@@ -121,10 +158,44 @@ namespace Z.Core.Audio
         /// </summary>
         private void PlayBackgroundMusic()
         {
-            var audioSource = GetMusicSource();
-            audioSource.loop = true;
-            audioSource.volume = m_BGMVolume * TotalVolume;
-            audioSource.Play();
+            if (BGMAudioClips == null || BGMAudioClips.Count == 0)
+            {
+                Debug.LogWarning("No BGM audio clips assigned!");
+                return;
+            }
+
+            PlayNextBGM();
+        }
+
+        /// <summary>
+        /// 随机播放下一首BGM
+        /// </summary>
+        private void PlayNextBGM()
+        {
+            if (BGMAudioClips == null || BGMAudioClips.Count == 0)
+                return;
+
+            // 如果只有一首BGM，直接播放它
+            if (BGMAudioClips.Count == 1)
+            {
+                m_BGMSource.clip = BGMAudioClips[0];
+                m_BGMSource.Play();
+                m_LastPlayedBGM = BGMAudioClips[0];
+                return;
+            }
+
+            // 随机选择一首与上一首不同的BGM
+            AudioClip nextBGM;
+            do
+            {
+                int randomIndex = Random.Range(0, BGMAudioClips.Count);
+                nextBGM = BGMAudioClips[randomIndex];
+            } while (nextBGM == m_LastPlayedBGM && BGMAudioClips.Count > 1);
+
+            m_BGMSource.clip = nextBGM;
+            m_BGMSource.volume = m_BGMVolume * TotalVolume;
+            m_BGMSource.Play();
+            m_LastPlayedBGM = nextBGM;
         }
 
         /// <summary>
@@ -180,13 +251,16 @@ namespace Z.Core.Audio
         /// <summary>
         /// 直接播放一个音效片段
         /// </summary>
-        public void PlayAudioEffect(AudioClip audioClip, float delay = 0)
+        public AudioSource PlayAudioEffect(AudioClip audioClip, float delay = 0)
         {
             var audioSource = GetEffectSource();
             audioSource.clip = audioClip;
             audioSource.loop = false;
             audioSource.volume = AudioEffectVolume * TotalVolume;
+            audioSource.pitch = 1f;//重置pitch，防止被修改过
             audioSource.PlayDelayed(delay);
+            //LogManager.Log($"PlayAudioEffect:volume:{audioSource.volume}");
+            return audioSource;
         }
 
         /// <summary>
@@ -274,6 +348,12 @@ namespace Z.Core.Audio
             foreach (var source in m_MusicSources)
             {
                 source.volume = m_BGMVolume * TotalVolume;
+            }
+
+            // 更新BGM专用源的音量
+            if (m_BGMSource != null)
+            {
+                m_BGMSource.volume = m_BGMVolume * TotalVolume;
             }
         }
 

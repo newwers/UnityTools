@@ -1,0 +1,11 @@
+﻿文本ID,简体中文,繁体中文,英文,俄语,西班牙语西班牙,葡萄牙语巴西,德语,日语,法语,波兰语,韩语,土耳其语,西班牙语拉丁美洲,乌克兰语,意大利语,捷克语,葡萄牙语葡萄牙,匈牙利语
+uint,string,string,string,string,string,string,string,string,string,string,string,string,string,string,string,string,string,string
+,,,,,,,,,,,,,,,,,,
+id,textzhCN,textzhTW,textEN,textRU,textesES,textptBR,textDE,textJA,textFR,textPL,textKO,textTR,textes419,textUK,textIT,textCS,textptPT,textHU
+1,置顶,置頂,Always on Top,Всегда поверх,Siempre visible,Sempre no topo,Immer im Vordergrund,常に最前面,Toujours au premier plan,Zawsze na wierzchu,항상 위에,Her zaman üstte,Siempre visible,Завжди поверх,Sempre in primo piano,Vždy nahoře,Sempre no topo,Mindig felül
+6,一戳即破,一戳即破,Oneclick Pop,Лопание в один клик,Reventar con un clic,Estourar com um clique,Mit einem Klick platzen,ワンクリックで破裂,Crever en un clic,Pęknięcie jednym kliknięciem,한 번 클릭으로 터트림,Tek tıkla patlat,Reventar con un clic,Одноразовий клік,Scoppia con un clic,Prasknout jedním kliknutím,Reventar com um clique,Egy kattintásra pattan
+8,保存,保存,Save,Сохранить,Guardar,Salvar,Speichern,保存,Enregistrer,Zapisz,저장,Kaydet,Guardar,Зберегти,Salva,Uložit,Guardar,Mentés
+9,退出,退出,Exit,Выход,Salir,Sair,Beenden,終了,Quitter,Wyjście,종료,Çıkış,Salir,Вихід,Esci,Konec,Sair,Kilépés
+14,删除存档,刪除存檔,Delete Save,Удалить сохранение,Borrar partida,Excluir salvar,Speicherstand löschen,セーブデータを削除,Supprimer sauvegarde,Usuń zapis,저장 삭제,Kaydı sil,Borrar partida,Видалити збереження,Elimina salvataggio,Smazat uložení,Apagar gravação,Mentés törlése
+15,重置场景,重置場景,Reset Scene,Сброс сцены,Restablecer escena,Redefinir cena,Szene zurücksetzen,シーンをリセット,Réinitialiser scène,Resetuj scenę,장면 초기화,Sahneyi sıfırla,Restablecer escena,Скинути сцену,Ripristina scena,Obnovit scénu,Repor cena,Jelenet visszaállítása
+17,获取Log,取得Log,Get Log,Получить журнал,Obtener registro,Obter log,Protokoll holen,ログを取得,Obtenir journal,Pobierz log,로그 가져오기,Log al,Obtener registro,Отримати журнал,Ottenere log,Získat záznam,Obter registo,Log letöltése
