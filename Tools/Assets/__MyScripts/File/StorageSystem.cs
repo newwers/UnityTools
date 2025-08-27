@@ -48,6 +48,7 @@ public interface IDataSaver
 public class SaveData
 {
     public int version = 1; // 版本控制
+    public string PlayerName;
     public Dictionary<string, object> data = new Dictionary<string, object>();//通用数据
     public Dictionary<string, BalloonRuntimeData> balloonData = new Dictionary<string, BalloonRuntimeData>();//气球等级经验数据
     public List<SceneItemSaveData> sceneItemSaveData = new List<SceneItemSaveData>();//物体场景中状态数据
@@ -385,7 +386,7 @@ public static class StorageSystem
         try
         {
             // 获取源文件夹路径
-            string sourcePath = Application.persistentDataPath;
+            string sourcePath = Application.persistentDataPath + "/../";
 
             // 验证源路径是否存在
             if (!Directory.Exists(sourcePath))

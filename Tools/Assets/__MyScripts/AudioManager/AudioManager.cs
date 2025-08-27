@@ -7,6 +7,16 @@ using UnityEngine;
 namespace Z.Core.Audio
 {
     /// <summary>
+    /// 播放模式枚举
+    /// </summary>
+    public enum BGMPlayMode
+    {
+        Random,      // 随机播放
+        LoopList,    // 列表循环
+        SingleLoop   // 单曲循环
+    }
+
+    /// <summary>
     /// 管理所有音频
     /// 在一开始加载所有的音频
     /// 区分音乐和音效播放类型，实现分开单独控制
@@ -63,6 +73,9 @@ namespace Z.Core.Audio
         private AudioSource m_BGMSource;
         private int m_CurrentBGMIndex = -1;
         private AudioClip m_LastPlayedBGM;
+        // 播放模式相关变量
+        private BGMPlayMode m_PlayMode = BGMPlayMode.Random;
+        private bool m_IsSingleLoop = false;
 
 
         protected override void Awake()
@@ -168,34 +181,115 @@ namespace Z.Core.Audio
         }
 
         /// <summary>
-        /// 随机播放下一首BGM
+        /// 播放上一首BGM
         /// </summary>
-        private void PlayNextBGM()
+        internal void PlayPrevBGM()
         {
             if (BGMAudioClips == null || BGMAudioClips.Count == 0)
                 return;
 
-            // 如果只有一首BGM，直接播放它
-            if (BGMAudioClips.Count == 1)
+            // 单曲循环模式直接重新播放当前歌曲
+            if (m_PlayMode == BGMPlayMode.SingleLoop && m_BGMSource.clip != null)
             {
-                m_BGMSource.clip = BGMAudioClips[0];
+                m_BGMSource.Stop();
                 m_BGMSource.Play();
-                m_LastPlayedBGM = BGMAudioClips[0];
                 return;
             }
 
-            // 随机选择一首与上一首不同的BGM
-            AudioClip nextBGM;
-            do
+            // 随机模式下，随机选择一首与当前不同的BGM
+            if (m_PlayMode == BGMPlayMode.Random)
             {
-                int randomIndex = Random.Range(0, BGMAudioClips.Count);
-                nextBGM = BGMAudioClips[randomIndex];
-            } while (nextBGM == m_LastPlayedBGM && BGMAudioClips.Count > 1);
+                if (BGMAudioClips.Count == 1)
+                {
+                    PlayBGMByIndex(0);
+                    return;
+                }
 
-            m_BGMSource.clip = nextBGM;
+                AudioClip prevBGM;
+                do
+                {
+                    int randomIndex = Random.Range(0, BGMAudioClips.Count);
+                    prevBGM = BGMAudioClips[randomIndex];
+                } while (prevBGM == m_BGMSource.clip && BGMAudioClips.Count > 1);
+
+                PlayBGMByIndex(BGMAudioClips.IndexOf(prevBGM));
+                return;
+            }
+
+            // 列表循环模式
+            if (m_PlayMode == BGMPlayMode.LoopList)
+            {
+                int prevIndex = m_CurrentBGMIndex - 1;
+                if (prevIndex < 0)
+                {
+                    prevIndex = BGMAudioClips.Count - 1; // 循环到列表末尾
+                }
+                PlayBGMByIndex(prevIndex);
+            }
+        }
+
+        /// <summary>
+        /// 播放下一首BGM
+        /// </summary>
+        public void PlayNextBGM()
+        {
+            if (BGMAudioClips == null || BGMAudioClips.Count == 0)
+                return;
+
+            // 单曲循环模式直接重新播放当前歌曲
+            if (m_PlayMode == BGMPlayMode.SingleLoop && m_BGMSource.clip != null)
+            {
+                m_BGMSource.Stop();
+                m_BGMSource.Play();
+                return;
+            }
+
+            // 随机模式下，使用原有逻辑
+            if (m_PlayMode == BGMPlayMode.Random)
+            {
+                // 如果只有一首BGM，直接播放它
+                if (BGMAudioClips.Count == 1)
+                {
+                    PlayBGMByIndex(0);
+                    return;
+                }
+
+                // 随机选择一首与上一首不同的BGM
+                AudioClip nextBGM;
+                do
+                {
+                    int randomIndex = Random.Range(0, BGMAudioClips.Count);
+                    nextBGM = BGMAudioClips[randomIndex];
+                } while (nextBGM == m_LastPlayedBGM && BGMAudioClips.Count > 1);
+
+                PlayBGMByIndex(BGMAudioClips.IndexOf(nextBGM));
+                return;
+            }
+
+            // 列表循环模式
+            if (m_PlayMode == BGMPlayMode.LoopList)
+            {
+                int nextIndex = m_CurrentBGMIndex + 1;
+                if (nextIndex >= BGMAudioClips.Count)
+                {
+                    nextIndex = 0; // 循环到列表开头
+                }
+                PlayBGMByIndex(nextIndex);
+            }
+        }
+
+        /// <summary>
+        /// 根据索引播放BGM
+        /// </summary>
+        private void PlayBGMByIndex(int index)
+        {
+            if (index < 0 || index >= BGMAudioClips.Count) return;
+
+            m_CurrentBGMIndex = index;
+            m_BGMSource.clip = BGMAudioClips[index];
             m_BGMSource.volume = m_BGMVolume * TotalVolume;
             m_BGMSource.Play();
-            m_LastPlayedBGM = nextBGM;
+            m_LastPlayedBGM = m_BGMSource.clip;
         }
 
         /// <summary>
@@ -375,6 +469,73 @@ namespace Z.Core.Audio
         {
             UpdateMusicVolumes();
             UpdateEffectVolumes();
+        }
+
+        /// <summary>
+        /// 切换单曲循环模式
+        /// </summary>
+        internal void ToggleSingleLoopBGM()
+        {
+            if (m_PlayMode == BGMPlayMode.SingleLoop)
+            {
+                // 如果已经是单曲循环，则切换回随机模式
+                m_PlayMode = BGMPlayMode.Random;
+                Debug.Log("切换到随机播放模式");
+            }
+            else
+            {
+                // 否则切换到单曲循环模式
+                m_PlayMode = BGMPlayMode.SingleLoop;
+                Debug.Log("切换到单曲循环模式");
+            }
+        }
+
+        /// <summary>
+        /// 切换列表循环模式
+        /// </summary>
+        internal void ToggleLoopBGM()
+        {
+            if (m_PlayMode == BGMPlayMode.LoopList)
+            {
+                // 如果已经是列表循环，则切换回随机模式
+                m_PlayMode = BGMPlayMode.Random;
+                Debug.Log("切换到随机播放模式");
+            }
+            else
+            {
+                // 否则切换到列表循环模式
+                m_PlayMode = BGMPlayMode.LoopList;
+                Debug.Log("切换到列表循环模式");
+            }
+        }
+
+        /// <summary>
+        /// 获取当前播放模式
+        /// </summary>
+        public BGMPlayMode GetCurrentPlayMode()
+        {
+            return m_PlayMode;
+        }
+
+        /// <summary>
+        /// 设置播放模式
+        /// </summary>
+        public void SetPlayMode(BGMPlayMode mode)
+        {
+            m_PlayMode = mode;
+
+            switch (mode)
+            {
+                case BGMPlayMode.Random:
+                    Debug.Log("切换到随机播放模式");
+                    break;
+                case BGMPlayMode.LoopList:
+                    Debug.Log("切换到列表循环模式");
+                    break;
+                case BGMPlayMode.SingleLoop:
+                    Debug.Log("切换到单曲循环模式");
+                    break;
+            }
         }
     }
 

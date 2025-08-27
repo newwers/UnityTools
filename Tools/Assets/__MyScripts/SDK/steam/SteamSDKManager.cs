@@ -20,6 +20,49 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
         ACH_HEAVY_FIRE,
         ACH_TRAVEL_FAR_ACCUM,
         ACH_TRAVEL_FAR_SINGLE,
+
+        ACH_GET_COIN_30,//获得30个硬币
+        ACH_GET_COIN_100,
+        ACH_GET_COIN_500,
+        ACH_GET_COIN_1000,
+        ACH_GET_COIN_10000,
+
+        ACH_POP_BALLOON_1,//戳破1个气球
+        ACH_POP_BALLOON_20,//戳破20个气球
+        ACH_POP_BALLOON_50,
+        ACH_POP_BALLOON_100,
+
+        ACH_OPEN_BALLOON_GIFT_BOX_1,//打开1个气球礼盒
+        ACH_OPEN_BALLOON_GIFT_BOX_10,
+        ACH_OPEN_BALLOON_GIFT_BOX_50,
+        ACH_OPEN_BALLOON_GIFT_BOX_100,
+
+        ACH_OPEN_BALLOON_GIFT_BOX_QUALITY_2,//打开2级稀有度气球礼盒
+        ACH_OPEN_BALLOON_GIFT_BOX_QUALITY_3,//打开3级稀有度气球礼盒
+        ACH_OPEN_BALLOON_GIFT_BOX_QUALITY_4,//打开4级稀有度气球礼盒
+
+        ACH_OPEN_ITEM_GIFT_BOX_1,//打开1个道具礼盒
+        ACH_OPEN_ITEM_GIFT_BOX_10,
+        ACH_OPEN_ITEM_GIFT_BOX_100,
+
+        ACH_ATTACH_BALLOON_TO_ITEM_FIRST,//首次将气球固定到物品上
+        ACH_POP_ITEM_FIRST,//首次绽放物品
+
+        ACH_COLLECT_ONE_ITEM_SET,       // 集齐任意一套物品礼包
+        ACH_COLLECT_THREE_ITEM_SETS,    // 集齐3套物品礼包
+        ACH_COLLECT_ALL_ITEM_SETS,       // 集齐所有物品礼包
+
+        ACH_UNLOCK_FIRST_BALLOON_PEDIA,//解锁首个气球图鉴
+        ACH_UNLOCK_FIRST_LEVEL2_BALLOON_PEDIA,////解锁首款2阶气球图鉴
+        ACH_UNLOCK_FIRST_LEVEL3_BALLOON_PEDIA,//解锁首款3阶气球图鉴
+        ACH_UNLOCK_10_BASE_BALLOON_PEDIA,//解锁10款基础气球图鉴
+        ACH_UNLOCK_30_BASE_BALLOON_PEDIA,//解锁30款基础气球图鉴
+        ACH_UNLOCK_ALL_BASE_BALLOON_PEDIA,//解锁所有础气球图鉴
+        ACH_UNLOCK_ALL_BALLOON_PEDIA,//解锁全部气球图鉴
+
+        ACH_COLLECT_ONE_BALLOON_SET_BASE,//集齐任意一套气球礼包里的全部基础款式
+        ACH_COLLECT_ONE_BALLOON_SET_ALL,//集齐任意一套气球礼包里的全部款式
+
     };
 
     private class Achievement_t
@@ -48,8 +91,55 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
         new Achievement_t(Achievement.ACH_WIN_ONE_GAME, "Winner", ""),
         new Achievement_t(Achievement.ACH_WIN_100_GAMES, "Champion", ""),
         new Achievement_t(Achievement.ACH_TRAVEL_FAR_ACCUM, "Interstellar", ""),
-        new Achievement_t(Achievement.ACH_TRAVEL_FAR_SINGLE, "Orbiter", "")
+        new Achievement_t(Achievement.ACH_TRAVEL_FAR_SINGLE, "Orbiter", ""),
+
+        new Achievement_t(Achievement.ACH_GET_COIN_30, "获得30个硬币", ""),
+        new Achievement_t(Achievement.ACH_GET_COIN_100, "获得100个硬币", ""),
+        new Achievement_t(Achievement.ACH_GET_COIN_500, "获得500个硬币", ""),
+        new Achievement_t(Achievement.ACH_GET_COIN_1000, "获得1000个硬币", ""),
+        new Achievement_t(Achievement.ACH_GET_COIN_10000, "获得10000个硬币", ""),
+
+        new Achievement_t(Achievement.ACH_POP_BALLOON_1, "戳破1个气球", ""),
+        new Achievement_t(Achievement.ACH_POP_BALLOON_20, "戳破20个气球", ""),
+        new Achievement_t(Achievement.ACH_POP_BALLOON_50, "戳破50个气球", ""),
+        new Achievement_t(Achievement.ACH_POP_BALLOON_100, "戳破100个气球", ""),
+
+        new Achievement_t(Achievement.ACH_OPEN_BALLOON_GIFT_BOX_1, "打开1个气球礼盒", ""),
+        new Achievement_t(Achievement.ACH_OPEN_BALLOON_GIFT_BOX_10, "打开10个气球礼盒", ""),
+        new Achievement_t(Achievement.ACH_OPEN_BALLOON_GIFT_BOX_50, "打开50个气球礼盒", ""),
+        new Achievement_t(Achievement.ACH_OPEN_BALLOON_GIFT_BOX_100, "打开100个气球礼盒", ""),
+
+        new Achievement_t(Achievement.ACH_OPEN_BALLOON_GIFT_BOX_QUALITY_2, "打开2级稀有度气球礼盒", ""),
+        new Achievement_t(Achievement.ACH_OPEN_BALLOON_GIFT_BOX_QUALITY_3, "打开3级稀有度气球礼盒", ""),
+        new Achievement_t(Achievement.ACH_OPEN_BALLOON_GIFT_BOX_QUALITY_4, "打开4级稀有度气球礼盒", ""),
+
+        new Achievement_t(Achievement.ACH_OPEN_ITEM_GIFT_BOX_1, "打开1个道具礼盒", ""),
+        new Achievement_t(Achievement.ACH_OPEN_ITEM_GIFT_BOX_10, "打开10个道具礼盒", ""),
+        new Achievement_t(Achievement.ACH_OPEN_ITEM_GIFT_BOX_100, "打开100个道具礼盒", ""),
+
+        new Achievement_t(Achievement.ACH_ATTACH_BALLOON_TO_ITEM_FIRST, "首次将气球固定到物品上", ""),
+        new Achievement_t(Achievement.ACH_POP_ITEM_FIRST, "首次戳破物品", ""),
+
+        new Achievement_t(Achievement.ACH_COLLECT_ONE_ITEM_SET, "集齐任意一套物品礼包", ""),
+        new Achievement_t(Achievement.ACH_COLLECT_THREE_ITEM_SETS, "集齐3套物品礼包", ""),
+        new Achievement_t(Achievement.ACH_COLLECT_ALL_ITEM_SETS, "集齐所有物品礼包", ""),
+
+        new Achievement_t(Achievement.ACH_UNLOCK_FIRST_BALLOON_PEDIA, "解锁首个气球图鉴", ""),
+        new Achievement_t(Achievement.ACH_UNLOCK_FIRST_LEVEL2_BALLOON_PEDIA, "解锁首款2阶气球图鉴", ""),
+        new Achievement_t(Achievement.ACH_UNLOCK_FIRST_LEVEL3_BALLOON_PEDIA, "解锁首款3阶气球图鉴", ""),
+        new Achievement_t(Achievement.ACH_UNLOCK_10_BASE_BALLOON_PEDIA, "解锁10款基础气球图鉴", ""),
+        new Achievement_t(Achievement.ACH_UNLOCK_30_BASE_BALLOON_PEDIA, "解锁30款基础气球图鉴", ""),
+        new Achievement_t(Achievement.ACH_UNLOCK_ALL_BASE_BALLOON_PEDIA, "解锁所有础气球图鉴", ""),
+        new Achievement_t(Achievement.ACH_UNLOCK_ALL_BALLOON_PEDIA, "解锁全部气球图鉴", ""),
+
+        new Achievement_t(Achievement.ACH_COLLECT_ONE_BALLOON_SET_BASE, "集齐任意一套气球礼包里的全部基础款式", ""),
+        new Achievement_t(Achievement.ACH_COLLECT_ONE_BALLOON_SET_ALL, "集齐任意一套气球礼包里的全部款式", ""),
+
+
+
     };
+
+    public string PlayerName;
 
     // 游戏id
     private CGameID m_GameID;
@@ -75,12 +165,38 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
     private double m_flGameDurationSeconds;//游戏持续时间（秒）
 
     // Persisted Stat details
-    private int m_nTotalGamesPlayed;//玩家总共玩过的游戏次数
-    private int m_nTotalNumWins;//玩家总共赢得的游戏次数
-    private int m_nTotalNumLosses;//玩家总共输掉的游戏次数
-    private float m_flTotalFeetTraveled;//玩家总共行走的距离（英尺）
+    private int m_nTotalGamesPlayed;//玩家总共玩过的游戏次数 打开道具礼盒次数来统计
+    private int m_nTotalNumWins;//玩家总共赢得的游戏次数  用气球爆炸次数来统计
+    private int m_nTotalNumLosses;//玩家总共输掉的游戏次数  打开气球礼盒次数来统计
+    private float m_flTotalFeetTraveled;//玩家总共行走的距离（英尺）  用拾取硬币数来统计
     private float m_flMaxFeetTraveled;//玩家在单次游戏中行走的最大距离（英尺）
     private float m_flAverageSpeed;//玩家平均速度（英尺/秒）
+
+    private int m_nOpenBalloonGiftBoxQuality2;//打开2级稀有度气球礼盒次数
+    private int m_nOpenBalloonGiftBoxQuality3;//打开3级稀有度气球礼盒次数
+    private int m_nOpenBalloonGiftBoxQuality4;//打开4级稀有度气球礼盒次数
+
+    private int m_nAttachBalloonToItemNum;//将气球固定到物品上次数
+    private int m_nPopItemNum;//戳破物品次数
+
+    private int m_nCollectedItemSets;    // 已集齐的物品礼包数量
+    /// <summary>
+    /// 解锁了多少款气球
+    /// </summary>
+    private int m_nUnlockBalloons;
+    /// <summary>
+    /// 解锁了多少套气球礼包
+    /// </summary>
+    private int m_nUnlockGiftPackBalloons;
+    /// <summary>
+    /// 解锁了多少套最大等级的气球礼包
+    /// </summary>
+    private int m_nUnlockMaxLevelGiftPackBalloons;
+
+    //升级到2级的气球数量
+    private int m_nLevel2Balloons;
+    //升级到3级的气球数量
+    private int m_nLevel3Balloons;
 
     #endregion
 
@@ -116,11 +232,11 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
         m_bRequestedStats = false;
         m_bStatsValid = false;
 
-        SteamUserStats.RequestCurrentStats();//请求当前玩家的统计数据
+        //SteamUserStats.RequestCurrentStats();//请求当前玩家的统计数据
 
         // 获取当前玩家昵称
-        string playerName = SteamFriends.GetPersonaName();
-        LogManager.Log($"Steam SDK 初始化成功 (AppID: {SteamUtils.GetAppID()}), 当前用户: {playerName}");
+        PlayerName = SteamFriends.GetPersonaName();
+        LogManager.Log($"Steam SDK 初始化成功 (AppID: {SteamUtils.GetAppID()}), 当前用户: {PlayerName}");
 
         // 获取当前玩家Steam ID
         CSteamID steamId = SteamUser.GetSteamID();
@@ -144,8 +260,8 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
         }
         if (Input.GetKeyDown(KeyCode.C))
         {
-            ResetAllAchievement();
-            LogManager.Log("重置所有统计数据和成就");
+            //ResetAllAchievement();
+
         }
 
         if (!m_bRequestedStats)
@@ -196,12 +312,228 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
                         UnlockAchievement(achievement);
                     }
                     break;
+
                 case Achievement.ACH_TRAVEL_FAR_SINGLE:
                     if (m_flGameFeetTraveled >= 500)
                     {
                         UnlockAchievement(achievement);
                     }
                     break;
+                //硬币成就
+                case Achievement.ACH_GET_COIN_30:
+                    if (m_flTotalFeetTraveled >= 30)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_GET_COIN_100:
+                    if (m_flTotalFeetTraveled >= 100)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_GET_COIN_500:
+                    if (m_flTotalFeetTraveled >= 500)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_GET_COIN_1000:
+                    if (m_flTotalFeetTraveled >= 1000)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_GET_COIN_10000:
+                    if (m_flTotalFeetTraveled >= 10000)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                //气球戳破
+                case Achievement.ACH_POP_BALLOON_1:
+                    if (m_nTotalNumWins >= 1)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_POP_BALLOON_20:
+                    if (m_nTotalNumWins >= 20)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_POP_BALLOON_50:
+                    if (m_nTotalNumWins >= 50)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_POP_BALLOON_100:
+                    if (m_nTotalNumWins >= 100)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                //打开气球礼盒
+                case Achievement.ACH_OPEN_BALLOON_GIFT_BOX_1:
+                    if (m_nTotalNumLosses >= 1)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_OPEN_BALLOON_GIFT_BOX_10:
+                    if (m_nTotalNumLosses >= 10)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_OPEN_BALLOON_GIFT_BOX_50:
+                    if (m_nTotalNumLosses >= 50)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_OPEN_BALLOON_GIFT_BOX_100:
+                    if (m_nTotalNumLosses >= 100)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                //打开道具礼盒
+                case Achievement.ACH_OPEN_ITEM_GIFT_BOX_1:
+                    if (m_nTotalGamesPlayed >= 1)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_OPEN_ITEM_GIFT_BOX_10:
+                    if (m_nTotalGamesPlayed >= 10)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_OPEN_ITEM_GIFT_BOX_100:
+                    if (m_nTotalGamesPlayed >= 100)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                //打开气球礼盒品质成就
+                case Achievement.ACH_OPEN_BALLOON_GIFT_BOX_QUALITY_2:
+                    if (m_nOpenBalloonGiftBoxQuality2 >= 1)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_OPEN_BALLOON_GIFT_BOX_QUALITY_3:
+                    if (m_nOpenBalloonGiftBoxQuality3 >= 1)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_OPEN_BALLOON_GIFT_BOX_QUALITY_4:
+                    if (m_nOpenBalloonGiftBoxQuality4 >= 1)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                //将气球固定到物品上
+                case Achievement.ACH_ATTACH_BALLOON_TO_ITEM_FIRST:
+                    if (m_nAttachBalloonToItemNum >= 1)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                //戳破物品
+                case Achievement.ACH_POP_ITEM_FIRST:
+                    if (m_nPopItemNum >= 1)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                //物品礼包成就
+                case Achievement.ACH_COLLECT_ONE_ITEM_SET:
+                    if (m_nCollectedItemSets >= 1)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_COLLECT_THREE_ITEM_SETS:
+                    if (m_nCollectedItemSets >= 3)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_COLLECT_ALL_ITEM_SETS:
+                    int totalSets = GetTotalItemSetsCount();
+                    if (totalSets > 0 && m_nCollectedItemSets >= totalSets)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_UNLOCK_FIRST_BALLOON_PEDIA://解锁首个气球图鉴
+                    if (m_nUnlockBalloons >= 1)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_UNLOCK_FIRST_LEVEL2_BALLOON_PEDIA:
+                    if (m_nLevel2Balloons >= 1)
+                    {
+                        //检查是否解锁了2阶气球
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_UNLOCK_FIRST_LEVEL3_BALLOON_PEDIA:
+                    if (m_nLevel3Balloons >= 1)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_UNLOCK_10_BASE_BALLOON_PEDIA:
+                    if (m_nUnlockBalloons >= 10)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_UNLOCK_30_BASE_BALLOON_PEDIA:
+                    if (m_nUnlockBalloons >= 30)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_UNLOCK_ALL_BASE_BALLOON_PEDIA:
+                    //检查是否解锁了所有基础气球
+                    int total = GetBalloonMaxCount();
+                    if (total > 0 && m_nUnlockBalloons >= total)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_UNLOCK_ALL_BALLOON_PEDIA:
+                    //检查是否解锁了所有气球
+                    int totalAll = GameManager.Instance.gameDatabase.GetAllBalloonGitfPack().Count;
+                    if (totalAll > 0 && m_nUnlockGiftPackBalloons >= totalAll && m_nUnlockMaxLevelGiftPackBalloons >= totalAll)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_COLLECT_ONE_BALLOON_SET_BASE:
+                    //集齐任意一套气球礼包里的全部基础款式
+                    if (m_nUnlockGiftPackBalloons > 0)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+                case Achievement.ACH_COLLECT_ONE_BALLOON_SET_ALL:
+                    //集齐任意一套气球礼包里的全部款式
+                    if (m_nUnlockMaxLevelGiftPackBalloons > 0)
+                    {
+                        UnlockAchievement(achievement);
+                    }
+                    break;
+
             }
         }
 
@@ -216,6 +548,22 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
             SteamUserStats.SetStat("NumLosses", m_nTotalNumLosses);
             SteamUserStats.SetStat("FeetTraveled", m_flTotalFeetTraveled);
             SteamUserStats.SetStat("MaxFeetTraveled", m_flMaxFeetTraveled);
+
+            SteamUserStats.SetStat("OpenBalloonGiftBoxQuality2", m_nOpenBalloonGiftBoxQuality2);
+            SteamUserStats.SetStat("OpenBalloonGiftBoxQuality3", m_nOpenBalloonGiftBoxQuality3);
+            SteamUserStats.SetStat("OpenBalloonGiftBoxQuality4", m_nOpenBalloonGiftBoxQuality4);
+
+            SteamUserStats.SetStat("AttachBalloonToItemNum", m_nAttachBalloonToItemNum);
+            SteamUserStats.SetStat("PopItemNum", m_nPopItemNum);
+
+            SteamUserStats.SetStat("CollectedItemSets", m_nCollectedItemSets);
+            SteamUserStats.SetStat("UnlockBalloons", m_nUnlockBalloons);
+            SteamUserStats.SetStat("UnlockGiftPackBalloons", m_nUnlockGiftPackBalloons);
+            SteamUserStats.SetStat("UnlockMaxLevelGiftPackBalloons", m_nUnlockMaxLevelGiftPackBalloons);
+
+            SteamUserStats.SetStat("Level2Balloons", m_nLevel2Balloons);
+            SteamUserStats.SetStat("Level3Balloons", m_nLevel3Balloons);
+
             // Update average feet / second stat
             SteamUserStats.UpdateAvgRateStat("AverageSpeed", m_flGameFeetTraveled, m_flGameDurationSeconds);
             // The averaged result is calculated for us
@@ -228,6 +576,161 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
         }
     }
 
+    public void OnBalloonUpgrade(int level)
+    {
+        if (!m_bStatsValid) return;
+        if (level == 2)
+        {
+            m_nLevel2Balloons++;
+        }
+        else if (level == 3)
+        {
+            m_nLevel3Balloons++;
+        }
+
+        m_bStoreStats = true;
+    }
+
+    /// <summary>
+    /// 获取气球总数
+    /// </summary>
+    /// <returns></returns>
+    int GetBalloonMaxCount()
+    {
+        return GameManager.Instance.gameDatabase.GetBalloonMaxCount();
+    }
+
+    public void OnBalloonUnlock()
+    {
+        if (!m_bStatsValid) return;
+        //解锁气球数
+        var count = GameManager.Instance.GetUnlockedBalloonCollectionCount();
+        if (m_nUnlockBalloons != count && count > 0)
+        {
+            m_nUnlockBalloons = count;
+            m_bStoreStats = true;
+        }
+        //气球礼包解锁套数
+        count = GameManager.Instance.gameDatabase.GetBalloonGiftPackUnlockCount();
+        if (m_nUnlockGiftPackBalloons != count && count > 0)
+        {
+            m_nUnlockGiftPackBalloons = count;
+            m_bStoreStats = true;
+        }
+
+        //最大等级气球礼包解锁数
+        count = GameManager.Instance.gameDatabase.GetMaxLevelBalloonGiftPackUnlockCount();
+        if (m_nUnlockMaxLevelGiftPackBalloons != count && count > 0)
+        {
+            m_nUnlockMaxLevelGiftPackBalloons = count;
+            m_bStoreStats = true;
+        }
+    }
+
+    /// <summary>
+    /// 当物品集解锁事件
+    /// </summary>
+    public void OnItemUnlock()
+    {
+        if (!m_bStatsValid) return;
+        var count = GetItemGiftPackUnlockCount();
+        if (count > m_nCollectedItemSets)
+        {
+            m_nCollectedItemSets = count;
+            m_bStoreStats = true;
+        }
+    }
+
+    /// <summary>
+    /// 获取道具礼包总数
+    /// </summary>
+    /// <returns></returns>
+    private int GetTotalItemSetsCount()
+    {
+        return GameManager.Instance.gameDatabase.GetAllItemGitfPack().Count;
+    }
+    /// <summary>
+    /// 获得解锁道具礼包的数量
+    /// </summary>
+    /// <returns></returns>
+    private int GetItemGiftPackUnlockCount()
+    {
+        return GameManager.Instance.gameDatabase.GetItemGiftPackUnlockCount();
+    }
+
+    /// <summary>
+    /// 气球拖拽到物体上次数
+    /// </summary>
+    public void OnAttachBalloonToItem()
+    {
+        if (!m_bStatsValid)
+            return;
+        m_nAttachBalloonToItemNum++;
+
+
+        m_bStoreStats = true;
+    }
+    /// <summary>
+    /// 绽放气球次数
+    /// </summary>
+    public void OnPopItem()
+    {
+
+        if (!m_bStatsValid)
+            return;
+
+        m_nPopItemNum++;
+        m_bStoreStats = true;
+    }
+
+    /// <summary>
+    /// 打开道具礼盒事件
+    /// </summary>
+    public void OnOpenItemGiftBox()
+    {
+        if (!m_bStatsValid)
+            return;
+
+        m_nTotalGamesPlayed++;
+
+        m_bStoreStats = true;
+    }
+
+    /// <summary>
+    /// 打开气球礼盒事件
+    /// </summary>
+    public void OnOpenBalloonGiftBox(BalloonGiftBox balloonGiftBox)
+    {
+        if (!m_bStatsValid)
+            return;
+
+        m_nTotalNumLosses++;
+
+
+        //获取礼盒品质
+        switch (balloonGiftBox.GetBalloonData().quality)
+        {
+            case EQuality.Common:
+                break;
+            case EQuality.Uncommon:
+                m_nOpenBalloonGiftBoxQuality2++;
+                break;
+            case EQuality.Rare:
+                m_nOpenBalloonGiftBoxQuality3++;
+                break;
+            case EQuality.Epic:
+                m_nOpenBalloonGiftBoxQuality4++;
+                break;
+            case EQuality.Legendary:
+                break;
+            default:
+                break;
+        }
+
+
+        m_bStoreStats = true;
+    }
+
     public void OnBalloonPopEvent()
     {
         if (!m_bStatsValid)
@@ -238,6 +741,16 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
         // We want to update stats the next frame.
         m_bStoreStats = true;
 
+    }
+
+    public void OnGetCoin()
+    {
+        m_flTotalFeetTraveled++;
+        if (m_flTotalFeetTraveled % 10 == 0)//拾取10个记录一次
+        {
+            // 再下一帧记录
+            m_bStoreStats = true;
+        }
     }
 
     private void OnApplicationQuit()
@@ -269,12 +782,10 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
         if (pCallback.m_eResult == EResult.k_EResultOK)
         {
             LogManager.Log("接收 用户状态和成就 从 Steam");
-            //在这边进行成就状态的获取,然后同步到GameDatabase中
-            //GameManager.Instance.gameDatabase.UpdateSteamStat();
 
             m_bStatsValid = true;
 
-            // 加载成就,todo:后面替换自己的成就数据
+            // 加载成就,
             foreach (Achievement_t ach in m_Achievements)
             {
                 bool ret = SteamUserStats.GetAchievement(ach.m_eAchievementID.ToString(), out ach.m_bAchieved);
@@ -289,13 +800,28 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
                 }
             }
 
-            // load stats
+            // load stats todo:后面替换自己的成就数据
             SteamUserStats.GetStat("NumGames", out m_nTotalGamesPlayed);
             SteamUserStats.GetStat("NumWins", out m_nTotalNumWins);
             SteamUserStats.GetStat("NumLosses", out m_nTotalNumLosses);
             SteamUserStats.GetStat("FeetTraveled", out m_flTotalFeetTraveled);
             SteamUserStats.GetStat("MaxFeetTraveled", out m_flMaxFeetTraveled);
             SteamUserStats.GetStat("AverageSpeed", out m_flAverageSpeed);
+
+            SteamUserStats.GetStat("OpenBalloonGiftBoxQuality2", out m_nOpenBalloonGiftBoxQuality2);
+            SteamUserStats.GetStat("OpenBalloonGiftBoxQuality3", out m_nOpenBalloonGiftBoxQuality3);
+            SteamUserStats.GetStat("OpenBalloonGiftBoxQuality4", out m_nOpenBalloonGiftBoxQuality4);
+
+            SteamUserStats.GetStat("AttachBalloonToItemNum", out m_nAttachBalloonToItemNum);
+            SteamUserStats.GetStat("PopItemNum", out m_nPopItemNum);
+
+            SteamUserStats.GetStat("CollectedItemSets", out m_nCollectedItemSets);
+            SteamUserStats.GetStat("UnlockBalloons", out m_nUnlockBalloons);
+            SteamUserStats.GetStat("UnlockGiftPackBalloons", out m_nUnlockGiftPackBalloons);
+            SteamUserStats.GetStat("UnlockMaxLevelGiftPackBalloons", out m_nUnlockMaxLevelGiftPackBalloons);
+
+            SteamUserStats.GetStat("Level2Balloons", out m_nLevel2Balloons);
+            SteamUserStats.GetStat("Level3Balloons", out m_nLevel3Balloons);
         }
         else
         {
@@ -424,6 +950,8 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
 
         // Store stats end of frame
         m_bStoreStats = true;
+
+        LogManager.Log($"解锁成就: {achievement.m_strName} ({achievement.m_eAchievementID}) - {achievement.m_strDescription}");
     }
 
     /// <summary>
@@ -481,6 +1009,7 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
         if (!SteamManager.Initialized) return;
 
         SteamUserStats.ResetAllStats(true);//true表示同时重置统计数据和成就,false表示只重置统计数据
+        LogManager.Log("重置所有统计数据和成就");
     }
 
 
