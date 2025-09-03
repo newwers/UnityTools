@@ -8,6 +8,7 @@
 
  */
 using Steamworks;
+using System;
 using UnityEngine;
 
 public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
@@ -139,7 +140,10 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
 
     };
 
+    public static Action OnSteamSDKInitAction;
+
     public string PlayerName;
+    public string Language { get; private set; }
 
     // 游戏id
     private CGameID m_GameID;
@@ -209,13 +213,14 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
     protected Callback<UserAchievementStored_t> m_UserAchievementStored;
 
 
-
     private void OnEnable()
     {
         if (!SteamManager.Initialized)
         {
             return;
         }
+
+        OnSteamSDKInitAction?.Invoke();
 
         // Cache the GameID for use in the Callbacks
         m_GameID = new CGameID(SteamUtils.GetAppID());
@@ -242,6 +247,13 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
         CSteamID steamId = SteamUser.GetSteamID();
         ulong steamId64 = steamId.m_SteamID;
         LogManager.Log($"当前玩家Steam ID: {steamId64}");
+
+        //获取玩家语言
+        Language = SteamApps.GetCurrentGameLanguage();
+        LogManager.Log($"当前游戏语言: {Language}");
+        //获取玩家steam客户端语言
+        Language = SteamUtils.GetSteamUILanguage();
+        LogManager.Log($"当前steam客户端语言: {Language}");
     }
 
 

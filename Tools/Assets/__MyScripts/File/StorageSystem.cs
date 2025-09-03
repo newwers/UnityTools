@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
@@ -190,6 +191,9 @@ public class SaveData
 /// </summary>
 public static class StorageSystem
 {
+    private static readonly int MAX_BACKUP_COUNT = 10; // 最大备份数量
+    private static readonly string BACKUP_FOLDER_NAME = "SaveBackups"; // 备份文件夹名称
+
     // 加密密钥（可以更复杂）
     private static readonly string encryptionKey = "your-encryption-key";
 
@@ -529,4 +533,136 @@ public static class StorageSystem
             Debug.LogError($"打开文件夹时发生错误: {e.Message}");
         }
     }
+
+    #region 备份
+
+    /// <summary>
+    /// 备份文件到备份目录
+    /// </summary>
+    /// <param name="sourceFilePath">源文件路径</param>
+    /// <param name="backupFileName">备份文件名(不包含路径)</param>
+    /// <returns>是否备份成功</returns>
+    public static bool BackupFile(string sourceFilePath, string backupFileName)
+    {
+        try
+        {
+            // 确保源文件存在
+            if (!File.Exists(sourceFilePath))
+            {
+                Debug.LogWarning($"无法备份，源文件不存在: {sourceFilePath}");
+                return false;
+            }
+
+            // 创建备份目录
+            string backupDir = Path.Combine(persistentDataPath, BACKUP_FOLDER_NAME);
+            if (!Directory.Exists(backupDir))
+            {
+                Directory.CreateDirectory(backupDir);
+            }
+
+            // 生成带时间戳的备份文件名
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string backupFilePath = Path.Combine(backupDir, $"{Path.GetFileNameWithoutExtension(backupFileName)}_{timestamp}{Path.GetExtension(backupFileName)}.backup");
+
+            // 复制文件到备份目录
+            File.Copy(sourceFilePath, backupFilePath, true);
+            Debug.Log($"已创建备份: {backupFilePath}");
+
+            // 清理旧备份
+            CleanupOldBackups(backupDir);
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"备份文件时发生错误: {e.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 清理过多的备份文件，只保留最新的MAX_BACKUP_COUNT个
+    /// </summary>
+    /// <param name="backupDir">备份目录</param>
+    private static void CleanupOldBackups(string backupDir)
+    {
+        try
+        {
+            if (!Directory.Exists(backupDir))
+                return;
+
+            // 获取所有备份文件并按创建时间排序
+            var backupFiles = Directory.GetFiles(backupDir, "*.backup")
+                                       .Select(f => new FileInfo(f))
+                                       .OrderByDescending(f => f.CreationTime)
+                                       .ToList();
+
+            // 删除超出数量限制的旧备份
+            if (backupFiles.Count > MAX_BACKUP_COUNT)
+            {
+                for (int i = MAX_BACKUP_COUNT; i < backupFiles.Count; i++)
+                {
+                    backupFiles[i].Delete();
+                    Debug.Log($"已删除旧备份: {backupFiles[i].Name}");
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"清理备份文件时发生错误: {e.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 从备份恢复文件
+    /// </summary>
+    /// <param name="backupFilePath">备份文件路径</param>
+    /// <param name="targetFilePath">目标文件路径</param>
+    /// <returns>是否恢复成功</returns>
+    public static bool RestoreFromBackup(string backupFilePath, string targetFilePath)
+    {
+        try
+        {
+            if (!File.Exists(backupFilePath))
+            {
+                Debug.LogError($"备份文件不存在: {backupFilePath}");
+                return false;
+            }
+
+            // 确保目标目录存在
+            string targetDir = Path.GetDirectoryName(targetFilePath);
+            if (!Directory.Exists(targetDir))
+            {
+                Directory.CreateDirectory(targetDir);
+            }
+
+            // 复制备份文件到目标位置
+            File.Copy(backupFilePath, targetFilePath, true);
+            Debug.Log($"已从备份恢复: {backupFilePath} -> {targetFilePath}");
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"恢复备份时发生错误: {e.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 获取所有可用备份文件
+    /// </summary>
+    /// <returns>备份文件列表</returns>
+    public static List<string> GetAvailableBackups()
+    {
+        string backupDir = Path.Combine(persistentDataPath, BACKUP_FOLDER_NAME);
+        if (!Directory.Exists(backupDir))
+            return new List<string>();
+
+        return Directory.GetFiles(backupDir, "*.backup")
+                       .OrderByDescending(f => new FileInfo(f).CreationTime)
+                       .ToList();
+    }
+
+    #endregion
 }
