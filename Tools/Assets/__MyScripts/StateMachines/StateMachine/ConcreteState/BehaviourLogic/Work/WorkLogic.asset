@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3587863b5d206af4e92b8ab034740d3d, type: 3}
+  m_Name: WorkLogic
+  m_EditorClassIdentifier: Assembly-CSharp::WorkLogic
+  RefusedRate: 0.3
+  RefusedCooldown: 3
+  CheckChangeStateInterval: {x: 3, y: 3}
+  ChangeStateRate: 0.2
+  moneyIncreaseInterval: {x: 3, y: 6}
+  moneyIncreaseAmount: {x: 2, y: 5}
+  moneyCriticalRate: 0.05
+  moneyCriticalMultiplier: 2
+  stateIcon: {fileID: -971789462, guid: d1b59207ee4c5fd48b8e8398c4055148, type: 3}
+  moveForce: 3

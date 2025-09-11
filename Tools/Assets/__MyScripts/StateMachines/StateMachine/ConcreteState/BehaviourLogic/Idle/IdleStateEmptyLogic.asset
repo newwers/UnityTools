@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3f991e4de5a3b044a77422e6c6ad0d8, type: 3}
+  m_Name: IdleStateEmptyLogic
+  m_EditorClassIdentifier: Assembly-CSharp::IdleStateEmptyLogic
+  PlayAnimationNum: {x: 1, y: 1}
+  frameRate: 0.18
+  faceSprites:
+  - {fileID: -2074776011, guid: 31d2b553816de9349ac83e9da9528a9e, type: 3}
+  hairSprites:
+  - {fileID: 21300000, guid: c6d1d890a4fd5384f98b3c61974fbd4f, type: 3}
+  handSprites:
+  - {fileID: -1502493701, guid: e5490663d85dec640a1ea4f20e43656a, type: 3}
+  footSprites:
+  - {fileID: 21300000, guid: 53e61fcf5774dc240bd552cb9c1bf49c, type: 3}
+  bodySprites:
+  - {fileID: 21300000, guid: 6c4397e614bc6254aa8d43c3b8b915e2, type: 3}
+  chairSprites:
+  - {fileID: 21300000, guid: 81ac6dd3a230620458c1e6c0b73205fd, type: 3}
+  chairFrontSprites:
+  - {fileID: 21300000, guid: 220bfd7aafb8f7942b3570c81643496d, type: 3}
+  hairAccessoriesSprites:
+  - {fileID: 21300000, guid: 8f63a3ef9ecd4bd4db4c00b7d6377001, type: 3}
+  moveForce: 3
+  RefusedRate: 0.6
+  RefusedCooldown: 3
+  moneyIncreaseInterval: {x: 3, y: 6}
+  moneyIncreaseRate: 0.3
+  idleDuration: {x: 6, y: 20}
