@@ -1,25 +1,27 @@
-/********************************************************************
+﻿/********************************************************************
 生成日期:	17:9:2021   14:31
 类    名: 	NumTween
 作    者:	zdq
 描    述:	数字跳动动画组件
 *********************************************************************/
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
+using TMPro;
+using System;
+
+
 
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace TopGame.UI
+namespace Z.UI
 {
     public class NumTween : MonoBehaviour
     {
-        public Text text;
+        public TextMeshPro text;
 
         public AnimationCurve timeCurve;
+        public event Action onComplete;
 
         float m_TweenTime = 0;
 
@@ -35,11 +37,11 @@ namespace TopGame.UI
         {
             if (!text)
             {
-                text = GetComponent<Text>();
+                text = GetComponent<TextMeshPro>();
             }
         }
         //------------------------------------------------------
-        public void Play(int begin,int end)
+        public void Play(int begin, int end)
         {
             if (begin == end)
             {
@@ -63,11 +65,12 @@ namespace TopGame.UI
             m_EndValue = 0;
             m_bEnable = false;
             m_Timer = 0;
+            onComplete?.Invoke();
         }
         //------------------------------------------------------
         private void Update()
         {
-            if (!m_bEnable || !text || timeCurve == null )
+            if (!m_bEnable || !text || timeCurve == null)
             {
                 return;
             }
@@ -87,31 +90,31 @@ namespace TopGame.UI
             if (m_bUpNumber)
             {
                 int dif = m_EndValue - m_BeginValue;
-                int val = Mathf.FloorToInt(dif * per);
+                int val = Mathf.CeilToInt(dif * per);
                 value += val;
                 //Debug.Log("value:" + value + ",val:" + val + ",per:" + per);
             }
             else
             {
                 int dif = m_BeginValue - m_EndValue;
-                int val = Mathf.FloorToInt(dif * per);
+                int val = Mathf.CeilToInt(dif * per);
                 value -= val;
             }
-            
+
             if (text)
             {
                 text.text = value.ToString();
-                
+
             }
 
-            m_Timer+= Time.unscaledDeltaTime;
+            m_Timer += Time.unscaledDeltaTime;
         }
         //------------------------------------------------------
 #if UNITY_EDITOR
         [ContextMenu("测试")]
         public void Test()
         {
-            Play(Random.Range(0, 1000), Random.Range(0, 10000));
+            Play(UnityEngine.Random.Range(0, 1000), UnityEngine.Random.Range(0, 10000));
         }
 #endif
     }
