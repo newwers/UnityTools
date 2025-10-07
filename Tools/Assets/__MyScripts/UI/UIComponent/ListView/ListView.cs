@@ -1811,6 +1811,11 @@ namespace Z.UI
                 m_ItemSize.y = m_ItemSize.y > 0 ? m_ItemSize.y : size.y;
             }
         }
+        public void SetCount(int count)
+        {
+            numItems = (uint)count;
+        }
+
         private void SetNumItems(uint num)
         {
             m_NumItems = num;

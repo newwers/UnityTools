@@ -8,6 +8,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Pool;
@@ -453,6 +454,65 @@ namespace Z.UI
             }
             LogManager.Log("MousePosToUIWorldPos 转换失败");
             return Vector3.zero;
+        }
+
+        public static void ShowSpritePreview(Sprite sprite, string title)
+        {
+            if (sprite != null)
+            {
+                // 开始垂直布局
+                EditorGUILayout.BeginVertical();
+
+                // 绘制一个水平分隔线
+                GUILayout.Space(10);
+                EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
+                GUILayout.Space(5);
+
+                // 绘制一个纹理预览窗口
+                Rect previewRect = GUILayoutUtility.GetRect(sprite.rect.width, sprite.rect.height);
+
+                // 计算原始宽高比
+                float spriteRatio = sprite.rect.width / sprite.rect.height;
+                float containerRatio = previewRect.width / previewRect.height;
+
+                Vector2 drawSize;
+                if (containerRatio > spriteRatio)
+                {
+                    drawSize = new Vector2(previewRect.height * spriteRatio, previewRect.height);
+                }
+                else
+                {
+                    drawSize = new Vector2(previewRect.width, previewRect.width / spriteRatio);
+                }
+
+                // 居中绘制位置
+                Vector2 drawPos = new Vector2(
+                    previewRect.x + (previewRect.width - drawSize.x) / 2,
+                    previewRect.y + (previewRect.height - drawSize.y) / 2
+                );
+
+                // 计算UV坐标
+                Rect spriteRect = new Rect(
+                    sprite.rect.x / sprite.texture.width,
+                    sprite.rect.y / sprite.texture.height,
+                    sprite.rect.width / sprite.texture.width,
+                    sprite.rect.height / sprite.texture.height
+                );
+
+                // 保持比例绘制Sprite
+                GUI.DrawTextureWithTexCoords(
+                    new Rect(drawPos.x, drawPos.y, drawSize.x, drawSize.y),
+                    sprite.texture,
+                    spriteRect
+                );
+
+                // 结束垂直布局
+                EditorGUILayout.EndVertical();
+            }
+            else
+            {
+                EditorGUILayout.LabelField($"{title}: 无图标");
+            }
         }
     }
 }

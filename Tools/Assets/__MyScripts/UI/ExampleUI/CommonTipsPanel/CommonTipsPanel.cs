@@ -1,54 +1,93 @@
-using MyWorld;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using System;
+using TMPro;
+using UnityEngine.UI;
 using Z.UI;
 
-namespace MyWorld
+public class CommonTipsPanel : BaseMonoSingleClass<CommonTipsPanel>, IUI
 {
-    public class CommonTipsPanel : BaseUIController
+    public UIReferenceComponent ui;
+
+    private Button m_ysebutton_button;
+    private TextMeshProUGUI m_nobtntext_textmeshprougui;
+    private TextMeshProUGUI m_tipstext_textmeshprougui;
+    private Toggle m_prompttoggle_toggle;
+    private TextMeshProUGUI m_prompttoggletext_textmeshprougui;
+    private TextMeshProUGUI m_yesbtntext_textmeshprougui;
+    private Button m_nobutton_button;
+
+    private Action m_yesAction;
+    private Action m_noAction;
+    private Action<bool> m_toggleAction;
+    private bool m_isToggleFlag = false;
+
+    public static void Show(Action yesAction, Action noAction, Action<bool> ToggleAction, string tips, bool isShowPromptToggle = false, string yesBtnText = "Yes", string noBtnText = "No")
     {
+        Instance.m_yesAction = yesAction;
+        Instance.m_noAction = noAction;
+        Instance.m_toggleAction = ToggleAction;
 
-        public UIReferenceComponent ui;
+        Instance.m_tipstext_textmeshprougui.text = tips;
+        Instance.m_yesbtntext_textmeshprougui.text = yesBtnText;
+        Instance.m_nobtntext_textmeshprougui.text = noBtnText;
 
-        public void ShowTips(string title,string tips)
-        {
-            RefreshUI(title,tips);
-            gameObject.SetActive(true);
-        }
-        private void Start()
-        {
-            Player.OnGameResetAction += Player_OnGameResetAction;
+        UIUtil.SetActive(Instance.m_prompttoggle_toggle, isShowPromptToggle);
 
-            OnHide();
-        }
+        Instance.OnShow();
+    }
 
-        private void OnDestroy()
-        {
-            Player.OnGameOverAction -= Player_OnGameResetAction;
-        }
+    private void Start()
+    {
+        Init();
+    }
 
-        private void Player_OnGameResetAction()
-        {
-            OnHide();
-        }
+    public void Init()
+    {
+        m_ysebutton_button = ui.GetUI<UnityEngine.UI.Button>("YseButton_Button");
+        m_ysebutton_button.onClick.AddListener(OnYesBtnClick);
+        m_yesbtntext_textmeshprougui = ui.GetUI<TMPro.TextMeshProUGUI>("YesBtnText_TextMeshProUGUI");
+
+        m_nobutton_button = ui.GetUI<UnityEngine.UI.Button>("NoButton_Button");
+        m_nobutton_button.onClick.AddListener(OnNoBtnClick);
+        m_nobtntext_textmeshprougui = ui.GetUI<TMPro.TextMeshProUGUI>("NoBtnText_TextMeshProUGUI");
 
 
-        public override void OnHide()
-        {
-            base.OnHide();
-            gameObject.SetActive(false);
-        }
+        m_tipstext_textmeshprougui = ui.GetUI<TMPro.TextMeshProUGUI>("TipsText_TextMeshProUGUI");
 
-        private void RefreshUI(string title,string tips)
-        {
-            TMPro.TextMeshProUGUI title_textmeshprougui = ui.GetUI<TMPro.TextMeshProUGUI>("Title_TextMeshProUGUI");
-            UIUtil.SetLabel(title_textmeshprougui, title);
-            TMPro.TextMeshProUGUI contenttext_textmeshprougui = ui.GetUI<TMPro.TextMeshProUGUI>("ContentText_TextMeshProUGUI");
-            UIUtil.SetLabel(contenttext_textmeshprougui, tips);
+        m_prompttoggle_toggle = ui.GetUI<UnityEngine.UI.Toggle>("PromptToggle_Toggle");
+        m_prompttoggle_toggle.onValueChanged.AddListener(OnToggleValueChange);
+        m_prompttoggletext_textmeshprougui = ui.GetUI<TMPro.TextMeshProUGUI>("PromptToggleText_TextMeshProUGUI");
+    }
 
-        }
+    private void OnToggleValueChange(bool value)
+    {
+        m_isToggleFlag = value;
+        m_toggleAction?.Invoke(value);
+    }
 
+    private void OnNoBtnClick()
+    {
+        m_noAction?.Invoke();
+        OnHide();
+    }
+
+    private void OnYesBtnClick()
+    {
+        m_yesAction?.Invoke();
+        OnHide();
+    }
+
+    public bool IsShow()
+    {
+        return gameObject.activeInHierarchy;
+    }
+
+    public void OnHide()
+    {
+        UIUtil.SetActive(gameObject, false);
+    }
+
+    public void OnShow()
+    {
+        UIUtil.SetActive(gameObject, true);
     }
 }

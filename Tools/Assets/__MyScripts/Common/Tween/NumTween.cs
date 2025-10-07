@@ -18,7 +18,7 @@ namespace Z.UI
 {
     public class NumTween : MonoBehaviour
     {
-        public TextMeshPro text;
+        public TMP_Text text;
 
         public AnimationCurve timeCurve;
         public event Action onComplete;
@@ -33,18 +33,12 @@ namespace Z.UI
 
         float m_Timer = 0;
 
-        private void Start()
-        {
-            if (!text)
-            {
-                text = GetComponent<TextMeshPro>();
-            }
-        }
         //------------------------------------------------------
         public void Play(int begin, int end)
         {
             if (begin == end)
             {
+                text.text = end.ToString();
                 return;
             }
             m_BeginValue = begin;

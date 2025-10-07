@@ -6,7 +6,7 @@
 
 using UnityEngine;
 using UnityEngine.UI;
-
+[ExecuteInEditMode]
 [RequireComponent(typeof(CanvasScaler))]
 public class UIScaler : MonoBehaviour
 {
@@ -34,9 +34,11 @@ public class UIScaler : MonoBehaviour
         float scaleFactor = Mathf.Min(widthRatio, heightRatio);
 
         // 设置CanvasScaler的缩放因子
-        canvasScaler.scaleFactor = scaleFactor;
-        LogManager.Log($"Screen Width: {Screen.width}, Screen Height: {Screen.height},widthRatio:{widthRatio},heightRatio:{heightRatio},scaleFactor:{scaleFactor}");
-
+        if (canvasScaler)
+        {
+            canvasScaler.scaleFactor = scaleFactor;
+            LogManager.Log($"Screen Width: {Screen.width}, Screen Height: {Screen.height},widthRatio:{widthRatio},heightRatio:{heightRatio},scaleFactor:{scaleFactor}");
+        }
     }
     // 可选：屏幕分辨率变化时重新计算（例如窗口缩放、横屏/竖屏切换）
     void OnRectTransformDimensionsChange()
