@@ -1,5 +1,6 @@
 ﻿using System;
 using TMPro;
+using UnityEngine;
 using UnityEngine.UI;
 using Z.UI;
 
@@ -12,6 +13,7 @@ public class CommonTipsPanel : BaseMonoSingleClass<CommonTipsPanel>, IUI
     private TextMeshProUGUI m_tipstext_textmeshprougui;
     private Toggle m_prompttoggle_toggle;
     private TextMeshProUGUI m_prompttoggletext_textmeshprougui;
+    private RectTransform m_root_recttransform;
     private TextMeshProUGUI m_yesbtntext_textmeshprougui;
     private Button m_nobutton_button;
 
@@ -22,6 +24,11 @@ public class CommonTipsPanel : BaseMonoSingleClass<CommonTipsPanel>, IUI
 
     public static void Show(Action yesAction, Action noAction, Action<bool> ToggleAction, string tips, bool isShowPromptToggle = false, string yesBtnText = "Yes", string noBtnText = "No")
     {
+        if (Instance.m_tipstext_textmeshprougui == null)
+        {
+            Instance.Init();
+        }
+
         Instance.m_yesAction = yesAction;
         Instance.m_noAction = noAction;
         Instance.m_toggleAction = ToggleAction;
@@ -37,7 +44,10 @@ public class CommonTipsPanel : BaseMonoSingleClass<CommonTipsPanel>, IUI
 
     private void Start()
     {
-        Init();
+        if (m_tipstext_textmeshprougui == null)
+        {
+            Init();
+        }
     }
 
     public void Init()
@@ -56,6 +66,8 @@ public class CommonTipsPanel : BaseMonoSingleClass<CommonTipsPanel>, IUI
         m_prompttoggle_toggle = ui.GetUI<UnityEngine.UI.Toggle>("PromptToggle_Toggle");
         m_prompttoggle_toggle.onValueChanged.AddListener(OnToggleValueChange);
         m_prompttoggletext_textmeshprougui = ui.GetUI<TMPro.TextMeshProUGUI>("PromptToggleText_TextMeshProUGUI");
+
+        m_root_recttransform = ui.GetUI<UnityEngine.RectTransform>("Root_RectTransform");
     }
 
     private void OnToggleValueChange(bool value)
@@ -78,16 +90,16 @@ public class CommonTipsPanel : BaseMonoSingleClass<CommonTipsPanel>, IUI
 
     public bool IsShow()
     {
-        return gameObject.activeInHierarchy;
+        return m_root_recttransform.gameObject.activeInHierarchy;
     }
 
     public void OnHide()
     {
-        UIUtil.SetActive(gameObject, false);
+        UIUtil.SetActive(m_root_recttransform, false);
     }
 
     public void OnShow()
     {
-        UIUtil.SetActive(gameObject, true);
+        UIUtil.SetActive(m_root_recttransform, true);
     }
 }

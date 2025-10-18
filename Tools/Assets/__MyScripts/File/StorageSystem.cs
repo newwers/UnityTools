@@ -52,10 +52,9 @@ public class SaveData
     public string PlayerName;
     public DateTime lastBackupTime; // 添加这个字段
     public Dictionary<string, object> data = new Dictionary<string, object>();//通用数据
-    public Dictionary<string, BalloonRuntimeData> balloonData = new Dictionary<string, BalloonRuntimeData>();//气球等级经验数据
-    public List<SceneItemSaveData> sceneItemSaveData = new List<SceneItemSaveData>();//物体场景中状态数据
-    public List<SceneGoldSaveData> sceneGoldSaveData = new List<SceneGoldSaveData>();//物体场景中状态数据
+    public Dictionary<int, List<SceneItemSaveData>> sceneItemSaveData = new Dictionary<int, List<SceneItemSaveData>>();//物体场景中状态数据
     public Dictionary<string, ItemUnlockData> itemUnlockData = new Dictionary<string, ItemUnlockData>();//物体解锁状态数据
+    public Dictionary<string, FixedItemShopSaveData> m_FixedItemShopSaveData = new Dictionary<string, FixedItemShopSaveData>();//固定道具商店保存数据
     public Dictionary<string, object> SettingData = new Dictionary<string, object>();//设置数据
 
 
@@ -145,14 +144,14 @@ public class SaveData
         Set(key, new float[] { value.x, value.y, value.z });
     }
 
-    public void SetBalloonData(Dictionary<string, BalloonRuntimeData> data)
+    public void SetFixedItemSaveData(Dictionary<string, FixedItemShopSaveData> data)
     {
-        balloonData = data;
+        m_FixedItemShopSaveData = data;
     }
 
-    public Dictionary<string, BalloonRuntimeData> GetBalloonData()
+    public Dictionary<string, FixedItemShopSaveData> GetFixedItemSaveData()
     {
-        return balloonData;
+        return m_FixedItemShopSaveData;
     }
 
     public void SetItemUnlockSaveData(Dictionary<string, ItemUnlockData> data)
@@ -165,23 +164,23 @@ public class SaveData
         return itemUnlockData;
     }
 
-    public void SetSceneItemSaveData(List<SceneItemSaveData> data)
+    public void SetSceneItemSaveData(Dictionary<int, List<SceneItemSaveData>> data)
     {
         sceneItemSaveData = data;
     }
-    public List<SceneItemSaveData> GetSceneItemSaveData()
+    public Dictionary<int, List<SceneItemSaveData>> GetSceneItemSaveData()
     {
         return sceneItemSaveData;
     }
 
-    public void SetSceneGoldSaveData(List<SceneGoldSaveData> data)
-    {
-        sceneGoldSaveData = data;
-    }
-    public List<SceneGoldSaveData> GetSceneGoldSaveData()
-    {
-        return sceneGoldSaveData;
-    }
+    //public void SetSceneGoldSaveData(List<SceneGoldSaveData> data)
+    //{
+    //    sceneGoldSaveData = data;
+    //}
+    //public List<SceneGoldSaveData> GetSceneGoldSaveData()
+    //{
+    //    return sceneGoldSaveData;
+    //}
 
 }
 
@@ -283,6 +282,17 @@ public static class StorageSystem
     public static int LoadIntFromPlayerPrefs(string key)
     {
         return PlayerPrefs.GetInt(key, 0);
+    }
+
+    public static void SaveBoolToPlayerPrefs(bool data, string key)
+    {
+        PlayerPrefs.SetInt(key, data ? 1 : 0);
+        PlayerPrefs.Save();
+    }
+
+    public static bool LoadBoolFromPlayerPrefs(string key)
+    {
+        return PlayerPrefs.GetInt(key, 0) == 1;
     }
 
     public static string ObjectToJson(object obj)
