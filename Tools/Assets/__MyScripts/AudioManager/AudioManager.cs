@@ -45,6 +45,7 @@ namespace Z.Core.Audio
         public AudioClip PickCoinAduio;
         public AudioClip DragRopeAudio;
         public AudioClip LongClickAudio;
+        public AudioClip LongClickAudio_Short;
         public AudioClip ItemPopAudio_Small;
         public AudioClip ItemPopAudio_Large;
         public AudioClip ErrorAudio;
@@ -206,13 +207,6 @@ namespace Z.Core.Audio
             if (BGMAudioClips == null || BGMAudioClips.Count == 0)
                 return;
 
-            // 单曲循环模式直接重新播放当前歌曲
-            if (m_PlayMode == EBGMPlayMode.SingleLoop && m_BGMSource.clip != null)
-            {
-                m_BGMSource.Stop();
-                m_BGMSource.Play();
-                return;
-            }
 
             // 随机模式下，随机选择一首与当前不同的BGM
             if (m_PlayMode == EBGMPlayMode.Random)
@@ -226,16 +220,14 @@ namespace Z.Core.Audio
                 AudioClip prevBGM;
                 do
                 {
-                    int randomIndex = Random.Range(0, BGMAudioClips.Count);
+                    int randomIndex = Random.Range(0, BGMAudioClips.Count-1);
                     prevBGM = BGMAudioClips[randomIndex];
                 } while (prevBGM == m_BGMSource.clip && BGMAudioClips.Count > 1);
 
                 PlayBGMByIndex(BGMAudioClips.IndexOf(prevBGM));
                 return;
             }
-
-            // 列表循环模式
-            if (m_PlayMode == EBGMPlayMode.LoopList)
+            else// 除了随机,其他模式点击上一首都是列表循环模式
             {
                 int prevIndex = m_CurrentBGMIndex - 1;
                 if (prevIndex < 0)
@@ -244,12 +236,13 @@ namespace Z.Core.Audio
                 }
                 PlayBGMByIndex(prevIndex);
             }
+
         }
 
         /// <summary>
         /// 播放下一首BGM
         /// </summary>
-        public void PlayNextBGM()
+        public void PlayNextBGM(bool isBtnClickNext = false)
         {
             if (BGMAudioClips == null || BGMAudioClips.Count == 0)
                 return;
@@ -260,7 +253,7 @@ namespace Z.Core.Audio
             }
 
             // 单曲循环模式直接重新播放当前歌曲
-            if (m_PlayMode == EBGMPlayMode.SingleLoop && m_BGMSource.clip != null)
+            if (isBtnClickNext == false && m_PlayMode == EBGMPlayMode.SingleLoop && m_BGMSource.clip != null)
             {
                 m_BGMSource.Stop();
                 m_BGMSource.Play();
@@ -281,17 +274,16 @@ namespace Z.Core.Audio
                 AudioClip nextBGM;
                 do
                 {
-                    int randomIndex = Random.Range(0, BGMAudioClips.Count);
+                    int randomIndex = Random.Range(0, BGMAudioClips.Count-1);
                     nextBGM = BGMAudioClips[randomIndex];
                 } while (nextBGM == m_LastPlayedBGM && BGMAudioClips.Count > 1);
 
                 PlayBGMByIndex(BGMAudioClips.IndexOf(nextBGM));
                 return;
             }
-
-            // 列表循环模式
-            if (m_PlayMode == EBGMPlayMode.LoopList)
+            else
             {
+                // 列表循环模式,在单曲循环模式下点击下一首也走这里
                 int nextIndex = m_CurrentBGMIndex + 1;
                 if (nextIndex >= BGMAudioClips.Count)
                 {

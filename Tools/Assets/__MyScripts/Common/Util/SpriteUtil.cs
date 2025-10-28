@@ -4,6 +4,26 @@ using UnityEngine;
 public static class SpriteUtil
 {
     /// <summary>
+    /// 设置spriteRenderer中使用SpriteProgressshader的材质的进度值
+    /// </summary>
+    /// <param name="sprite"></param>
+    /// <param name="progress"></param>
+    public static void SetSpriteProgress(SpriteRenderer sprite, float progress)
+    {
+        if (sprite == null) return;
+
+        // 获取当前属性块
+        MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+        sprite.GetPropertyBlock(propertyBlock);
+
+        // 设置新颜色
+        propertyBlock.SetFloat("_MaskProgress", Mathf.Clamp01(progress));
+
+        // 应用属性块
+        sprite.SetPropertyBlock(propertyBlock);
+    }
+
+    /// <summary>
     /// 忽略两个碰撞
     /// </summary>
     /// <param name="selfCollider"></param>
