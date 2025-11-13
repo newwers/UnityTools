@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0a5bd0947274fd47a20f5b10b053375, type: 3}
+  m_Name: AttackManager_Warrior
+  m_EditorClassIdentifier: 
+  character: {fileID: 2848489433506183388, guid: 6585af30efed96149b4b942e92e871ea, type: 3}
+  normalAttacks:
+  - {fileID: 11400000, guid: 1e440853c6122df4a8f550dcca961596, type: 2}
+  dashAttack: {fileID: 0}
+  jumpAttack: {fileID: 0}
+  specialAttack: {fileID: 0}
+  heavyAttack: {fileID: 0}
+  globalComboResetTime: 1.5

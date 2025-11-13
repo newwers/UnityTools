@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0a5bd0947274fd47a20f5b10b053375, type: 3}
+  m_Name: AttackManager_HeroKnight
+  m_EditorClassIdentifier: 
+  character: {fileID: 231858806342042490, guid: 081717245794e654dabaa9e0391205ec, type: 3}
+  normalAttacks:
+  - {fileID: 11400000, guid: b54d0dd7365391f4c9ec0b271d32c272, type: 2}
+  - {fileID: 11400000, guid: bee06323537f36e4599e3720640c26a2, type: 2}
+  - {fileID: 11400000, guid: 7c37c8c123222694d9d65041c109e2fa, type: 2}
+  dashAttack: {fileID: 11400000, guid: 2828d5cad646cc8498e948b29b5db7d5, type: 2}
+  jumpAttack: {fileID: 11400000, guid: a660c03b6509ea0469c40b9a863786ac, type: 2}
+  parryAttack: {fileID: 11400000, guid: 8e591648fdbf0b646aeac9df682d0bef, type: 2}
+  specialAttack: {fileID: 11400000, guid: 93705d7c349c0e545bb3af15a249e03e, type: 2}
+  heavyAttack: {fileID: 11400000, guid: 4e4937460138115469d0bc296b302e6f, type: 2}
+  globalComboResetTime: 1.5

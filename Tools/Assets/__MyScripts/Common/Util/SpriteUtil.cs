@@ -3,6 +3,29 @@ using UnityEngine;
 
 public static class SpriteUtil
 {
+        public static Texture2D GetSpriteTexture(Sprite sprite)
+    {
+        if (sprite == null)
+            return null;
+
+        // 如果sprite的纹理已经是单独的了，可能不需要提取，但通常图集里的sprite.texture返回整个图集
+        // 获取sprite在原始纹理中的像素区域
+        Rect rect = sprite.rect;
+        Texture2D originalTexture = sprite.texture;
+
+        // 创建一个新的纹理，大小为sprite的宽高
+        Texture2D newTexture = new Texture2D((int)rect.width, (int)rect.height);
+
+        // 获取原始纹理中sprite区域的像素
+        Color[] pixels = originalTexture.GetPixels((int)rect.x, (int)rect.y, (int)rect.width, (int)rect.height);
+
+        // 设置到新纹理
+        newTexture.SetPixels(pixels);
+        newTexture.Apply();
+
+        return newTexture;
+    }
+    
     /// <summary>
     /// 设置spriteRenderer中使用SpriteProgressshader的材质的进度值
     /// </summary>

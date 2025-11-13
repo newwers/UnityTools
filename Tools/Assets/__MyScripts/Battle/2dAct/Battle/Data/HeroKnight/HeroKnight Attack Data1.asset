@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07423e2a601c8f54fb065b791415301f, type: 3}
+  m_Name: HeroKnight Attack Data1
+  m_EditorClassIdentifier: 
+  attackName: "Knight\u666E\u901A\u653B\u51FB1"
+  animationClip: {fileID: 7400000, guid: 0bafac48b1090284da2048c29bc986ff, type: 2}
+  frameRate: 14
+  priority: 0
+  animationParameterType: 0
+  animationParameterName: Attack1
+  animationIntValue: 1
+  animationFloatValue: 1
+  animationBoolValue: 1
+  windUpTime: 0.14285715
+  activeTime: 0.071428575
+  recoveryTime: 0.21428573
+  comboWindow: 0.21
+  ActualWindUpFrames: 2
+  ActualActiveFrames: 1
+  ActualRecoveryFrames: 3
+  windUpFrames: 2
+  activeFrames: 1
+  recoveryFrames: 3
+  hitboxRadius: 0.5
+  hitboxAngle: 90
+  hitboxEndPoint: {x: 1, y: 0}
+  enableMovement: 0
+  movementSpeed: 3
+  movementCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 5
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: -1
+      outSlope: -1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  canCombo: 1
+  nextAttacks: []
+  resetComboOnMiss: 0
+  hitEffect: {fileID: 0}
+  attackSound: {fileID: 0}
+  canCancel: 1
+  frameData:
+  - frameIndex: 2
+    isAttackFrame: 1
+    hitLayers:
+      serializedVersion: 2
+      m_Bits: 256
+    hitboxType: 0
+    hitboxOffset: {x: 0.74, y: 0.93}
+    hitboxSize: {x: 1.6, y: 1.25}
+    hitboxRadius: 0.5
+    hitboxAngle: 90
+    hitboxEndPoint: {x: 1, y: 0}
+    damage: 10
+    knockbackForce: 5
+    causeStun: 0
+    stunDuration: 1
+    hitEffect: {fileID: 0}
+    hitSound: {fileID: 0}
