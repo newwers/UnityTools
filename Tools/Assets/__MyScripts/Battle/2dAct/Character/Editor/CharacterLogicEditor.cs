@@ -39,12 +39,12 @@ public class CharacterLogicEditor : Editor
                 EditorGUILayout.LabelField($"攻击计时: {characterLogic.currentAttackTimer:F2}s");
                 EditorGUILayout.LabelField($"连招段数: {characterLogic.currentComboIndex}");
 
-                if (characterLogic.currentAttackData != null)
+                if (characterLogic.currentAttackActionData != null)
                 {
-                    EditorGUILayout.LabelField($"攻击数据: {characterLogic.currentAttackData.acitonName}");
-                    EditorGUILayout.LabelField($"前摇: {characterLogic.currentAttackData.windUpTime:F2}s");
-                    EditorGUILayout.LabelField($"攻击中: {characterLogic.currentAttackData.activeTime:F2}s");
-                    EditorGUILayout.LabelField($"后摇: {characterLogic.currentAttackData.recoveryTime:F2}s");
+                    EditorGUILayout.LabelField($"攻击数据: {characterLogic.currentAttackActionData.acitonName}");
+                    EditorGUILayout.LabelField($"前摇: {characterLogic.currentAttackActionData.windUpTime:F2}s");
+                    EditorGUILayout.LabelField($"攻击中: {characterLogic.currentAttackActionData.activeTime:F2}s");
+                    EditorGUILayout.LabelField($"后摇: {characterLogic.currentAttackActionData.recoveryTime:F2}s");
                 }
             }
 

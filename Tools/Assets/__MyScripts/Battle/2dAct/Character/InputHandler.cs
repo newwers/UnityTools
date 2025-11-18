@@ -48,7 +48,6 @@ public class InputHandler : MonoBehaviour
     // 强力攻击设置
     private const float HEAVY_ATTACK_HOLD_TIME = 0.5f;
     private bool isHeavyAttackCharging = false;
-    private float heavyAttackHoldTimer = 0f;
 
     // 添加冲刺攻击检测
     private float lastDashTime = 0f;

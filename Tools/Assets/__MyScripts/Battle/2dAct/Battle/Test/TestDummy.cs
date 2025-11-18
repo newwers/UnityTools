@@ -12,7 +12,7 @@ public class TestDummy : MonoBehaviour
     [Header("自动攻击设置")]
     public bool enableAutoAttack = false; // 是否启用自动攻击
     public float attackInterval = 2f; // 攻击间隔时间
-    public ActionData attackData; // 攻击配置数据
+    public AttackActionData attackData; // 攻击配置数据
 
     [Header("被击反馈")]
     public Color hitColor = Color.red;
@@ -144,7 +144,7 @@ public class TestDummy : MonoBehaviour
     private void PerformAutoAttack()
     {
         if (attackData == null) return;
-        currentActionPriority = 150;//攻击优先级设为150
+        currentActionPriority = CharacterLogic.DashPriority;//攻击优先级设为150
         //LogManager.Log($"[TestDummy] 执行自动攻击: {attackData.attackName}");
 
         // 使用AttackHitDetector进行攻击检测
@@ -169,9 +169,9 @@ public class TestDummy : MonoBehaviour
         //LogManager.Log($"[TestDummy] 开始攻击检测，攻击ID: {attackId}");
 
         // 播放攻击动画
-        if (animator != null && !string.IsNullOrEmpty(attackData.animationParameterName))
+        if (animator != null && attackData.animationParameters != null)
         {
-            SetAttackAnimationParameter(attackData);
+            SetActionAnimationParameter(attackData);
         }
 
         // 前摇阶段
@@ -229,12 +229,12 @@ public class TestDummy : MonoBehaviour
 #endif
 
         // 清理动画参数
-        if (animator != null && !string.IsNullOrEmpty(attackData.animationParameterName))
+        if (animator != null && attackData.animationParameters != null)
         {
-            ClearAttackAnimationParameter(attackData);
+            //ClearAttackAnimationParameter(attackData);
         }
 
-        currentActionPriority = 0; // 恢复默认优先级
+        currentActionPriority = CharacterLogic.IdlePriority; // 恢复默认优先级
 
         //LogManager.Log($"[TestDummy] 攻击完成");
     }
@@ -293,7 +293,7 @@ public class TestDummy : MonoBehaviour
     /// <summary>
     /// 计算当前帧索引
     /// </summary>
-    private int CalculateCurrentFrameIndex(ActionData attackData, float currentAttackTimer)
+    private int CalculateCurrentFrameIndex(AttackActionData attackData, float currentAttackTimer)
     {
         if (attackData == null) return 0;
 
@@ -324,49 +324,55 @@ public class TestDummy : MonoBehaviour
     /// <summary>
     /// 设置攻击动画参数
     /// </summary>
-    private void SetAttackAnimationParameter(ActionData attackData)
+    public void SetActionAnimationParameter(ActionData actionData)
     {
-        if (animator == null || string.IsNullOrEmpty(attackData.animationParameterName)) return;
+        if (actionData == null || actionData.animationParameters == null)
+            return;
 
-        switch (attackData.animationParameterType)
+        foreach (var param in actionData.animationParameters)
         {
-            case ActionData.AnimationParameterType.Trigger:
-                animator.SetTrigger(attackData.animationParameterName);
-                break;
-            case ActionData.AnimationParameterType.Bool:
-                animator.SetBool(attackData.animationParameterName, attackData.animationBoolValue);
-                break;
-            case ActionData.AnimationParameterType.Int:
-                animator.SetInteger(attackData.animationParameterName, attackData.animationIntValue);
-                break;
-            case ActionData.AnimationParameterType.Float:
-                animator.SetFloat(attackData.animationParameterName, attackData.animationFloatValue);
-                break;
+            switch (param.type)
+            {
+                case ActionData.AnimationParameterType.Trigger:
+                    animator.SetTrigger(param.parameterName);
+                    break;
+                case ActionData.AnimationParameterType.Bool:
+                    animator.SetBool(param.parameterName, param.animationBoolValue);
+                    break;
+                case ActionData.AnimationParameterType.Int:
+                    animator.SetInteger(param.parameterName, param.animationIntValue);
+                    break;
+                case ActionData.AnimationParameterType.Float:
+                    animator.SetFloat(param.parameterName, param.animationFloatValue);
+                    break;
+            }
         }
+
+        //LogManager.Log($"[CharacterAnimation] 设置动画参数: {actionData.animationParameterName}, 类型: {attackData.animationParameterType}");
     }
 
     /// <summary>
     /// 清理攻击动画参数
     /// </summary>
-    private void ClearAttackAnimationParameter(ActionData attackData)
-    {
-        if (animator == null || string.IsNullOrEmpty(attackData.animationParameterName)) return;
+    //private void ClearAttackAnimationParameter(ActionData attackData)
+    //{
+    //    if (animator == null || string.IsNullOrEmpty(attackData.animationParameterName)) return;
 
-        switch (attackData.animationParameterType)
-        {
-            case ActionData.AnimationParameterType.Bool:
-                animator.SetBool(attackData.animationParameterName, false);
-                break;
-            case ActionData.AnimationParameterType.Trigger:
-                // Trigger不需要清理，它会自动重置
-                break;
-        }
-    }
+    //    switch (attackData.animationParameterType)
+    //    {
+    //        case ActionData.AnimationParameterType.Bool:
+    //            animator.SetBool(attackData.animationParameterName, false);
+    //            break;
+    //        case ActionData.AnimationParameterType.Trigger:
+    //            // Trigger不需要清理，它会自动重置
+    //            break;
+    //    }
+    //}
 
     /// <summary>
     /// 设置自动攻击配置
     /// </summary>
-    public void SetAutoAttackConfig(ActionData newAttackData, float interval = 2f)
+    public void SetAutoAttackConfig(AttackActionData newAttackData, float interval = 2f)
     {
         attackData = newAttackData;
         attackInterval = interval;
@@ -396,7 +402,7 @@ public class TestDummy : MonoBehaviour
     {
         if (isStunned || isDead) return;
 
-        currentActionPriority = 300; // 硬直优先级设为300
+        currentActionPriority = CharacterLogic.StunPriority; // 硬直优先级设为300
         isStunned = true;
         stunTimer = duration;
 
@@ -420,7 +426,7 @@ public class TestDummy : MonoBehaviour
     private void RecoverFromStun()
     {
         isStunned = false;
-        currentActionPriority = 0; // 恢复默认优先级
+        currentActionPriority = CharacterLogic.IdlePriority; // 恢复默认优先级
 
         LogManager.Log($"[TestDummy] 硬直结束");
 
@@ -454,24 +460,34 @@ public class TestDummy : MonoBehaviour
 
         LogManager.Log($"[TestDummy] 受到伤害: {frameData.damage}, 剩余血量: {currentHealth}/{maxHealth}");
 
-        // 根据攻击优先级决定受击表现
-        bool shouldPlayHitAnimation = ShouldPlayHitAnimation(attackData.priority);
-
-        // 触发Hurt动画
-        if (shouldPlayHitAnimation)
+        // 检查是否造成眩晕
+        if (frameData.causeStun)
         {
-            // 播放受击动画
-            if (animator != null && !string.IsNullOrEmpty(hurtTriggerName))
-            {
-                animator.SetTrigger(hurtTriggerName);
-            }
-            LogManager.Log($"[TestDummy] 播放受击动画，当前动作优先级: {currentActionPriority}");
+            ApplyStun(frameData.stunDuration);
         }
         else
         {
-            // 只播放闪白效果，不播放受击动画
-            LogManager.Log($"[TestDummy] 只播放闪白效果，不打断当前动作");
+            // 根据攻击优先级决定受击表现
+            bool shouldPlayHitAnimation = ShouldPlayHitAnimation(attackData.priority);
+
+            // 触发Hurt动画
+            if (shouldPlayHitAnimation)
+            {
+                // 播放受击动画
+                if (animator != null && !string.IsNullOrEmpty(hurtTriggerName))
+                {
+                    animator.SetTrigger(hurtTriggerName);
+                }
+                LogManager.Log($"[TestDummy] 播放受击动画，当前动作优先级: {currentActionPriority}");
+            }
+            else
+            {
+                // 只播放闪白效果，不播放受击动画
+                LogManager.Log($"[TestDummy] 只播放闪白效果，不打断当前动作");
+            }
         }
+
+
 
         // 触发事件
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
@@ -494,11 +510,7 @@ public class TestDummy : MonoBehaviour
         }
 
 
-        // 检查是否造成眩晕
-        if (frameData.causeStun)
-        {
-            ApplyStun(frameData.stunDuration);
-        }
+
     }
 
     /// <summary>
@@ -506,9 +518,7 @@ public class TestDummy : MonoBehaviour
     /// </summary>
     private bool ShouldPlayHitAnimation(int priority)
     {
-        // 这里需要从攻击数据获取优先级，暂时使用默认逻辑
-        // 在实际攻击检测中，这个判断会在 ProcessHit 方法中完成
-        return currentActionPriority < priority;
+        return priority > CharacterLogic.HurtPriority && currentActionPriority < priority;
     }
 
     /// <summary>

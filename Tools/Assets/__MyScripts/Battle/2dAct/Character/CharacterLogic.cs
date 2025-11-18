@@ -24,14 +24,16 @@ public enum PlayerState
     Parrying,       // 弹反
     Down,           // 倒地
     GettingUp,      // 爬起
-    Stunned         // 硬直
+    Stunned,         // 硬直
+    Hurt,         // 受伤
+    Death,         // 死亡
 }
 
 
 public enum AttackPhase
 {
     WindUp,     // 前摇阶段
-    Active,     // 攻击中阶段,只有在攻击阶段才进行命中检测
+    Active,     // 攻击中阶段,只有在攻击阶段才进行命中攻击帧检测
     Recovery    // 后摇阶段
 }
 
@@ -52,56 +54,36 @@ public class CharacterLogic : MonoBehaviour
     public System.Action OnStunned;
 
 
+
     [Header("逻辑状态")]
     public PlayerState CurrentState = PlayerState.Idle;
-    public AttackPhase currentAttackPhase = AttackPhase.WindUp;
-
-    [Header("移动设置")]
-    public float moveSpeed = 8f;
-    public float acceleration = 15f;
-    public float deceleration = 20f;
-
-    [Header("跳跃设置")]
-    public float jumpForce = 16f;
-    public float fallMultiplier = 2.5f;
-    public float lowJumpMultiplier = 2f;
-    public float coyoteTime = 0.1f;
-
-    [Header("地面检测")]
-    public LayerMask groundLayer;
-    public Vector2 groundCheckSize = new Vector2(0.5f, 0.1f);
-    public Vector2 groundCheckOffset = new Vector2(0f, -0.5f);
-
-    [Header("冲刺设置")]
-    public float dashSpeed = 20f;
-    public float dashDuration = 0.2f;
-    public float dashCooldown = 0.5f;
-
-    [Header("攻击系统")]
-    public ActionManager attackManager;
-    public float attackResetTime = 1.0f;
-
-    // 格挡和弹反相关字段
-    [Header("格挡设置")]
-    public float blockDamageReduction = 0.7f; // 格挡伤害减免
-    public float parryDamageMultiplier = 1.5f; // 弹反伤害加成
-    public float parryWindow = 0.2f; // 弹反输入窗口
-    public float parryStunDuration = 1.0f; // 弹反成功时敌人的硬直时间
 
 
+
+    [Header("角色切换")]
+    [Tooltip("角色数据库")]
+    public CharacterDatabase characterDatabase;
+    private GameObject characterInstance;
 
     // 添加强力攻击相关变量
-    [Header("强力攻击设置")]
-    public float heavyAttackHoldTime = 0.5f;
     private bool isHeavyAttackCharging = false;
     private float heavyAttackChargeStartTime = 0f;
 
 
     // 攻击系统相关变量
     [Header("攻击调试信息")]
-    public ActionData currentAttackData;
-    public float currentAttackTimer = 0f;
-    public int currentComboIndex = 0;
+    [FieldReadOnly]
+    public ActionManager actionManager;
+    [SerializeField]
+    private CharacterAttackController attackController;
+    [FieldReadOnly]
+    public ActionData currentActionData;//当前行为数据
+    public AttackActionData currentAttackActionData => attackController != null ? attackController.currentAttackActionData : null;//当前攻击数据
+
+    public AttackPhase currentAttackPhase => attackController != null ? attackController.currentAttackPhase : AttackPhase.WindUp;
+    public float currentAttackTimer => attackController != null ? attackController.currentAttackTimer : 0f;
+    public int currentComboIndex => attackController != null ? attackController.currentComboIndex : 0;
+
 
 
 
@@ -114,10 +96,6 @@ public class CharacterLogic : MonoBehaviour
     private Rigidbody2D rb;
     private InputHandler inputHandler;
     private CharacterAnimation animHandler;
-
-    // 添加攻击检测相关字段
-    private string currentAttackId;
-    private AttackHitVisualizer attackVisualizer;
 
     private int jumpProtectionFrames = 0;
     private const int JUMP_PROTECTION_FRAME_COUNT = 3; // 跳跃保护3帧
@@ -139,15 +117,20 @@ public class CharacterLogic : MonoBehaviour
 
     [Header("动作优先级")]
     [SerializeField] private int currentActionPriority = 0; // 当前执行动作的优先级
+    private Coroutine m_RecoverFromHurt_Coroutine;
     public const int StunPriority = 300; // 硬直优先级最高
     public const int BlockPriority = 200; // 格挡优先级
     public const int ParryPriority = 250; // 弹反优先级
     public const int DashPriority = 150; // 冲刺优先级
+    public const int HurtPriority = 100; // 受伤优先级
     public const int IdlePriority = 0; // 待机优先级
 
 
 
-
+    public InputHandler InputHandler
+    {
+        get { return inputHandler; }
+    }
     public bool IsGrounded
     {
         get { return m_IsGrounded; }
@@ -162,42 +145,83 @@ public class CharacterLogic : MonoBehaviour
                CurrentState == PlayerState.Parrying;//弹反也算攻击状态
     }
 
+    [Header("生命属性")]
+    public int maxHealth = 100;
+    [FieldReadOnly]
+    public int currentHealth = 100;
+    private int currentCharacterIndex;
+
+    public bool IsDead => CurrentState == PlayerState.Death || currentHealth <= 0;
+
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         inputHandler = GetComponent<InputHandler>();
-        animHandler = GetComponent<CharacterAnimation>();
-        attackVisualizer = GetComponent<AttackHitVisualizer>();
+        attackController = GetComponent<CharacterAttackController>();
+        currentCharacterIndex = 0;
+        LoadCharacterPrefab(currentCharacterIndex);
+
+        // 初始化生命值
+        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+        if (currentHealth == 0)
+            currentHealth = maxHealth;
+
+        // 初始化当前行为数据（优先使用 ActionManager 中的 idleAction）
+        currentActionData = actionManager != null ? (ActionData)actionManager.idleAction : null;
     }
+
+
+
 
     private void OnEnable()
     {
         // 订阅输入事件
-        inputHandler.OnMoveInput += HandleMoveInput;
-        inputHandler.OnJumpInput += HandleJumpInput;
-        inputHandler.OnJumpCanceledAction += HandleJumpCanceled;
-        inputHandler.OnDashInput += HandleDashInput;
-        inputHandler.OnAttackStarted += HandleAttackStarted;
-        inputHandler.OnBlockStartedAction += HandleBlockStarted;
-        inputHandler.OnBlockCanceledAction += HandleBlockCanceled;
-        inputHandler.OnHeavyAttackStarted += HandleHeavyAttackStarted;
+        if (inputHandler)
+        {
+            inputHandler.OnMoveInput += HandleMoveInput;
+            inputHandler.OnJumpInput += HandleJumpInput;
+            inputHandler.OnJumpCanceledAction += HandleJumpCanceled;
+            inputHandler.OnDashInput += HandleDashInput;
+            inputHandler.OnAttackStarted += HandleAttackStarted;
+            inputHandler.OnBlockStartedAction += HandleBlockStarted;
+            inputHandler.OnBlockCanceledAction += HandleBlockCanceled;
+            inputHandler.OnHeavyAttackStarted += HandleHeavyAttackStarted;
+            inputHandler.OnAssistAttack += HandleAssistAttack;
+        }
         OnHurt += OnHurtHandler;
+
+        if (attackController != null)
+        {
+            attackController.OnAttackStarted += HandleAttackControllerStarted;
+            attackController.OnAttackEnded += HandleAttackControllerEnded;
+        }
     }
 
 
     private void OnDisable()
     {
         // 订阅输入事件
-        inputHandler.OnMoveInput -= HandleMoveInput;
-        inputHandler.OnJumpInput -= HandleJumpInput;
-        inputHandler.OnJumpCanceledAction -= HandleJumpCanceled;
-        inputHandler.OnDashInput -= HandleDashInput;
-        inputHandler.OnAttackStarted -= HandleAttackStarted;
-        inputHandler.OnBlockStartedAction -= HandleBlockStarted;
-        inputHandler.OnBlockCanceledAction -= HandleBlockCanceled;
-        inputHandler.OnHeavyAttackStarted -= HandleHeavyAttackStarted;
+        if (inputHandler)
+        {
+            inputHandler.OnMoveInput -= HandleMoveInput;
+            inputHandler.OnJumpInput -= HandleJumpInput;
+            inputHandler.OnJumpCanceledAction -= HandleJumpCanceled;
+            inputHandler.OnDashInput -= HandleDashInput;
+            inputHandler.OnAttackStarted -= HandleAttackStarted;
+            inputHandler.OnBlockStartedAction -= HandleBlockStarted;
+            inputHandler.OnBlockCanceledAction -= HandleBlockCanceled;
+            inputHandler.OnHeavyAttackStarted -= HandleHeavyAttackStarted;
+            inputHandler.OnAssistAttack -= HandleAssistAttack;
+        }
         OnHurt -= OnHurtHandler;
+        if (attackController != null)
+        {
+            attackController.OnAttackStarted -= HandleAttackControllerStarted;
+            attackController.OnAttackEnded -= HandleAttackControllerEnded;
+        }
     }
+
 
     private void Update()
     {
@@ -210,12 +234,21 @@ public class CharacterLogic : MonoBehaviour
 
         HandleStateMachine();
         ProcessAttackBuffer();
+    }
 
-        // 更新攻击阶段
-        if (IsAttacking())
+
+    private void HandleAssistAttack()
+    {
+        if (characterDatabase != null && characterDatabase.characters != null && characterDatabase.characters.Count > 1)
         {
-            UpdateAttackPhase();
+            if (characterInstance != null)//销毁旧角色
+            {
+                Destroy(characterInstance);
+            }
         }
+        //循环切换角色
+        currentCharacterIndex = (currentCharacterIndex + 1) % characterDatabase.GetCharacterCount();
+        LoadCharacterPrefab(currentCharacterIndex);
     }
 
     private void UpdateTimers()
@@ -230,6 +263,8 @@ public class CharacterLogic : MonoBehaviour
 
     private void OnHurtHandler(ActionData attackData, AttackFrameData frameData, GameObject attacker)
     {
+        if (IsDead) return; // 已死亡则忽略受伤事件
+
         // 检查是否在格挡状态,并且在弹反窗口内
         if (isBlocking)//格挡状态
         {
@@ -249,38 +284,129 @@ public class CharacterLogic : MonoBehaviour
             return;
         }
 
+        // 先应用伤害
+        bool died = TakeDamage(frameData != null ? frameData.damage : 0, attacker);
+
+        if (died)
+        {
+            // 如果死亡，立即处理死亡流程并返回（不会继续执行受击或眩晕）
+            HandleDeath(attacker);
+            return;
+        }
+
         // 检查是否造成眩晕
-        if (frameData.causeStun)
+        if (frameData != null && frameData.causeStun)
         {
             ApplyStun(frameData.stunDuration);
         }
         else
         {
             // 根据攻击优先级决定受击表现
-            bool shouldPlayHitAnimation = ShouldPlayHitAnimation(attackData.priority);
-            animHandler.OnHurt(shouldPlayHitAnimation);
+            // 切换到硬直状态
+            bool shouldPlayHitAnimation = ShouldPlayHitAnimation(attackData != null ? attackData.priority : 0);
+            animHandler?.OnHurt(shouldPlayHitAnimation);
+            if (shouldPlayHitAnimation)//只有播放受击动画时才切换状态
+            {
+                ChangeState(PlayerState.Hurt);
+                //根据受伤时间,切换回之前的状态
+                if (m_RecoverFromHurt_Coroutine != null)
+                {
+                    StopCoroutine(m_RecoverFromHurt_Coroutine);
+                }
+                m_RecoverFromHurt_Coroutine = StartCoroutine(RecoverFromHurt(actionManager.hurtAction.animationClipLength)); // 假设受伤后0.2秒恢复
+            }
         }
 
 
-        // 应用伤害和击退
-        if (rb != null)
+        // 应用击退
+        if (rb != null && attacker != null && frameData != null)
         {
             Vector2 knockbackDirection = (transform.position - attacker.transform.position).normalized;
             rb.AddForce(knockbackDirection * frameData.knockbackForce, ForceMode2D.Impulse);
         }
 
         // 播放命中特效
-        if (frameData.hitEffect != null)
+        if (frameData != null && frameData.hitEffect != null)
         {
             Instantiate(frameData.hitEffect, transform.position, Quaternion.identity);
         }
     }
 
+    void LoadCharacterPrefab(int index)
+    {
+        if (characterDatabase != null && characterDatabase.characters != null && characterDatabase.characters.Count > 0)
+        {
+            var data = characterDatabase.GetCharacterPrefab(index);
+            if (data != null)
+            {
+                characterInstance = Instantiate(data.characterPrefab, transform.position, transform.rotation, transform);
+                animHandler = characterInstance.GetComponent<CharacterAnimation>();
+                if (animHandler != null)
+                {
+                    animHandler.SetCharacterLogic(this, rb);
+                }
+
+                if (attackController != null)
+                {
+                    attackController.SetCharacterAnimation(animHandler);
+                    attackController.actionManager = data.actionManager;
+                }
+                ApplyActionManager(data.actionManager);
+            }
+            else
+            {
+                LogManager.LogError("[CharacterLogic] 无法加载角色预制体: 数据库中未找到对应预制体");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 运行时切换 ActionManager（用于角色切换）
+    /// </summary>
+    /// <param name="newActionManager">目标 ActionManager 资产</param>
+    /// <param name="refreshStateImmediately">是否立刻刷新状态</param>
+    public void ApplyActionManager(ActionManager newActionManager, bool refreshStateImmediately = true)
+    {
+        if (newActionManager == null)
+        {
+            LogManager.LogError("[CharacterLogic] 无法应用空的 ActionManager");
+            return;
+        }
+
+        actionManager = newActionManager;
+
+        // 切换时打断所有攻击/格挡/弹反状态
+        BreakAttack();
+        hasBufferedAttack = false;
+        SetIsBlockState(false);
+        isParryWindowActive = false;
+        canParry = false;
+        isHeavyAttackCharging = false;
+        currentActionPriority = IdlePriority;
+        currentActionData = actionManager != null ? (ActionData)actionManager.idleAction : null;
+
+        if (refreshStateImmediately)
+        {
+            ForceRefreshState();
+        }
+
+        LogManager.Log($"[CharacterLogic] 已应用新的 ActionManager: {newActionManager.name}");
+    }
+
+
+    IEnumerator RecoverFromHurt(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        m_RecoverFromHurt_Coroutine = null;
+        if (CurrentState == PlayerState.Hurt)
+        {
+            RefreshState();
+        }
+    }
+
     private bool ShouldPlayHitAnimation(int priority)
     {
-        // 这里需要从攻击数据获取优先级，暂时使用默认逻辑
-        // 在实际攻击检测中，这个判断会在 ProcessHit 方法中完成
-        return currentActionPriority < priority;
+        return priority > HurtPriority && currentActionPriority < priority;//只有当攻击优先级高于硬直优先级且当前动作优先级低于攻击优先级时才播放受击动画
     }
 
     /// <summary>
@@ -378,6 +504,10 @@ public class CharacterLogic : MonoBehaviour
     /// </summary>
     private bool CanStateBeRefreshed()
     {
+        if (CurrentState == PlayerState.Death)
+        {
+            return false;
+        }
         return true;
         switch (CurrentState)
         {
@@ -397,7 +527,7 @@ public class CharacterLogic : MonoBehaviour
             case PlayerState.JumpAttacking:
             case PlayerState.SpecialAttacking:
                 // 只有在攻击结束后（没有当前攻击数据）才可以刷新
-                return currentAttackData == null;
+                return currentAttackActionData == null;
 
             default:
                 return true;
@@ -420,7 +550,7 @@ public class CharacterLogic : MonoBehaviour
         }
 
         // 地面状态
-        if (Mathf.Abs(inputHandler.MoveInput.x) > 0.1f)
+        if (inputHandler && Mathf.Abs(inputHandler.MoveInput.x) > 0.1f)
             return PlayerState.Running;
         else
             return PlayerState.Idle;
@@ -428,9 +558,9 @@ public class CharacterLogic : MonoBehaviour
 
     private void CheckGround()
     {
-        Vector2 checkPosition = (Vector2)transform.position + groundCheckOffset;
+        Vector2 checkPosition = (Vector2)transform.position + actionManager.jumpAction.groundCheckOffset;
         bool wasGrounded = m_IsGrounded;
-        m_IsGrounded = Physics2D.OverlapBox(checkPosition, groundCheckSize, 0f, groundLayer);
+        m_IsGrounded = Physics2D.OverlapBox(checkPosition, actionManager.jumpAction.groundCheckSize, 0f, actionManager.jumpAction.groundLayer);
 
         // 跳跃保护帧内不检测落地
         if (jumpProtectionFrames > 0)
@@ -449,15 +579,25 @@ public class CharacterLogic : MonoBehaviour
                 RefreshState();
             }
         }
-        else if (!m_IsGrounded && wasGrounded)
+        else if (!m_IsGrounded && wasGrounded)// 离开地面时
         {
             lastGroundedTime = Time.time;
-
+            OnLeaveGround();
             // 离开地面时刷新状态
             RefreshState();
         }
     }
 
+    /// <summary>
+    /// 离开地面时
+    /// </summary>
+    private void OnLeaveGround()
+    {
+
+    }
+    /// <summary>
+    /// 落地时
+    /// </summary>
     private void OnLand()
     {
         //if (CurrentState == PlayerState.JumpAttacking)//在空中攻击落地时,直接结束攻击
@@ -504,7 +644,7 @@ public class CharacterLogic : MonoBehaviour
     private void HandleGroundedState()
     {
         // 状态转换
-        if (Mathf.Abs(inputHandler.MoveInput.x) > 0.1f)
+        if (inputHandler != null && Mathf.Abs(inputHandler.MoveInput.x) > 0.1f)
         {
             ChangeState(PlayerState.Running);
         }
@@ -529,12 +669,17 @@ public class CharacterLogic : MonoBehaviour
     private void HandleDashState()
     {
         float dashDirection = isFacingRight ? 1f : -1f;
-        rb.linearVelocity = new Vector2(dashDirection * dashSpeed, rb.linearVelocity.y);
+        rb.linearVelocity = new Vector2(dashDirection * actionManager.dashAction.dashSpeed, rb.linearVelocity.y);
     }
 
     private void HandleBlockState()
     {
-        rb.linearVelocity = new Vector2(inputHandler.MoveInput.x * moveSpeed * 0.3f, rb.linearVelocity.y);
+        float moveInputX = 0f;
+        if (inputHandler)
+        {
+            moveInputX = inputHandler.MoveInput.x;
+        }
+        rb.linearVelocity = new Vector2(moveInputX * actionManager.moveAction.moveSpeed * 0.3f, rb.linearVelocity.y);
     }
 
     private void HandleAttackState()
@@ -545,7 +690,7 @@ public class CharacterLogic : MonoBehaviour
             HandleAirMovement();
             //HandleJumpPhysics(); // 保持跳跃物理效果
         }
-        else if (currentAttackData != null && currentAttackData.enableMovement && currentAttackPhase == AttackPhase.Active)
+        else if (currentAttackActionData != null && currentAttackActionData.enableMovement && currentAttackPhase == AttackPhase.Active)
         {
             // 攻击状态下可以轻微移动
             HandleAttackMovement();
@@ -559,135 +704,56 @@ public class CharacterLogic : MonoBehaviour
     #endregion
 
     #region 攻击阶段系统
-    private void UpdateAttackPhase()
+
+    // 处理攻击子系统开始的回调（放在类的私有方法区域）
+    private void HandleAttackControllerStarted(AttackActionData attackData)
     {
-        if (currentAttackData == null) return;
+        if (attackData == null) return;
 
-        currentAttackTimer += Time.deltaTime;
-
-        switch (currentAttackPhase)
+        // 根据所选攻击数据设置对应的状态（保持与原语义一致）
+        if (actionManager != null && attackData == actionManager.heavyAttack)
         {
-            case AttackPhase.WindUp:
-                if (currentAttackTimer >= currentAttackData.windUpTime)
-                {
-                    EnterActivePhase();
-                }
-                break;
-
-            case AttackPhase.Active:
-                // 每帧进行攻击检测
-                if (AttackHitDetector.Instance != null && !string.IsNullOrEmpty(currentAttackId))
-                {
-                    AttackHitDetector.Instance.CheckHitForFrame(
-                        currentAttackId, currentAttackData, transform.position,
-                        isFacingRight, currentAttackTimer, gameObject);
-                }
-
-
-                if (currentAttackTimer >= currentAttackData.windUpTime + currentAttackData.activeTime)
-                {
-                    EnterRecoveryPhase();
-                }
-                break;
-
-            case AttackPhase.Recovery:
-                if (currentAttackTimer >= currentAttackData.TotalDuration)
-                {
-                    EndAttack();
-                }
-                else
-                {
-                    CheckComboInput();
-                }
-                break;
+            ChangeState(PlayerState.HeavyAttacking);
         }
-    }
-
-    //private int CalculateCurrentFrameIndex()
-    //{
-    //    if (currentAttackData == null) return 0;
-
-    //    float activeElapsed = currentAttackTimer - currentAttackData.windUpTime;
-    //    activeElapsed = Mathf.Clamp(activeElapsed, 0f, currentAttackData.activeTime);
-
-    //    int totalActiveFrames = currentAttackData.ActualActiveFrames;
-    //    if (totalActiveFrames <= 0) return 0;
-
-    //    float phaseProgress = activeElapsed / currentAttackData.activeTime;
-    //    int frameIndex = Mathf.FloorToInt(phaseProgress * totalActiveFrames);
-    //    frameIndex = Mathf.Clamp(frameIndex, 0, totalActiveFrames - 1);
-
-    //    int actualFrameIndex = currentAttackData.ActualWindUpFrames + frameIndex;
-    //    return actualFrameIndex;
-    //}
-
-    private void EnterActivePhase()
-    {
-        currentAttackPhase = AttackPhase.Active;
-
-        // 开始攻击检测
-        currentAttackId = AttackHitDetector.Instance.StartAttackDetection(
-            currentAttackData, transform.position, isFacingRight, gameObject);
-
-
-        // 设置动画速度
-        if (animHandler != null)
+        else if (actionManager != null && attackData == actionManager.dashAttack)
         {
-            animHandler.SetAttackAnimationSpeed(currentAttackPhase, currentAttackData);
+            ChangeState(PlayerState.DashAttacking);
+        }
+        else if (actionManager != null && attackData == actionManager.jumpAttack)
+        {
+            ChangeState(PlayerState.JumpAttacking);
+        }
+        else if (actionManager != null && attackData == actionManager.parryAttack)
+        {
+            ChangeState(PlayerState.Parrying);
+        }
+        else
+        {
+            ChangeState(PlayerState.Attacking);
         }
 
-        LogManager.Log($"[CharacterLogic] 进入攻击中阶段");
+        // 与原逻辑保持一致，让 currentActionData 指向当前攻击数据
+        currentActionData = attackData != null ? (ActionData)attackData : null;
+
+        // 记录最近一次攻击时间
+        lastAttackTime = Time.time;
     }
 
-    private void EnterRecoveryPhase()
+    // 处理攻击子系统结束的回调
+    private void HandleAttackControllerEnded()
     {
-        currentAttackPhase = AttackPhase.Recovery;
-        // 设置动画速度
-        if (animHandler != null)
-        {
-            animHandler.SetAttackAnimationSpeed(currentAttackPhase, currentAttackData);
-        }
-        LogManager.Log($"[CharacterLogic] 进入后摇阶段");
-    }
-    /// <summary>
-    /// 攻击结束后调用函数
-    /// </summary>
-    private void EndAttack()
-    {
-        LogManager.Log($"[CharacterLogic] 攻击结束");
-
-        if (CurrentState == PlayerState.Parrying)//弹反攻击结束
+        // 如果刚结束的是弹反攻击，走弹反结束路径；否则刷新状态
+        if (CurrentState == PlayerState.Parrying)
         {
             OnParryAttackEnd();
         }
-
-        // 结束攻击检测
-        if (!string.IsNullOrEmpty(currentAttackId))
+        else
         {
-            AttackHitDetector.Instance.EndAttackDetection(currentAttackId);
-            currentAttackId = null;
+            // 攻击结束回归合适状态
+            RefreshState();
         }
-
-        // 清理动画参数
-        if (animHandler != null && currentAttackData != null)
-        {
-            animHandler.ClearAttackAnimationParameter(currentAttackData);
-        }
-
-        // 清除可视化
-        if (attackVisualizer != null)
-        {
-            attackVisualizer.ClearFrameData();
-        }
-
-        // 清除连招输入
-        hasBufferedAttack = false;
-        currentAttackData = null;
-        currentComboIndex = 0;
-
-        // 强制刷新状态
-        ForceRefreshState();
     }
+
 
     /// <summary>
     /// 弹反成功（由动画事件调用）
@@ -697,7 +763,7 @@ public class CharacterLogic : MonoBehaviour
         LogManager.Log($"[CharacterLogic] 弹反成功!");
 
         // 切换到攻击状态或返回格挡状态
-        if (inputHandler.IsBlockPressed)
+        if (inputHandler && inputHandler.IsBlockPressed)
         {
             ChangeState(PlayerState.Blocking);
         }
@@ -743,44 +809,29 @@ public class CharacterLogic : MonoBehaviour
     /// </summary>
     private void BreakAttack()
     {
-        // 清理动画参数
-        if (animHandler != null && currentAttackData != null)
-        {
-            animHandler.ClearAttackAnimationParameter(currentAttackData);
-        }
+        // 由攻击子系统处理打断和清理
+        attackController?.EndAttack();
 
-        // 清除可视化
-        if (attackVisualizer != null)
-        {
-            attackVisualizer.ClearFrameData();
-        }
-
-        currentAttackData = null;
-        currentAttackPhase = AttackPhase.WindUp;
-        currentAttackTimer = 0f;
-        currentComboIndex = 0;
-        hasBufferedAttack = false;
-
-        // 使用统一的状态刷新函数
-        //RefreshState();//这边会死循环和ChangeState中调用的冲突
+        // 保持上层状态一致性
+        currentActionData = actionManager != null ? (ActionData)actionManager.idleAction : null;
     }
 
     private void HandleAttackMovement()
     {
-        if (currentAttackData == null || !currentAttackData.enableMovement) return;
+        if (currentAttackActionData == null || !currentAttackActionData.enableMovement) return;
 
-        float phaseProgress = (currentAttackTimer - currentAttackData.windUpTime) / currentAttackData.activeTime;
-        float movementFactor = currentAttackData.movementCurve.Evaluate(phaseProgress);
+        float phaseProgress = (currentAttackTimer - currentAttackActionData.windUpTime) / currentAttackActionData.activeTime;
+        float movementFactor = currentAttackActionData.movementCurve.Evaluate(phaseProgress);
 
         float movementDirection = isFacingRight ? 1f : -1f;
-        Vector2 movement = new Vector2(movementDirection * currentAttackData.movementSpeed * movementFactor, 0f);
+        Vector2 movement = new Vector2(movementDirection * currentAttackActionData.movementSpeed * movementFactor, 0f);
 
         rb.linearVelocity = new Vector2(movement.x, rb.linearVelocity.y);
     }
 
     private void CheckComboInput()
     {
-        if (hasBufferedAttack && currentAttackData != null && currentAttackData.canCombo && currentAttackTimer >= currentAttackData.ComboStartTime)
+        if (hasBufferedAttack && currentAttackActionData != null && currentAttackActionData.canCombo && currentAttackTimer >= currentAttackActionData.ComboStartTime)
         {
             LogManager.Log($"[CharacterLogic] 后摇阶段检测到连招输入，执行连招");
             PerformComboAttack();
@@ -791,7 +842,7 @@ public class CharacterLogic : MonoBehaviour
     private void PerformComboAttack()
     {
         // 连招不检查 CanAttack()，因为已经在攻击状态中
-        if (currentAttackData != null && currentAttackData.canCombo)
+        if (currentAttackActionData != null && currentAttackActionData.canCombo)
         {
             PerformAttack();
         }
@@ -874,17 +925,24 @@ public class CharacterLogic : MonoBehaviour
 
         if (IsAttacking())
         {
-            BufferAttackInput();
+            // 攻击中则缓冲，由攻击子系统管理缓冲
+            attackController?.BufferAttack();
         }
         else if (CanAttack())
         {
-            PerformAttack();
+            // 由攻击子系统选择并开始合适的攻击类型
+            attackController?.TryPerformAttack(
+                CurrentState == PlayerState.Dashing,
+                m_IsGrounded,
+                CurrentState == PlayerState.Parrying,
+                canParry);
+            // 消耗基础攻击输入
+            inputHandler?.ConsumeInput(InputCommandType.Attack);
         }
         else
         {
-            // 如果不能立即攻击，则缓冲攻击输入
             LogManager.Log($"[CharacterLogic] 当前无法攻击，缓冲攻击输入");
-            BufferAttackInput();
+            attackController?.BufferAttack();
         }
     }
 
@@ -949,41 +1007,32 @@ public class CharacterLogic : MonoBehaviour
         }
     }
 
+    // 替换现有的 PerformHeavyAttack 实现为委托到 attackController（带回退逻辑）
     private void PerformHeavyAttack()
     {
-        if (attackManager == null || attackManager.heavyAttack == null)
+        if (actionManager == null || actionManager.heavyAttack == null)
         {
             LogManager.LogError($"[CharacterLogic] 强力攻击未配置!");
+            isHeavyAttackCharging = false;
+            heavyAttackChargeStartTime = 0f;
             return;
         }
 
         LogManager.Log($"[CharacterLogic] 执行强力攻击");
 
-        // 设置攻击数据
-        currentAttackData = attackManager.heavyAttack;
-        currentAttackPhase = AttackPhase.WindUp;
-        currentAttackTimer = 0f;
-        currentComboIndex = 0;
+        // 优先使用攻击子系统
+        if (attackController != null)
+        {
+            // 让攻击子系统启动指定的强力攻击数据
+            attackController.StartAttack(actionManager.heavyAttack);
 
-        // 根据当前状态设置适当的攻击状态
-        if (!m_IsGrounded)
-        {
-            ChangeState(PlayerState.JumpAttacking);
-        }
-        else
-        {
-            ChangeState(PlayerState.HeavyAttacking);
+            // 重置充能标志
+            heavyAttackChargeStartTime = 0f;
+            isHeavyAttackCharging = false;
+
+            return;
         }
 
-        // 触发动画
-        if (animHandler != null)
-        {
-            animHandler.SetAttackAnimationParameter(currentAttackData);
-            animHandler.SetAttackAnimationSpeed(currentAttackPhase, currentAttackData);
-        }
-
-        heavyAttackChargeStartTime = 0f;
-        isHeavyAttackCharging = false;
     }
 
 
@@ -993,7 +1042,7 @@ public class CharacterLogic : MonoBehaviour
     private void CheckBufferedInputs()
     {
         // 只检查攻击预输入
-        if (CanAttack() && inputHandler.TryGetBufferedInput(InputCommandType.Attack, out var attackCmd))
+        if (CanAttack() && inputHandler != null && inputHandler.TryGetBufferedInput(InputCommandType.Attack, out var attackCmd))
         {
             LogManager.Log($"[CharacterLogic] 从缓冲区获取到攻击输入: {attackCmd}");
             PerformAttack();
@@ -1004,13 +1053,13 @@ public class CharacterLogic : MonoBehaviour
     #region 条件检查方法
     private bool CanJump()
     {
-        bool coyoteTimeValid = Time.time - lastGroundedTime <= coyoteTime;
+        bool coyoteTimeValid = Time.time - lastGroundedTime <= actionManager.jumpAction.coyoteTime;
         return (m_IsGrounded || coyoteTimeValid) && CanInterruptForJump();
     }
 
     private bool CanDash()
     {
-        return Time.time - lastDashTime >= dashCooldown && CanInterruptForDash();
+        return Time.time - lastDashTime >= actionManager.dashAction.dashCooldown && CanInterruptForDash();
     }
 
     private bool CanAttack()
@@ -1062,7 +1111,7 @@ public class CharacterLogic : MonoBehaviour
             case PlayerState.DashAttacking:
             case PlayerState.JumpAttacking:
                 // 攻击状态可以直接被跳跃打断
-                return currentAttackData == null || currentAttackData.canCancel;
+                return currentAttackActionData == null || currentAttackActionData.canCancel;
 
             default:
                 return CanChangeState(PlayerState.Jumping);
@@ -1090,7 +1139,7 @@ public class CharacterLogic : MonoBehaviour
             case PlayerState.DashAttacking:
             case PlayerState.JumpAttacking:
                 // 攻击状态可以直接被冲刺打断
-                return currentAttackData == null || currentAttackData.canCancel;
+                return currentAttackActionData == null || currentAttackActionData.canCancel;
 
             default:
                 return CanChangeState(PlayerState.Dashing);
@@ -1110,7 +1159,7 @@ public class CharacterLogic : MonoBehaviour
 
             case PlayerState.Jumping: // 跳跃中允许攻击
             case PlayerState.Falling:
-                return attackManager != null && attackManager.jumpAttack != null;
+                return actionManager != null && actionManager.jumpAttack != null;
 
             case PlayerState.Attacking:
             case PlayerState.HeavyAttacking:
@@ -1118,8 +1167,8 @@ public class CharacterLogic : MonoBehaviour
             case PlayerState.JumpAttacking:
                 // 在后摇阶段且允许连招时可以中断
                 if (currentAttackPhase == AttackPhase.Recovery &&
-                    currentAttackData != null &&
-                    currentAttackData.canCombo)
+                    currentAttackActionData != null &&
+                    currentAttackActionData.canCombo)
                 {
                     return true;
                 }
@@ -1155,45 +1204,34 @@ public class CharacterLogic : MonoBehaviour
     #endregion
 
     #region 攻击预输入系统
-    private void BufferAttackInput()
-    {
-        // 设置攻击缓冲标志
-        hasBufferedAttack = true;
-
-        LogManager.Log($"[CharacterLogic] 缓冲攻击输入");
-    }
 
     private void ProcessAttackBuffer()
     {
-        // 检查是否有缓冲的攻击输入且仍在有效时间内
-        if (hasBufferedAttack)
+        // 如果攻击子系统有缓冲并且当前允许发起攻击，则请求攻击子系统发起攻击
+        if (attackController != null && attackController.hasBufferedAttack)
         {
-            // 如果当前可以攻击，则执行攻击
             if (CanAttack())
             {
-                PerformAttack();
-                hasBufferedAttack = false; // 清除缓冲标志
+                attackController.TryPerformAttack(
+                    CurrentState == PlayerState.Dashing,
+                    m_IsGrounded,
+                    CurrentState == PlayerState.Parrying,
+                    canParry);
+
+                // 清理 InputHandler 的缓冲（如原来）
+                inputHandler?.ConsumeInput(InputCommandType.Attack);
             }
         }
     }
 
-    // 在动画结束时检查是否有缓冲的攻击输入
-    public void CheckForBufferedAttackOnAnimationEnd()
-    {
-        if (hasBufferedAttack && CanAttack())
-        {
-            PerformAttack();
-            hasBufferedAttack = false;
-        }
-    }
     #endregion
 
     #region 动作执行
     private void HandleMovement(Vector2 input)
     {
-        float targetSpeed = input.x * moveSpeed;
+        float targetSpeed = input.x * actionManager.moveAction.moveSpeed;
         float speedDiff = targetSpeed - rb.linearVelocity.x;
-        float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? acceleration : deceleration;
+        float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? actionManager.moveAction.acceleration : actionManager.moveAction.deceleration;
         float movement = Mathf.Pow(Mathf.Abs(speedDiff) * accelRate, 0.9f) * Mathf.Sign(speedDiff);
 
         rb.AddForce(movement * Vector2.right);
@@ -1201,9 +1239,15 @@ public class CharacterLogic : MonoBehaviour
 
     private void HandleAirMovement()
     {
-        float targetSpeed = inputHandler.MoveInput.x * moveSpeed * 0.8f;
+        float moveInputX = 0f;
+        if (inputHandler)
+        {
+            moveInputX = inputHandler.MoveInput.x;
+        }
+
+        float targetSpeed = moveInputX * actionManager.moveAction.moveSpeed * 0.8f;
         float speedDiff = targetSpeed - rb.linearVelocity.x;
-        float movement = speedDiff * acceleration * 0.5f;
+        float movement = speedDiff * actionManager.moveAction.acceleration * 0.5f;
         rb.AddForce(movement * Vector2.right);
     }
 
@@ -1211,17 +1255,17 @@ public class CharacterLogic : MonoBehaviour
     {
         if (rb.linearVelocity.y < 0)
         {
-            rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.deltaTime;
+            rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (actionManager.jumpAction.fallMultiplier - 1) * Time.deltaTime;
         }
-        else if (rb.linearVelocity.y > 0 && !inputHandler.IsBlockPressed)
+        else if (rb.linearVelocity.y > 0 && inputHandler && !inputHandler.IsBlockPressed)
         {
-            rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime;
+            rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (actionManager.jumpAction.lowJumpMultiplier - 1) * Time.deltaTime;
         }
     }
 
     private void PerformJump()
     {
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, actionManager.jumpAction.jumpForce);
         ChangeState(PlayerState.Jumping);
         OnJump?.Invoke();
 
@@ -1252,67 +1296,27 @@ public class CharacterLogic : MonoBehaviour
     /// </summary>
     private void PerformAttack()
     {
-        if (attackManager == null)
+        // 旧实现已迁移到 attackController，保留兼容调用路径
+        if (attackController == null)
         {
-            LogManager.LogError($"[CharacterLogic] AttackManager 未设置!");
+            LogManager.LogError($"[CharacterLogic] attackController 未挂载!");
             return;
         }
 
-        hasBufferedAttack = false;
-        inputHandler.ConsumeInput(InputCommandType.Attack);
+        // 让攻击子系统选择并开始攻击
+        attackController.TryPerformAttack(
+            CurrentState == PlayerState.Dashing,
+            m_IsGrounded,
+            CurrentState == PlayerState.Parrying,
+            canParry);
 
-        // 根据当前状态选择攻击数据
-        if (CurrentState == PlayerState.Dashing && attackManager.dashAttack != null)// 冲刺攻击优先级最高
-        {
-            currentAttackData = attackManager.dashAttack;
-            ChangeState(PlayerState.DashAttacking);
-            // 消耗冲刺攻击输入
-            inputHandler.ConsumeInput(InputCommandType.DashAttack);
-        }
-        else if (!m_IsGrounded && attackManager.jumpAttack != null)//跳跃攻击
-        {
-            currentAttackData = attackManager.jumpAttack;
-            ChangeState(PlayerState.JumpAttacking);
-        }
-        else if (CurrentState == PlayerState.Parrying && canParry)//弹反攻击
-        {
-            currentAttackData = attackManager.parryAttack;
-            LogManager.Log("[CharacterLogic] 执行弹反攻击");
-        }
-        //else if (attackManager.specialAttack != null && inputHandler.MoveInput.y < -0.5f)//特殊攻击
-        //{
-        //    currentAttackData = attackManager.specialAttack;
-        //    ChangeState(PlayerState.SpecialAttacking);
-        //}
-        else
-        {
-            // 普通攻击连招 - 使用新的动画参数系统
-            var comboSequence = attackManager.GetComboSequence();
-            if (comboSequence != null && comboSequence.Length > 0)
-            {
-                currentComboIndex = (currentComboIndex % comboSequence.Length) + 1;
-                currentAttackData = comboSequence[currentComboIndex - 1];
-                ChangeState(PlayerState.Attacking);
-            }
-            else
-            {
-                LogManager.LogError($"[CharacterLogic] 没有配置普通攻击序列!");
-                return;
-            }
-        }
+        // 同步 currentActionData 指向攻击子系统（保持原先外部读取习惯）
+        currentActionData = currentAttackActionData != null ? (ActionData)currentAttackActionData : null;
 
-        // 重置攻击状态
-        currentAttackPhase = AttackPhase.WindUp;
-        currentAttackTimer = 0f;
+        // 消耗主攻击输入
+        inputHandler?.ConsumeInput(InputCommandType.Attack);
 
-        LogManager.Log($"[CharacterLogic] 执行攻击: {currentAttackData.acitonName}, 连招段数: {currentComboIndex}");
-
-        // 使用新的动画参数系统触发动画
-        if (animHandler != null)
-        {
-            animHandler.SetAttackAnimationParameter(currentAttackData);
-            animHandler.SetAttackAnimationSpeed(currentAttackPhase, currentAttackData);
-        }
+        LogManager.Log($"[CharacterLogic] 委托执行攻击: {currentAttackActionData?.acitonName}， 连招段数: {currentComboIndex}");
     }
 
     #endregion
@@ -1321,6 +1325,10 @@ public class CharacterLogic : MonoBehaviour
     public void ChangeState(PlayerState newState)
     {
         if (CurrentState == newState) return;
+
+        // 如果已经死亡，禁止任何状态切换（除非需要在死亡时做特殊处理）
+        if (CurrentState == PlayerState.Death)
+            return;
 
         // 退出当前状态
         switch (CurrentState)
@@ -1347,7 +1355,7 @@ public class CharacterLogic : MonoBehaviour
                 break;
         }
 
-        // 进入新状态
+        // 进入新状态 — 设置 currentActionData 为对应 ActionManager 中的行为（若存在）
         switch (newState)
         {
             case PlayerState.Attacking:
@@ -1356,8 +1364,47 @@ public class CharacterLogic : MonoBehaviour
             case PlayerState.JumpAttacking:
             case PlayerState.Parrying:
                 lastAttackTime = Time.time;
+                // 攻击类状态使用 currentAttackActionData（若有）
+                //currentActionData = currentAttackActionData != null ? (ActionData)currentAttackActionData : null;
+                break;
+
+            case PlayerState.Idle:
+                currentActionData = actionManager != null ? (ActionData)actionManager.idleAction : null;
+                break;
+
+            case PlayerState.Running:
+                currentActionData = actionManager != null ? (ActionData)actionManager.moveAction : null;
+                break;
+
+            case PlayerState.Dashing:
+                currentActionData = actionManager != null ? (ActionData)actionManager.dashAction : null;
+                break;
+
+            case PlayerState.Jumping:
+                currentActionData = actionManager != null ? (ActionData)actionManager.jumpAction : null;
+                break;
+
+            case PlayerState.Falling:
+                currentActionData = actionManager != null ? actionManager.fallAction : null;
+                break;
+
+            case PlayerState.Blocking:
+                currentActionData = actionManager != null ? (ActionData)actionManager.blockAction : null;
+                break;
+
+            case PlayerState.Hurt:
+                currentActionData = actionManager != null ? actionManager.hurtAction : null;
+                break;
+
+            case PlayerState.Death:
+                currentActionData = actionManager != null ? actionManager.deathAction : null;
+                break;
+
+            default:
+                currentActionData = actionManager != null ? (ActionData)actionManager.idleAction : null;
                 break;
         }
+
 
         PlayerState previousState = CurrentState;
         CurrentState = newState;
@@ -1404,7 +1451,7 @@ public class CharacterLogic : MonoBehaviour
             case PlayerState.HeavyAttacking:
             case PlayerState.DashAttacking:
             case PlayerState.JumpAttacking:
-                return currentActionPriority = currentAttackData.priority;
+                return currentActionPriority = currentAttackActionData.priority;
             case PlayerState.Blocking:
                 return BlockPriority; // 格挡优先级高于受击动画
             case PlayerState.Parrying:
@@ -1421,7 +1468,7 @@ public class CharacterLogic : MonoBehaviour
     #region 协程
     private IEnumerator EndDashAfterTime()
     {
-        yield return new WaitForSeconds(dashDuration);
+        yield return new WaitForSeconds(actionManager.dashAction.dashDuration);
         if (CurrentState == PlayerState.Dashing)
         {
             // 使用统一的状态刷新函数
@@ -1446,7 +1493,7 @@ public class CharacterLogic : MonoBehaviour
 
     private IEnumerator DeactivateParryWindowAfterTime()
     {
-        yield return new WaitForSeconds(parryWindow);
+        yield return new WaitForSeconds(actionManager.blockAction.parryWindow);
 
         if (isParryWindowActive)
         {
@@ -1466,43 +1513,36 @@ public class CharacterLogic : MonoBehaviour
         transform.localScale = scale;
     }
 
-    #region 公共方法
-    public void OnAttackAnimationEnd()
-    {
-    }
-
-    public void OnHurtAnimationEnd()
-    {
-        // 使用统一的状态刷新函数
-        RefreshState();
-    }
-
-    #endregion
 
     private void OnDrawGizmosSelected()
     {
         // 设置Gizmos颜色
         Gizmos.color = m_IsGrounded ? Color.green : Color.red;
 
-        // 计算检测区域的位置
-        Vector2 checkPosition = (Vector2)transform.position + groundCheckOffset;
+        if (actionManager != null && actionManager.jumpAction != null)
+        {
+            // 计算检测区域的位置
+            Vector2 checkPosition = (Vector2)transform.position + actionManager.jumpAction.groundCheckOffset;
 
-        // 绘制地面检测区域
-        Gizmos.DrawWireCube(checkPosition, groundCheckSize);
+            // 绘制地面检测区域
+            Gizmos.DrawWireCube(checkPosition, actionManager.jumpAction.groundCheckSize);
 
-        // 绘制检测区域的填充（半透明）
-        Gizmos.color = m_IsGrounded ? new Color(0, 1, 0, 0.3f) : new Color(1, 0, 0, 0.3f);
-        Gizmos.DrawCube(checkPosition, groundCheckSize);
+            // 绘制检测区域的填充（半透明）
+            Gizmos.color = m_IsGrounded ? new Color(0, 1, 0, 0.3f) : new Color(1, 0, 0, 0.3f);
+            Gizmos.DrawCube(checkPosition, actionManager.jumpAction.groundCheckSize);
 
-        // 绘制从角色中心到检测区域的连线
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(transform.position, checkPosition);
+            // 绘制从角色中心到检测区域的连线
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawLine(transform.position, checkPosition);
 
-        // 在检测区域显示文本标签
-        GUIStyle style = new GUIStyle();
-        style.normal.textColor = m_IsGrounded ? Color.green : Color.red;
-        UnityEditor.Handles.Label(checkPosition + Vector2.up * 0.2f,
-            $"Ground Check\nSize: {groundCheckSize}\nGrounded: {m_IsGrounded}", style);
+            // 在检测区域显示文本标签
+            GUIStyle style = new GUIStyle();
+            style.normal.textColor = m_IsGrounded ? Color.green : Color.red;
+            UnityEditor.Handles.Label(checkPosition + Vector2.up * 0.2f,
+                $"Ground Check\nSize: {actionManager.jumpAction.groundCheckSize}\nGrounded: {m_IsGrounded}", style);
+        }
+
+
     }
 
     private void OnDrawGizmos()
@@ -1511,9 +1551,81 @@ public class CharacterLogic : MonoBehaviour
         if (!UnityEditor.Selection.Contains(gameObject))
         {
             Gizmos.color = m_IsGrounded ? new Color(0, 1, 0, 0.1f) : new Color(1, 0, 0, 0.1f);
+            if (actionManager != null && actionManager.jumpAction != null)
+            {
+                Vector2 checkPosition = (Vector2)transform.position + actionManager.jumpAction.groundCheckOffset;
+                Gizmos.DrawWireCube(checkPosition, actionManager.jumpAction.groundCheckSize);
+            }
 
-            Vector2 checkPosition = (Vector2)transform.position + groundCheckOffset;
-            Gizmos.DrawWireCube(checkPosition, groundCheckSize);
         }
     }
+
+
+    #region 生命与死亡实现
+
+    /// <summary>
+    /// 扣血，返回是否死亡
+    /// </summary>
+    public bool TakeDamage(int damage, GameObject attacker = null)
+    {
+        if (IsDead) return true;
+
+        int prevHp = currentHealth;
+        currentHealth = Mathf.Max(0, currentHealth - damage);
+        LogManager.Log($"[CharacterLogic] 受伤: {damage} HP {prevHp} -> {currentHealth}");
+
+        return currentHealth <= 0;
+    }
+
+    /// <summary>
+    /// 回复生命
+    /// </summary>
+    public void Heal(int amount)
+    {
+        if (IsDead) return;
+        int prev = currentHealth;
+        currentHealth = Mathf.Clamp(currentHealth + amount, 0, maxHealth);
+        LogManager.Log($"[CharacterLogic] 回复: {amount} HP {prev} -> {currentHealth}");
+    }
+
+    /// <summary>
+    /// 处理死亡流程
+    /// </summary>
+    private void HandleDeath(GameObject killer = null)
+    {
+        if (IsDead && CurrentState == PlayerState.Death) return;
+
+        LogManager.Log($"[CharacterLogic] 死亡: 被 {(killer != null ? killer.name : "未知")} 击杀");
+
+        // 停止正在进行的伤害恢复协程
+        if (m_RecoverFromHurt_Coroutine != null)
+        {
+            StopCoroutine(m_RecoverFromHurt_Coroutine);
+            m_RecoverFromHurt_Coroutine = null;
+        }
+
+        // 结束攻击，清理检测
+        BreakAttack();
+
+        // 设置为死亡状态，禁止后续状态切换
+        currentActionPriority = int.MaxValue / 2;
+        ChangeState(PlayerState.Death);
+        attackController.EndAttack();
+
+        // 禁用输入并停止物理运动
+        if (inputHandler != null)
+            inputHandler.enabled = false;
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+            rb.simulated = false;
+        }
+
+        // 广播死亡事件（动画会监听并播放死亡动画）
+        OnDeath?.Invoke();
+    }
+
+    #endregion
 }

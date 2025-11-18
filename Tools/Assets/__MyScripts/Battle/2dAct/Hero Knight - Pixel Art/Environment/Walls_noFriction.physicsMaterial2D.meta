@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 9c497a4ce1f356b448c0dd3eca091d35
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 6200000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 165188
+  packageName: Hero Knight - Pixel Art
+  packageVersion: 1.2
+  assetPath: Assets/Hero Knight - Pixel Art/Environment/Walls_noFriction.physicsMaterial2D
+  uploadId: 447637

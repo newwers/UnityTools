@@ -18,7 +18,7 @@ public class AttackHitVisualizer : MonoBehaviour
 
     private void OnGUI()
     {
-        if (debugVisualize && characterLogic != null && characterLogic.currentAttackData != null && characterLogic.currentAttackPhase == AttackPhase.Active)
+        if (debugVisualize && characterLogic != null && characterLogic.currentAttackActionData != null && characterLogic.currentAttackPhase == AttackPhase.Active)
         {
             GUILayout.BeginArea(new Rect(10, 100, 300, 200));
             GUILayout.BeginVertical(EditorStyles.helpBox);
@@ -26,7 +26,7 @@ public class AttackHitVisualizer : MonoBehaviour
             GUILayout.Label($"攻击检测状态:");
             GUILayout.Label($"当前阶段: {characterLogic.currentAttackPhase}");
             GUILayout.Label($"计时器: {characterLogic.currentAttackTimer:F2}s");
-            GUILayout.Label($"攻击中已过: {characterLogic.currentAttackTimer - characterLogic.currentAttackData.windUpTime:F2}s");
+            GUILayout.Label($"攻击中已过: {characterLogic.currentAttackTimer - characterLogic.currentAttackActionData.windUpTime:F2}s");
 
             GUILayout.EndVertical();
             GUILayout.EndArea();

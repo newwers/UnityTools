@@ -25,7 +25,7 @@ public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
     /// <summary>
     /// 检测指定帧的攻击
     /// </summary>
-    public AttackFrameData CheckHitForFrame(string attackId, ActionData attackData, Vector2 position, bool facingRight,
+    public AttackFrameData CheckHitForFrame(string attackId, AttackActionData attackData, Vector2 position, bool facingRight,
                                float currentAttackTimer, GameObject attacker)
     {
         if (!attackHitRecords.ContainsKey(attackId)) return null;
@@ -58,7 +58,7 @@ public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
     }
 
     #region 核心检测逻辑
-    private AttackFrameData CheckHitForFrame(ActionData attackData, Vector2 position, bool facingRight,
+    private AttackFrameData CheckHitForFrame(AttackActionData attackData, Vector2 position, bool facingRight,
                                 int frameIndex, HashSet<GameObject> alreadyHit, GameObject attacker)
     {
         if (attackData == null)
@@ -115,7 +115,7 @@ public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
         return frameData;
     }
 
-    private int CalculateCurrentFrameIndex(ActionData attackData, float currentAttackTimer)
+    private int CalculateCurrentFrameIndex(AttackActionData attackData, float currentAttackTimer)
     {
         if (attackData == null) return 0;
 
@@ -189,7 +189,7 @@ public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
         }
 
         // 检查是否是角色逻辑组件
-        CharacterLogic characterLogic = target.GetComponent<CharacterLogic>();
+        CharacterLogic characterLogic = target.GetComponentInParent<CharacterLogic>();
         if (characterLogic != null)
         {
             Vector2 knockbackDirection = (target.transform.position - attacker.transform.position).normalized;

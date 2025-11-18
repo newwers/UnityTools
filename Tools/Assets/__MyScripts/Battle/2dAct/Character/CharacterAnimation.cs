@@ -24,7 +24,6 @@ public class CharacterAnimation : MonoBehaviour
     private readonly int grounded = Animator.StringToHash("Grounded");
     private readonly int airSpeedY = Animator.StringToHash("AirSpeedY");
     private readonly int jump = Animator.StringToHash("Jump");
-    private readonly int attack = Animator.StringToHash("Attack");
     private readonly int block = Animator.StringToHash("Block");
     private readonly int blockSuccess = Animator.StringToHash("BlockSuccess");
     private readonly int idleBlock = Animator.StringToHash("IdleBlock");
@@ -37,9 +36,8 @@ public class CharacterAnimation : MonoBehaviour
     private void Awake()
     {
         animator = GetComponent<Animator>();
-        logic = GetComponent<CharacterLogic>();
-        rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+
 
         if (spriteRenderer != null)
         {
@@ -47,25 +45,41 @@ public class CharacterAnimation : MonoBehaviour
         }
     }
 
+    void SubEvent()
+    {
+        if (logic)
+        {
+            // 订阅逻辑事件
+            logic.OnStateChanged += OnStateChanged;
+            logic.OnJump += OnJump;
+            logic.OnLandAction += OnLand;
+            logic.OnDeath += OnDeath;
+            logic.OnBlockSuccess += OnBlockSuccess;
+        }
+    }
+
+    void UnSubEvent()
+    {
+        if (logic != null)
+        {
+            logic.OnStateChanged -= OnStateChanged;
+            logic.OnJump -= OnJump;
+            logic.OnLandAction -= OnLand;
+            logic.OnDeath -= OnDeath;
+            logic.OnBlockSuccess -= OnBlockSuccess;
+        }
+
+    }
+
     private void OnEnable()
     {
-        // 订阅逻辑事件
-        logic.OnStateChanged += OnStateChanged;
-        logic.OnJump += OnJump;
-        logic.OnLandAction += OnLand;
-        logic.OnDeath += OnDeath;
-        logic.OnBlockSuccess += OnBlockSuccess;
         //logic.OnStunned += OnStunned;
     }
 
 
     private void OnDisable()
     {
-        logic.OnStateChanged -= OnStateChanged;
-        logic.OnJump -= OnJump;
-        logic.OnLandAction -= OnLand;
-        logic.OnDeath -= OnDeath;
-        logic.OnBlockSuccess -= OnBlockSuccess;
+        UnSubEvent();
         //logic.OnStunned -= OnStunned;
     }
 
@@ -84,18 +98,37 @@ public class CharacterAnimation : MonoBehaviour
         UpdateAnimationParameters();
     }
 
+
+    public void SetCharacterLogic(CharacterLogic characterLogic, Rigidbody2D rigidbody2D)
+    {
+        logic = characterLogic;
+        rb = rigidbody2D;
+
+        SubEvent();
+    }
+
     private void UpdateAnimationParameters()
     {
+        if (rb == null)
+        {
+
+            return;
+        }
         // 移动速度参数
         float actualMoveSpeed = new Vector2(rb.linearVelocity.x, 0).magnitude;
         float animMoveSpeedValue = actualMoveSpeed / animationBaseSpeed;
         animator.SetFloat(animMoveSpeed, animMoveSpeedValue);
 
         // 水平移动输入
-        animator.SetFloat(moveX, Mathf.Abs(logic.GetComponent<InputHandler>().MoveInput.x));
+        float moveInputX = 0;
+        if (logic && logic.InputHandler)
+        {
+            moveInputX = logic.InputHandler.MoveInput.x;
+        }
+        animator.SetFloat(moveX, Mathf.Abs(moveInputX));
 
         // 地面检测
-        animator.SetBool(grounded, logic.GetComponent<CharacterLogic>().IsGrounded);
+        //animator.SetBool(grounded, logic.IsGrounded);
 
         // 垂直速度
         animator.SetFloat(airSpeedY, rb.linearVelocity.y);
@@ -118,7 +151,7 @@ public class CharacterAnimation : MonoBehaviour
         switch (newState)
         {
             case PlayerState.Dashing:
-                animator.SetFloat(animRollSpeed, dashAnimationLength / logic.dashDuration);
+                animator.SetFloat(animRollSpeed, dashAnimationLength / logic.actionManager.dashAction.dashDuration);
                 animator.SetTrigger(roll);
                 break;
 
@@ -127,13 +160,12 @@ public class CharacterAnimation : MonoBehaviour
                 animator.SetBool(idleBlock, true);
                 break;
 
-            case PlayerState.Idle:
-                animator.SetBool(idleBlock, false);
-                break;
             case PlayerState.Stunned:
                 OnStunned();
                 break;
         }
+
+        SetActionAnimationParameter(logic.currentActionData);
     }
 
     /// <summary>
@@ -214,7 +246,7 @@ public class CharacterAnimation : MonoBehaviour
 
 
     // 添加攻击动画速度控制
-    public void SetAttackAnimationSpeed(AttackPhase phase, ActionData attackData)
+    public void SetAttackAnimationSpeed(AttackPhase phase, AttackActionData attackData)
     {
         if (attackData != null && attackData.animationClip != null)
         {
@@ -251,47 +283,36 @@ public class CharacterAnimation : MonoBehaviour
         }
     }
 
-    // 添加新的动画参数设置方法
-    public void SetAttackAnimationParameter(ActionData attackData)
+    /// <summary>
+    /// 根据动作数据设置动画参数
+    /// 目前只有切换状态的时候触发一次,对于持续性例如移动动作,在update中负责动画调用
+    /// </summary>
+    /// <param name="actionData"></param>
+    public void SetActionAnimationParameter(ActionData actionData)
     {
-        if (attackData == null || string.IsNullOrEmpty(attackData.animationParameterName))
+        if (actionData == null || actionData.animationParameters == null)
             return;
 
-        switch (attackData.animationParameterType)
+        foreach (var param in actionData.animationParameters)
         {
-            case ActionData.AnimationParameterType.Trigger:
-                animator.SetTrigger(attackData.animationParameterName);
-                break;
-            case ActionData.AnimationParameterType.Bool:
-                animator.SetBool(attackData.animationParameterName, attackData.animationBoolValue);
-                break;
-            case ActionData.AnimationParameterType.Int:
-                animator.SetInteger(attackData.animationParameterName, attackData.animationIntValue);
-                break;
-            case ActionData.AnimationParameterType.Float:
-                animator.SetFloat(attackData.animationParameterName, attackData.animationFloatValue);
-                break;
+            switch (param.type)
+            {
+                case ActionData.AnimationParameterType.Trigger:
+                    animator.SetTrigger(param.parameterName);
+                    break;
+                case ActionData.AnimationParameterType.Bool:
+                    animator.SetBool(param.parameterName, param.animationBoolValue);
+                    break;
+                case ActionData.AnimationParameterType.Int:
+                    animator.SetInteger(param.parameterName, param.animationIntValue);
+                    break;
+                case ActionData.AnimationParameterType.Float:
+                    animator.SetFloat(param.parameterName, param.animationFloatValue);
+                    break;
+            }
         }
 
-        LogManager.Log($"[CharacterAnimation] 设置动画参数: {attackData.animationParameterName}, 类型: {attackData.animationParameterType}");
-    }
-
-    // 清理动画参数（在攻击结束时调用）
-    public void ClearAttackAnimationParameter(ActionData attackData)
-    {
-        if (attackData == null || string.IsNullOrEmpty(attackData.animationParameterName))
-            return;
-
-        switch (attackData.animationParameterType)
-        {
-            case ActionData.AnimationParameterType.Bool:
-                animator.SetBool(attackData.animationParameterName, false);
-                break;
-            case ActionData.AnimationParameterType.Trigger:
-                // Trigger不需要清理，它会自动重置
-                break;
-                // Int和Float类型通常不需要特别清理
-        }
+        //LogManager.Log($"[CharacterAnimation] 设置动画参数: {actionData.animationParameterName}, 类型: {attackData.animationParameterType}");
     }
 
 }
