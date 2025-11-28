@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d406d200fa5d9a649a5e2623b8ea4ba2, type: 3}
+  m_Name: Warrior Up Action Data
+  m_EditorClassIdentifier: 
+  acitonName: "Warrior_\u91CD\u653B\u51FB2"
+  priority: 0
+  character: {fileID: 8009572862484974867, guid: 5b89e6adbb096704db025a49a19f9516, type: 3}
+  animationClip: {fileID: 7400000, guid: c4deaaa09c41e224faebf13375cbb7c8, type: 2}
+  frameRate: 10
+  animationParameters:
+  - parameterName: Attack2
+    type: 0
+    animationIntValue: 0
+    animationFloatValue: 0
+    animationBoolValue: 0
+  - parameterName: IdleBlock
+    type: 1
+    animationIntValue: 0
+    animationFloatValue: 0
+    animationBoolValue: 0
+  canCancel: 1
+  skillData: {fileID: 0}
+  triggerType: 0
+  longPressTimeThreshold: 0.3
+  holdTickInterval: 0.1
+  maxHoldTicks: 10
+  windUpTime: 0.1
+  activeTime: 0.1
+  recoveryTime: 0.2
+  comboWindow: 0.1
+  ActualWindUpFrames: 1
+  ActualActiveFrames: 1
+  ActualRecoveryFrames: 2
+  windUpFrames: 1
+  activeFrames: 1
+  recoveryFrames: 2
+  enableMovement: 1
+  IsAccumulateForce: 0
+  movementSpeed: {x: 10, y: 0}
+  movementCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: -1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: -1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  canCombo: 0
+  resetComboOnMiss: 0
+  frameData:
+  - frameIndex: 1
+    isAttackFrame: 1
+    hitLayers:
+      serializedVersion: 2
+      m_Bits: 384
+    allowIndependentHit: 0
+    hitboxType: 0
+    hitboxOffset: {x: 0.5, y: 0}
+    hitboxSize: {x: 1.35, y: 1.16}
+    hitboxRadius: 0.5
+    hitboxAngle: 90
+    hitboxEndPoint: {x: 1, y: 0}
+    damage: 10
+    knockbackForce: {x: 5, y: 10}
+    effects: []
+    hitEffect: {fileID: 0}
+    hitSound: {fileID: 0}
+  hitEffect: {fileID: 0}
+  attackSound: {fileID: 0}

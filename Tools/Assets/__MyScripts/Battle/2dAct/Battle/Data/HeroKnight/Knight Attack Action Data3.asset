@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   acitonName: "Knight_\u666E\u901A\u653B\u51FB3"
   priority: 150
+  character: {fileID: 5771301279390029218, guid: 825b2b521de0e0146b836fb7a8d11906, type: 3}
   animationClip: {fileID: 7400000, guid: c42aa71ad221ea349a7ee113bb662657, type: 2}
   frameRate: 14
   animationParameters:
@@ -22,7 +23,17 @@ MonoBehaviour:
     animationIntValue: 1
     animationFloatValue: 1
     animationBoolValue: 1
+  - parameterName: IdleBlock
+    type: 1
+    animationIntValue: 1
+    animationFloatValue: 1
+    animationBoolValue: 0
   canCancel: 1
+  skillData: {fileID: 0}
+  triggerType: 0
+  longPressTimeThreshold: 0.3
+  holdTickInterval: 0.1
+  maxHoldTicks: 10
   windUpTime: 0.14285715
   activeTime: 0.071428575
   recoveryTime: 0.35714287
@@ -33,8 +44,9 @@ MonoBehaviour:
   windUpFrames: 2
   activeFrames: 1
   recoveryFrames: 5
-  enableMovement: 0
-  movementSpeed: 3
+  enableMovement: 1
+  IsAccumulateForce: 0
+  movementSpeed: {x: 10, y: 0}
   movementCurve:
     serializedVersion: 2
     m_Curve:
@@ -67,6 +79,7 @@ MonoBehaviour:
     hitLayers:
       serializedVersion: 2
       m_Bits: 256
+    allowIndependentHit: 0
     hitboxType: 0
     hitboxOffset: {x: 0.5, y: 0.93}
     hitboxSize: {x: 1.96, y: 1.04}
@@ -74,9 +87,8 @@ MonoBehaviour:
     hitboxAngle: 90
     hitboxEndPoint: {x: 1, y: 0}
     damage: 1
-    knockbackForce: 5
-    causeStun: 0
-    stunDuration: 1
+    knockbackForce: {x: 0, y: 0}
+    effects: []
     hitEffect: {fileID: 0}
     hitSound: {fileID: 0}
   hitEffect: {fileID: 0}

@@ -32,6 +32,7 @@ public class BaseSingleClass<T> where T : new()//约束子类必须有无参构�
 /// 注意:针对单例场景切换回来后,重复存在问题,单例物体不能重复加载,需要单独提取出来,而且单例身上引用的组件,也需要一起设置为dontDestroy才行,否则场景重复加载时,丢失引用
 /// </summary>
 /// <typeparam name="T"></typeparam>
+[DisallowMultipleComponent]
 public class BaseMonoSingleClass<T> : MonoBehaviour where T : MonoBehaviour
 {
     #region Single

@@ -3,11 +3,16 @@ using UnityEngine;
 
 public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
 {
+    // 记录每次攻击命中的目标对象
     private Dictionary<string, HashSet<GameObject>> attackHitRecords = new Dictionary<string, HashSet<GameObject>>();
+
+    // 记录每次攻击关联的DamageInfo（用于在ApplySkillEffectsOnComplete时访问）
+    private Dictionary<string, DamageInfo> attackDamageInfos = new Dictionary<string, DamageInfo>();
 
 
     /// <summary>
     /// 开始一次攻击检测
+    /// 创建并存储DamageInfo，记录攻击方信息
     /// </summary>
     public string StartAttackDetection(ActionData attackData, Vector2 position, bool facingRight, GameObject attacker)
     {
@@ -18,7 +23,20 @@ public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
             attackHitRecords[attackId] = new HashSet<GameObject>();
         }
 
-        LogManager.Log($"[AttackHitDetector] 开始攻击检测: {attackId}");
+        // 为这次攻击创建DamageInfo，记录攻击方
+        AttackActionData attackActionData = attackData as AttackActionData;
+        if (attackActionData != null)
+        {
+            DamageInfo damageInfo = new DamageInfo
+            {
+                attacker = attacker,
+                target = null, // 受击方在命中时填充
+                skillData = attackActionData.skillData
+            };
+            attackDamageInfos[attackId] = damageInfo;
+        }
+
+        //LogManager.Log($"[AttackHitDetector] 开始攻击检测: {attackId}");
         return attackId;
     }
 
@@ -33,19 +51,39 @@ public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
         var alreadyHit = attackHitRecords[attackId];
         int currentFrameIndex = CalculateCurrentFrameIndex(attackData, currentAttackTimer);
 
-        return CheckHitForFrame(attackData, position, facingRight, currentFrameIndex, alreadyHit, attacker);
+        return CheckHitForFrame(attackData, position, facingRight, currentFrameIndex, alreadyHit, attacker, attackId);
     }
 
     /// <summary>
     /// 结束攻击检测
+    /// 清理攻击记录和DamageInfo
     /// </summary>
     public void EndAttackDetection(string attackId)
     {
         if (attackHitRecords.ContainsKey(attackId))
         {
             attackHitRecords.Remove(attackId);
-            LogManager.Log($"[AttackHitDetector] 结束攻击检测: {attackId}");
+            //LogManager.Log($"[AttackHitDetector] 结束攻击检测: {attackId}");
         }
+
+        // 清理DamageInfo记录
+        if (attackDamageInfos.ContainsKey(attackId))
+        {
+            attackDamageInfos.Remove(attackId);
+        }
+    }
+
+    /// <summary>
+    /// 获取指定攻击的DamageInfo
+    /// 用于在ApplySkillEffectsOnComplete时获取受击方信息
+    /// </summary>
+    public DamageInfo GetAttackDamageInfo(string attackId)
+    {
+        if (attackDamageInfos.ContainsKey(attackId))
+        {
+            return attackDamageInfos[attackId];
+        }
+        return null;
     }
 
     /// <summary>
@@ -59,7 +97,7 @@ public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
 
     #region 核心检测逻辑
     private AttackFrameData CheckHitForFrame(AttackActionData attackData, Vector2 position, bool facingRight,
-                                int frameIndex, HashSet<GameObject> alreadyHit, GameObject attacker)
+                                int frameIndex, HashSet<GameObject> alreadyHit, GameObject attacker, string attackId)
     {
         if (attackData == null)
         {
@@ -79,7 +117,7 @@ public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
         var frameData = attackData.GetFrameData(frameIndex);
         if (frameData == null)
         {
-            LogManager.LogWarning($"[AttackHitDetector] 第 {frameIndex} 帧没有配置攻击框数据");
+            //LogManager.LogWarning($"[AttackHitDetector] 第 {frameIndex} 帧没有配置攻击框数据");
             return null;
         }
 
@@ -104,9 +142,15 @@ public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
 
         foreach (Collider2D hit in hits)
         {
-            if (hit.gameObject != attacker && !alreadyHit.Contains(hit.gameObject))//避免自伤且同一目标只命中一次
+            if (hit.gameObject == attacker) continue;
+
+            bool alreadyProcessed = alreadyHit.Contains(hit.gameObject);
+            if (!alreadyProcessed || frameData.allowIndependentHit)
             {
-                ProcessHit(hit.gameObject, attackData, frameData, attacker);
+                // 传递attackId给ProcessHit
+                ProcessHit(hit.gameObject, attackData, frameData, attacker, attackId);
+
+                // 仍将目标加入记录列表，确保未标记为独立的后续帧不会重复命中
                 alreadyHit.Add(hit.gameObject);
             }
         }
@@ -173,31 +217,169 @@ public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
         }
     }
 
-    private void ProcessHit(GameObject target, ActionData attackData, AttackFrameData frameData, GameObject attacker)
+    /// <summary>
+    /// 处理命中目标的逻辑
+    /// 使用IDamageable接口统一处理所有可受击对象
+    /// 支持玩家、假人、敌人等任何实现了IDamageable接口的对象
+    /// </summary>
+    /// <param name="target">被命中的目标GameObject</param>
+    /// <param name="attackData">攻击动作数据</param>
+    /// <param name="frameData">当前帧的攻击数据</param>
+    /// <param name="attacker">攻击者GameObject</param>
+    /// <param name="attackId">攻击ID，用于获取对应的DamageInfo</param>
+    private void ProcessHit(GameObject target, ActionData attackData, AttackFrameData frameData, GameObject attacker, string attackId)
     {
         LogManager.Log($"[AttackHitDetector] 第 {frameData.frameIndex} 帧命中: {target.name}");
 
-
-
-        // 检查是否是假人
-        TestDummy dummy = target.GetComponent<TestDummy>();
-        if (dummy != null)
+        AttackActionData attackActionData = attackData as AttackActionData;
+        if (attackActionData == null)
         {
-            Vector2 knockbackDirection = (target.transform.position - attacker.transform.position).normalized;
-            dummy.TakeDamage(attackData, frameData, knockbackDirection, frameData.knockbackForce);
+            LogManager.LogWarning("[AttackHitDetector] 无法转换为AttackActionData");
             return;
         }
 
-        // 检查是否是角色逻辑组件
-        CharacterLogic characterLogic = target.GetComponentInParent<CharacterLogic>();
-        if (characterLogic != null)
+        IDamageable damageable = target.GetComponent<IDamageable>();
+        if (damageable == null)
         {
-            Vector2 knockbackDirection = (target.transform.position - attacker.transform.position).normalized;
+            damageable = target.GetComponentInParent<IDamageable>();
+        }
 
-            // 调用角色的受伤逻辑
-            characterLogic.OnHurt?.Invoke(attackData, frameData, attacker);
+        if (damageable == null)
+        {
+            LogManager.LogWarning($"[AttackHitDetector] 目标 {target.name} 没有实现IDamageable接口");
+            return;
+        }
+
+        if (damageable.IsDead)
+        {
+            return;
+        }
+
+        // 创建或获取伤害信息
+        DamageInfo damageInfo = CreateDamageInfo(attackActionData, frameData, attacker);
+
+        // 填充受击方信息
+        damageInfo.target = target;
+
+        // 将DamageInfo更新到字典中（用于ApplySkillEffectsOnComplete时访问）
+        if (!string.IsNullOrEmpty(attackId) && attackDamageInfos.ContainsKey(attackId))
+        {
+            attackDamageInfos[attackId].target = target;
+        }
+
+        // 仅应用攻击帧级别的效果（命中时）
+        ApplyFrameEffects(frameData, target, attacker, true);
+
+        // 应用伤害
+        damageable.TakeDamage(damageInfo, attackActionData, frameData, attacker);
+    }
+
+    /// <summary>
+    /// 创建伤害信息
+    /// 计算最终伤害 = 技能基础伤害(baseDamage) + 攻击帧附加伤害(frameData.damage)
+    /// </summary>
+    public static DamageInfo CreateDamageInfo(AttackActionData attackActionData, AttackFrameData frameData, GameObject attacker)
+    {
+        var skillData = attackActionData.skillData;
+
+        // 计算最终伤害：技能基础伤害 + 攻击帧附加伤害
+        float baseDamage = frameData.damage;
+
+        if (skillData != null)
+        {
+            // 技能基础伤害 + 攻击帧附加伤害
+            if (skillData.baseDamage > 0)
+            {
+                baseDamage = skillData.baseDamage + frameData.damage;
+            }
+
+            bool isGuaranteedCrit = skillData.isGuaranteedCrit;
+            float lifeStealPercent = skillData.lifeStealPercent;
+
+            if (skillData.lifeStealChance > 0)
+            {
+                float roll = Random.Range(0f, 100f);
+                if (roll < skillData.lifeStealChance)
+                {
+                    lifeStealPercent += skillData.lifeStealAmount;
+                }
+            }
+
+            return new DamageInfo
+            {
+                baseDamage = baseDamage,
+                breakPower = skillData.breakPower,
+                isGuaranteedCrit = isGuaranteedCrit,
+                lifeStealPercent = lifeStealPercent,
+                attacker = attacker,
+                target = null,
+                skillData = skillData
+            };
+        }
+
+        // 如果没有技能数据，只使用攻击帧的附加伤害
+        return new DamageInfo
+        {
+            baseDamage = baseDamage,
+            breakPower = 0,
+            staggerDamage = 0,
+            isGuaranteedCrit = false,
+            lifeStealPercent = 0,
+            attacker = attacker,
+            target = null,
+            skillData = null
+        };
+    }
+
+    /// <summary>
+    /// 应用攻击帧效果到目标
+    /// 从攻击帧数据中提取效果列表并应用到目标的BuffSystem
+    /// 用于实现多段攻击中不同段落施加不同效果的功能
+    /// 根据EffectTarget决定效果施加给攻击者还是被击中者
+    /// </summary>
+    /// <param name="frameData">攻击帧数据，包含效果列表</param>
+    /// <param name="target">被命中的目标</param>
+    /// <param name="attacker">攻击者</param>
+    /// <param name="isHit">是否命中目标，用于判断requireHit效果是否生效</param>
+    private void ApplyFrameEffects(AttackFrameData frameData, GameObject target, GameObject attacker, bool isHit)
+    {
+        // 检查攻击帧是否有效果列表
+        if (frameData.effects == null || frameData.effects.Count == 0)
+        {
+            // 没有效果需要应用，直接返回
+            return;
+        }
+
+        // 遍历并应用攻击帧的所有效果
+        foreach (var effect in frameData.effects)
+        {
+            if (effect != null)
+            {
+                // 判断效果是否需要命中才能触发
+                if (effect.requireHit && !isHit)
+                {
+                    // 效果需要命中但没有命中，跳过
+                    continue;
+                }
+
+                // 根据效果目标类型选择施加对象
+                GameObject effectReceiver = (effect.effectTarget == EffectTarget.Attacker) ? attacker : target;
+
+                // 尝试获取效果接收者的BuffSystem组件
+                var receiverBuffSystem = effectReceiver.GetComponentInParent<BuffSystem>();
+                if (receiverBuffSystem == null)
+                {
+                    LogManager.LogWarning($"[AttackHitDetector] 效果接收者 {effectReceiver.name} 没有BuffSystem组件，无法应用攻击帧效果 {effect.effectName}");
+                    continue;
+                }
+
+                // 应用Buff效果，由BuffSystem负责处理具体逻辑
+                receiverBuffSystem.ApplyBuff(effect, attacker);
+                LogManager.Log($"[AttackHitDetector] 应用攻击帧效果: {effect.effectName} 到 {effectReceiver.name} (目标类型: {effect.effectTarget}, 命中状态: {isHit})");
+            }
         }
     }
+
     #endregion
 
     #region 辅助方法（保持原有实现）

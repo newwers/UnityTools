@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   acitonName: "Warrior_\u653B\u51FB2"
   priority: 0
+  character: {fileID: 8009572862484974867, guid: 5b89e6adbb096704db025a49a19f9516, type: 3}
   animationClip: {fileID: 7400000, guid: c4deaaa09c41e224faebf13375cbb7c8, type: 2}
   frameRate: 10
   animationParameters:
@@ -22,7 +23,17 @@ MonoBehaviour:
     animationIntValue: 0
     animationFloatValue: 0
     animationBoolValue: 0
+  - parameterName: IdleBlock
+    type: 1
+    animationIntValue: 0
+    animationFloatValue: 0
+    animationBoolValue: 0
   canCancel: 1
+  skillData: {fileID: 0}
+  triggerType: 0
+  longPressTimeThreshold: 1.286
+  holdTickInterval: 0.1
+  maxHoldTicks: 10
   windUpTime: 0.1
   activeTime: 0.1
   recoveryTime: 0.2
@@ -33,8 +44,9 @@ MonoBehaviour:
   windUpFrames: 1
   activeFrames: 1
   recoveryFrames: 2
-  enableMovement: 0
-  movementSpeed: 3
+  enableMovement: 1
+  IsAccumulateForce: 0
+  movementSpeed: {x: 10, y: 0}
   movementCurve:
     serializedVersion: 2
     m_Curve:
@@ -67,6 +79,7 @@ MonoBehaviour:
     hitLayers:
       serializedVersion: 2
       m_Bits: 384
+    allowIndependentHit: 0
     hitboxType: 0
     hitboxOffset: {x: 0.5, y: 0}
     hitboxSize: {x: 1.35, y: 1.16}
@@ -74,9 +87,8 @@ MonoBehaviour:
     hitboxAngle: 90
     hitboxEndPoint: {x: 1, y: 0}
     damage: 10
-    knockbackForce: 5
-    causeStun: 0
-    stunDuration: 1
+    knockbackForce: {x: 0, y: 10}
+    effects: []
     hitEffect: {fileID: 0}
     hitSound: {fileID: 0}
   hitEffect: {fileID: 0}

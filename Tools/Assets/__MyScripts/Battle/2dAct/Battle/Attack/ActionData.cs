@@ -39,6 +39,7 @@ public class ActionData : ScriptableObject
 
 
     [Header("动画参数配置")]
+    public GameObject character; //绑定角色
     public AnimationClip animationClip;
     public float frameRate = 30f;
     public float animationClipLength
@@ -51,7 +52,7 @@ public class ActionData : ScriptableObject
     /// <summary>
     /// 状态对应动画参数
     /// 目前只有切换状态的时候触发一次,对于持续性例如移动动作,在update中负责动画调用
-    /// 例如移动,空中速度,移动动画速度
+    /// 例如移动,空中速度,移动动画速度,地面检测
     /// </summary>
     public List<AnimationParameter> animationParameters = new List<AnimationParameter>();
 

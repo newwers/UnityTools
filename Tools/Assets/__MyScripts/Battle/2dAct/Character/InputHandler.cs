@@ -11,6 +11,7 @@ public enum InputCommandType
     Block,
     AssistAttack,//协助攻击
     SpecialAttack,//特殊攻击
+    SpecialAttack2,//特殊攻击2
     HeavyAttack,      // 强力攻击
     DashAttack        // 冲刺攻击
 }
@@ -27,6 +28,7 @@ public struct InputCommand
         Time = time;
     }
 }
+[DisallowMultipleComponent]
 
 public class InputHandler : MonoBehaviour
 {
@@ -42,12 +44,12 @@ public class InputHandler : MonoBehaviour
     public System.Action OnBlockCanceledAction;
     public System.Action OnAssistAttack;
     public System.Action OnSpecialAttack;
-    // 添加强力攻击事件
-    public System.Action OnHeavyAttackStarted;
+    public System.Action OnSpecialAttack2;
+    /// <summary>
+    /// 攻击输入事件
+    /// </summary>
+    public System.Action<float> OnInputAttackAction;
 
-    // 强力攻击设置
-    private const float HEAVY_ATTACK_HOLD_TIME = 0.5f;
-    private bool isHeavyAttackCharging = false;
 
     // 添加冲刺攻击检测
     private float lastDashTime = 0f;
@@ -59,8 +61,14 @@ public class InputHandler : MonoBehaviour
 
     // 当前输入状态
     public Vector2 MoveInput { get; private set; }
+    /// <summary>
+    /// 攻击按键持续时间
+    /// 多个攻击按钮都共享 AttackHoldTime，若需要对不同技能分别计时（例如协助技能有独立蓄力进度），可改为为每个按键维持独立计时器（比如 attackHoldTime, assistHoldTime, specialHoldTime）。
+    /// </summary>
     public float AttackHoldTime { get; private set; }
     public bool IsBlockPressed { get; private set; }
+    public bool IsJumpPressed { get; private set; }
+    public bool IsAttackPressed { get; private set; }
 
     private PlayerInput playerInput;
     private InputAction moveAction;
@@ -70,6 +78,7 @@ public class InputHandler : MonoBehaviour
     private InputAction attackAction;
     private InputAction assistAction;
     private InputAction specialAction;
+    private InputAction specialAction2;
 
     private void Awake()
     {
@@ -81,9 +90,10 @@ public class InputHandler : MonoBehaviour
         blockAction = playerInput.actions["Block"];
         attackAction = playerInput.actions["Attack"];
         assistAction = playerInput.actions["AssistAttack"];
-        //specialAction = playerInput.actions["SpecialAttack"];
+        specialAction = playerInput.actions["SpecialAttack"];
+        specialAction2 = playerInput.actions.FindAction("SpecialAttack2", throwIfNotFound: false);
 
-        LogManager.Log($"[InputHandler] 初始化完成，缓冲区大小: {inputBuffer.Count}");
+        //LogManager.Log($"[InputHandler] 初始化完成，缓冲区大小: {inputBuffer.Count}");
     }
 
     private void OnEnable()
@@ -96,8 +106,26 @@ public class InputHandler : MonoBehaviour
         attackAction.started += OnAttackStartedCallback;
         attackAction.performed += OnAttackPerformedCallback;
         attackAction.canceled += OnAttackCanceledCallback;
-        assistAction.started += OnAssistAttackCallback;
-        //specialAction.started += OnSpecialAttackCallback;
+
+        // assist / special also treated as attack-like inputs for hold/charge handling
+        assistAction.started += OnAssistStartedCallback;
+        assistAction.performed += OnAssistPerformedCallback;
+        assistAction.canceled += OnAssistCanceledCallback;
+
+        specialAction.started += OnSpecialStartedCallback;
+        specialAction.performed += OnSpecialPerformedCallback;
+        specialAction.canceled += OnSpecialCanceledCallback;
+
+        if (specialAction2 != null)
+        {
+            specialAction2.started += OnSpecial2StartedCallback;
+            specialAction2.performed += OnSpecial2PerformedCallback;
+            specialAction2.canceled += OnSpecial2CanceledCallback;
+        }
+        else
+        {
+            LogManager.LogWarning("[InputHandler] 未在输入资产中找到 SpecialAttack2");
+        }
         LogManager.Log($"[InputHandler] 输入事件已订阅");
     }
 
@@ -111,8 +139,21 @@ public class InputHandler : MonoBehaviour
         attackAction.started -= OnAttackStartedCallback;
         attackAction.performed -= OnAttackPerformedCallback;
         attackAction.canceled -= OnAttackCanceledCallback;
-        //assistAction.started -= OnAssistAttackCallback;
-        //specialAction.started -= OnSpecialAttackCallback;
+
+        assistAction.started -= OnAssistStartedCallback;
+        assistAction.performed -= OnAssistPerformedCallback;
+        assistAction.canceled -= OnAssistCanceledCallback;
+
+        specialAction.started -= OnSpecialStartedCallback;
+        specialAction.performed -= OnSpecialPerformedCallback;
+        specialAction.canceled -= OnSpecialCanceledCallback;
+
+        if (specialAction2 != null)
+        {
+            specialAction2.started -= OnSpecial2StartedCallback;
+            specialAction2.performed -= OnSpecial2PerformedCallback;
+            specialAction2.canceled -= OnSpecial2CanceledCallback;
+        }
 
         LogManager.Log($"[InputHandler] 输入事件已取消订阅");
     }
@@ -123,18 +164,11 @@ public class InputHandler : MonoBehaviour
         MoveInput = moveAction.ReadValue<Vector2>();
         OnMoveInput?.Invoke(MoveInput);
 
-        // 更新攻击按键时间
-        if (attackAction.IsPressed())
+        // 更新攻击按键时间：任意攻击类按键（主攻/协助/特殊）被按住时开始累加
+        if (IsAnyAttackActionPressed())
         {
             AttackHoldTime += Time.deltaTime;
-
-            // 强力攻击检测
-            if (!isHeavyAttackCharging && AttackHoldTime >= HEAVY_ATTACK_HOLD_TIME)
-            {
-                isHeavyAttackCharging = true;
-                OnHeavyAttackStarted?.Invoke();
-                LogManager.Log($"[InputHandler] 触发重攻击");
-            }
+            OnInputAttackAction?.Invoke(AttackHoldTime);
         }
 
         // 更新冲刺攻击窗口
@@ -145,15 +179,26 @@ public class InputHandler : MonoBehaviour
         }
     }
 
+    private bool IsAnyAttackActionPressed()
+    {
+        if (attackAction != null && attackAction.IsPressed()) return true;
+        if (assistAction != null && assistAction.IsPressed()) return true;
+        if (specialAction != null && specialAction.IsPressed()) return true;
+        if (specialAction2 != null && specialAction2.IsPressed()) return true;
+        return false;
+    }
+
     #region 输入回调方法
     private void OnJumpStarted(InputAction.CallbackContext context)
     {
         //AddToBuffer(new InputCommand(InputCommandType.Jump, Time.time));// 不再添加到缓冲区，直接触发事件
+        IsJumpPressed = true;
         OnJumpInput?.Invoke();
     }
 
     private void OnJumpCanceled(InputAction.CallbackContext context)
     {
+        IsJumpPressed = false;
         OnJumpCanceledAction?.Invoke();
     }
 
@@ -187,8 +232,9 @@ public class InputHandler : MonoBehaviour
 
     private void OnAttackStartedCallback(InputAction.CallbackContext context)
     {
+        // 开始计时
         AttackHoldTime = 0f;
-        isHeavyAttackCharging = false;
+        IsAttackPressed = true;
 
         // 先检查冲刺攻击窗口
         if (isDashAttackWindowActive && Time.time - lastDashTime <= DASH_ATTACK_WINDOW)
@@ -202,19 +248,21 @@ public class InputHandler : MonoBehaviour
             AddToBuffer(new InputCommand(InputCommandType.Attack, Time.time));
         }
 
+        // 统一通知攻击开始（供 CharacterAttackController 订阅）
         OnAttackStarted?.Invoke();
     }
 
     private void OnAttackPerformedCallback(InputAction.CallbackContext context)
     {
-        AttackHoldTime = 0f;
-        isHeavyAttackCharging = false;
-        OnAttackCanceled?.Invoke();
+        // performed 不重置持有时间；这是按键被确认的阶段
+        OnAttackPerformed?.Invoke();
     }
 
     private void OnAttackCanceledCallback(InputAction.CallbackContext context)
     {
+        // 取消时触发取消事件并重置计时
         AttackHoldTime = 0f;
+        IsAttackPressed = false;
         OnAttackCanceled?.Invoke();
     }
 
@@ -231,6 +279,64 @@ public class InputHandler : MonoBehaviour
         OnBlockCanceledAction?.Invoke();
     }
 
+    // Assist handlers (treated as attack-like for hold/charge)
+    private void OnAssistStartedCallback(InputAction.CallbackContext context)
+    {
+        // reset hold timer for new press
+        AttackHoldTime = 0f;
+
+        AddToBuffer(new InputCommand(InputCommandType.AssistAttack, Time.time));
+        OnAssistAttack?.Invoke();
+        //OnAttackStarted?.Invoke();
+    }
+    private void OnAssistPerformedCallback(InputAction.CallbackContext context)
+    {
+        OnAttackPerformed?.Invoke();
+    }
+    private void OnAssistCanceledCallback(InputAction.CallbackContext context)
+    {
+        AttackHoldTime = 0f;
+        //OnAttackCanceled?.Invoke();
+    }
+
+    // Special handlers
+    private void OnSpecialStartedCallback(InputAction.CallbackContext context)
+    {
+        AttackHoldTime = 0f;
+
+        AddToBuffer(new InputCommand(InputCommandType.SpecialAttack, Time.time));
+        OnSpecialAttack?.Invoke();
+        //OnAttackStarted?.Invoke();
+    }
+    private void OnSpecialPerformedCallback(InputAction.CallbackContext context)
+    {
+        OnAttackPerformed?.Invoke();
+    }
+    private void OnSpecialCanceledCallback(InputAction.CallbackContext context)
+    {
+        AttackHoldTime = 0f;
+        //OnAttackCanceled?.Invoke();
+    }
+
+    // Special2 handlers
+    private void OnSpecial2StartedCallback(InputAction.CallbackContext context)
+    {
+        AttackHoldTime = 0f;
+
+        AddToBuffer(new InputCommand(InputCommandType.SpecialAttack2, Time.time));
+        OnSpecialAttack2?.Invoke();
+        //OnAttackStarted?.Invoke();
+    }
+    private void OnSpecial2PerformedCallback(InputAction.CallbackContext context)
+    {
+        OnAttackPerformed?.Invoke();
+    }
+    private void OnSpecial2CanceledCallback(InputAction.CallbackContext context)
+    {
+        AttackHoldTime = 0f;
+        //OnAttackCanceled?.Invoke();
+    }
+
     private void OnAssistAttackCallback(InputAction.CallbackContext context)
     {
         AddToBuffer(new InputCommand(InputCommandType.AssistAttack, Time.time));
@@ -241,6 +347,12 @@ public class InputHandler : MonoBehaviour
     {
         AddToBuffer(new InputCommand(InputCommandType.SpecialAttack, Time.time));
         OnSpecialAttack?.Invoke();
+    }
+
+    private void OnSpecialAttack2Callback(InputAction.CallbackContext context)
+    {
+        AddToBuffer(new InputCommand(InputCommandType.SpecialAttack2, Time.time));
+        OnSpecialAttack2?.Invoke();
     }
     #endregion
 
@@ -289,7 +401,7 @@ public class InputHandler : MonoBehaviour
     private void AddToBuffer(InputCommand command)
     {
         inputBuffer.Push(command);
-        LogManager.Log($"[InputHandler] 添加到缓冲区: {command}，当前缓冲区大小: {inputBuffer.Count}");
+        //LogManager.Log($"[InputHandler] 添加到缓冲区: {command}，当前缓冲区大小: {inputBuffer.Count}");
     }
 
     #endregion

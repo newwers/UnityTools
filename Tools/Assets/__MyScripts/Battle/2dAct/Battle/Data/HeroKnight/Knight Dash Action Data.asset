@@ -14,10 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   acitonName: "Knight_\u51B2\u523A\u884C\u4E3A"
   priority: 0
+  character: {fileID: 5771301279390029218, guid: 825b2b521de0e0146b836fb7a8d11906, type: 3}
   animationClip: {fileID: 7400000, guid: 5118900a0fbea814ea3ffb8fada43696, type: 2}
   frameRate: 14
   animationParameters:
-  - parameterName: Roll
+  - parameterName: Dash
     type: 0
     animationIntValue: 0
     animationFloatValue: 0

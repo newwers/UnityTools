@@ -1,0 +1,90 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d406d200fa5d9a649a5e2623b8ea4ba2, type: 3}
+  m_Name: Warrior Heavy Attack Action Data
+  m_EditorClassIdentifier: 
+  acitonName: Warrior_HeavyAttack
+  priority: 0
+  character: {fileID: 8009572862484974867, guid: 5b89e6adbb096704db025a49a19f9516, type: 3}
+  animationClip: {fileID: 7400000, guid: 11822cbe6f25108459fd2ef98cc9255c, type: 2}
+  frameRate: 10
+  animationParameters:
+  - parameterName: DashAttack
+    type: 0
+    animationIntValue: 0
+    animationFloatValue: 0
+    animationBoolValue: 0
+  canCancel: 1
+  skillData: {fileID: 0}
+  triggerType: 1
+  longPressTimeThreshold: 0.3
+  holdTickInterval: 0.1
+  maxHoldTicks: 10
+  windUpTime: 0.2
+  activeTime: 0.1
+  recoveryTime: 0.7
+  comboWindow: 0.1
+  ActualWindUpFrames: 2
+  ActualActiveFrames: 1
+  ActualRecoveryFrames: 7
+  windUpFrames: 2
+  activeFrames: 1
+  recoveryFrames: 7
+  enableMovement: 0
+  IsAccumulateForce: 0
+  movementSpeed: {x: 10, y: 0}
+  movementCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: -1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: -1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  canCombo: 0
+  resetComboOnMiss: 0
+  frameData:
+  - frameIndex: 3
+    isAttackFrame: 1
+    hitLayers:
+      serializedVersion: 2
+      m_Bits: 384
+    allowIndependentHit: 0
+    hitboxType: 0
+    hitboxOffset: {x: 0.5, y: 0}
+    hitboxSize: {x: 1.46, y: 1.24}
+    hitboxRadius: 0.5
+    hitboxAngle: 90
+    hitboxEndPoint: {x: 1, y: 0}
+    damage: 1
+    knockbackForce: {x: 0, y: 0}
+    effects: []
+    hitEffect: {fileID: 0}
+    hitSound: {fileID: 0}
+  hitEffect: {fileID: 0}
+  attackSound: {fileID: 0}

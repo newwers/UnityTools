@@ -25,7 +25,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d7bd8a7e5c3e2424f865d35b045ac742, type: 2}
   - {fileID: 11400000, guid: 025bb62402997154ebd2dbcfb8ed30bd, type: 2}
   dashAttack: {fileID: 11400000, guid: 0af16d2a93aecb049a82adb6b59e73d4, type: 2}
-  jumpAttack: {fileID: 11400000, guid: 025bb62402997154ebd2dbcfb8ed30bd, type: 2}
+  jumpAttack: {fileID: 11400000, guid: a2b923f089447e142b3568e1632df5f1, type: 2}
   parryAttack: {fileID: 11400000, guid: 025bb62402997154ebd2dbcfb8ed30bd, type: 2}
-  specialAttack: {fileID: 0}
-  heavyAttack: {fileID: 11400000, guid: 0af16d2a93aecb049a82adb6b59e73d4, type: 2}
+  heavyAttack: {fileID: 11400000, guid: 088d7283e9af96648802ba0bc8a8a813, type: 2}
+  upAttack: {fileID: 11400000, guid: 48e18f368d9f1394da711434b189cd1f, type: 2}
+  downAttack: {fileID: 11400000, guid: 8721363591a5a30488d9f9e7e945be29, type: 2}
+  specialAttack: {fileID: 11400000, guid: 57632d06853e401448fdb343ebfe9406, type: 2}
+  specialAttack2: {fileID: 11400000, guid: cdd99f7935d565544a6c380fa5943257, type: 2}

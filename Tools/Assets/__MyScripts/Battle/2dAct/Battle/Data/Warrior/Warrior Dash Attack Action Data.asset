@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   acitonName: Warrior_DashAttack
   priority: 0
+  character: {fileID: 8009572862484974867, guid: 5b89e6adbb096704db025a49a19f9516, type: 3}
   animationClip: {fileID: 7400000, guid: 11822cbe6f25108459fd2ef98cc9255c, type: 2}
   frameRate: 10
   animationParameters:
@@ -23,6 +24,11 @@ MonoBehaviour:
     animationFloatValue: 0
     animationBoolValue: 0
   canCancel: 1
+  skillData: {fileID: 0}
+  triggerType: 0
+  longPressTimeThreshold: 0.3
+  holdTickInterval: 0.1
+  maxHoldTicks: 10
   windUpTime: 0.2
   activeTime: 0.1
   recoveryTime: 0.7
@@ -34,7 +40,8 @@ MonoBehaviour:
   activeFrames: 1
   recoveryFrames: 7
   enableMovement: 0
-  movementSpeed: 3
+  IsAccumulateForce: 0
+  movementSpeed: {x: 10, y: 0}
   movementCurve:
     serializedVersion: 2
     m_Curve:
@@ -67,6 +74,7 @@ MonoBehaviour:
     hitLayers:
       serializedVersion: 2
       m_Bits: 384
+    allowIndependentHit: 0
     hitboxType: 0
     hitboxOffset: {x: 0.5, y: 0}
     hitboxSize: {x: 1.46, y: 1.24}
@@ -74,9 +82,8 @@ MonoBehaviour:
     hitboxAngle: 90
     hitboxEndPoint: {x: 1, y: 0}
     damage: 1
-    knockbackForce: 5
-    causeStun: 0
-    stunDuration: 1
+    knockbackForce: {x: 0, y: 0}
+    effects: []
     hitEffect: {fileID: 0}
     hitSound: {fileID: 0}
   hitEffect: {fileID: 0}

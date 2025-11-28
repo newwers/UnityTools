@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   acitonName: Knight_Death_Action
   priority: 0
+  character: {fileID: 5771301279390029218, guid: 825b2b521de0e0146b836fb7a8d11906, type: 3}
   animationClip: {fileID: 7400000, guid: d2566ec8b252342449771d8abf45a00a, type: 2}
   frameRate: 10
   animationParameters:

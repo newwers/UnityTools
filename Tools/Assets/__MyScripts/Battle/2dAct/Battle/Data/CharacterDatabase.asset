@@ -13,9 +13,11 @@ MonoBehaviour:
   m_Name: CharacterDatabase
   m_EditorClassIdentifier: 
   characters:
-  - characterName: Knight
+  - characterName: HeroKnight
     characterPrefab: {fileID: 5771301279390029218, guid: 825b2b521de0e0146b836fb7a8d11906, type: 3}
     actionManager: {fileID: 11400000, guid: dc0585a2a73167a4395177ae87d3e037, type: 2}
+    posOffset: {x: 0, y: 0, z: 0}
   - characterName: Warrior
     characterPrefab: {fileID: 8009572862484974867, guid: 5b89e6adbb096704db025a49a19f9516, type: 3}
     actionManager: {fileID: 11400000, guid: 2031f9971c44fcc48a828d2efd767adc, type: 2}
+    posOffset: {x: 0, y: 0.76, z: 0}

@@ -28,5 +28,8 @@ MonoBehaviour:
   dashAttack: {fileID: 11400000, guid: f09a5ee22623881458dad03e7a6ff22c, type: 2}
   jumpAttack: {fileID: 11400000, guid: aefe6bcef0c518a469a0fefd11541e31, type: 2}
   parryAttack: {fileID: 11400000, guid: fc97870dbb38d0a479842e2bad77336b, type: 2}
-  specialAttack: {fileID: 0}
   heavyAttack: {fileID: 11400000, guid: ec367eab4b7e83342afcc8324ab459bf, type: 2}
+  upAttack: {fileID: 11400000, guid: 7c93ee45287464c42bcc449ff9d2a76a, type: 2}
+  downAttack: {fileID: 11400000, guid: 18afcb024206aec4689282b6d78fa12a, type: 2}
+  specialAttack: {fileID: 11400000, guid: 025bb62402997154ebd2dbcfb8ed30bd, type: 2}
+  specialAttack2: {fileID: 11400000, guid: 0af16d2a93aecb049a82adb6b59e73d4, type: 2}

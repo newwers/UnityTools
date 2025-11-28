@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   acitonName: "Knight\u8DF3\u8DC3\u884C\u4E3A"
   priority: 0
-  animationClip: {fileID: 0}
-  frameRate: 30
+  character: {fileID: 5771301279390029218, guid: 825b2b521de0e0146b836fb7a8d11906, type: 3}
+  animationClip: {fileID: 7400000, guid: 0cfe2276959603e40904eecacdfa08fc, type: 2}
+  frameRate: 11
   animationParameters:
   - parameterName: Jump
     type: 0

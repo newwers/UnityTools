@@ -815,6 +815,7 @@ public class ActionDataEditor : EditorWindow
         DrawSpecialAttackField("冲刺攻击", ref actionManager.dashAttack);
         DrawSpecialAttackField("跳跃攻击", ref actionManager.jumpAttack);
         DrawSpecialAttackField("特殊攻击", ref actionManager.specialAttack);
+        DrawSpecialAttackField("特殊攻击2", ref actionManager.specialAttack2);
         DrawSpecialAttackField("重攻击", ref actionManager.heavyAttack);
         DrawSpecialAttackField("弹反攻击", ref actionManager.parryAttack);
     }
@@ -935,6 +936,7 @@ public class ActionDataEditor : EditorWindow
                 actionManager.dashAttack == attackData ||
                 actionManager.jumpAttack == attackData ||
                 actionManager.specialAttack == attackData ||
+                actionManager.specialAttack2 == attackData ||
                 actionManager.heavyAttack == attackData)
             {
                 // 已经在当前ActionManager中
@@ -955,6 +957,7 @@ public class ActionDataEditor : EditorWindow
                     manager.dashAttack == attackData ||
                     manager.jumpAttack == attackData ||
                     manager.specialAttack == attackData ||
+                    manager.specialAttack2 == attackData ||
                     manager.heavyAttack == attackData)
                 {
                     actionManager = manager;
@@ -1023,6 +1026,16 @@ public class ActionDataEditor : EditorWindow
         EditorGUILayout.EndHorizontal();
 
         attack.acitonName = EditorGUILayout.TextField("攻击名称", attack.acitonName);
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("攻击触发方式", EditorStyles.boldLabel);
+
+        attack.triggerType = (AttackTriggerType)EditorGUILayout.EnumPopup("触发类型", attack.triggerType);
+
+        if (attack.triggerType == AttackTriggerType.LongPress || attack.triggerType == AttackTriggerType.Hold)
+        {
+            attack.longPressTimeThreshold = EditorGUILayout.Slider("长按时间阈值", attack.longPressTimeThreshold, 0.1f, 2f);
+        }
 
         // 动画片段设置，显示时长信息
         EditorGUILayout.BeginHorizontal();
@@ -1290,7 +1303,8 @@ public class ActionDataEditor : EditorWindow
             attack.enableMovement = EditorGUILayout.Toggle("启用位移", attack.enableMovement);
             if (attack.enableMovement)
             {
-                attack.movementSpeed = EditorGUILayout.FloatField("位移速度", attack.movementSpeed);
+                attack.IsAccumulateForce = EditorGUILayout.Toggle("累加力", attack.IsAccumulateForce);
+                attack.movementSpeed = EditorGUILayout.Vector2Field("位移速度", attack.movementSpeed);
                 attack.movementCurve = EditorGUILayout.CurveField("位移曲线", attack.movementCurve);
             }
 
@@ -1376,31 +1390,6 @@ public class ActionDataEditor : EditorWindow
             Debug.LogError($"粘贴 ActionData 时出错: {e.Message}");
         }
     }
-
-    /// <summary>
-    /// 复制帧数据
-    /// </summary>
-    private void CopyFrameData(AttackFrameData source, AttackFrameData target)
-    {
-        if (source == null || target == null) return;
-
-        target.frameIndex = source.frameIndex;
-        target.isAttackFrame = source.isAttackFrame;
-        target.hitLayers = source.hitLayers;
-        target.hitboxType = source.hitboxType;
-        target.hitboxOffset = source.hitboxOffset;
-        target.hitboxSize = source.hitboxSize;
-        target.hitboxRadius = source.hitboxRadius;
-        target.hitboxAngle = source.hitboxAngle;
-        target.hitboxEndPoint = source.hitboxEndPoint;
-        target.damage = source.damage;
-        target.knockbackForce = source.knockbackForce;
-        target.causeStun = source.causeStun;
-        target.stunDuration = source.stunDuration;
-        target.hitEffect = source.hitEffect;
-        target.hitSound = source.hitSound;
-    }
-
     #endregion
 
     // 同步到预览帧
@@ -1433,7 +1422,6 @@ public class ActionDataEditor : EditorWindow
         // 设置默认值（使用攻击数据的全局设置）
         newFrame.isAttackFrame = true;
         newFrame.damage = 1;
-        newFrame.knockbackForce = 5;
         newFrame.hitEffect = attack.hitEffect;
         newFrame.hitSound = attack.attackSound;
 
@@ -1463,7 +1451,6 @@ public class ActionDataEditor : EditorWindow
         // 设置默认值
         newFrame.isAttackFrame = true;
         newFrame.damage = 1;
-        newFrame.knockbackForce = 5;
         newFrame.hitEffect = attack.hitEffect;
         newFrame.hitSound = attack.attackSound;
 
@@ -1534,17 +1521,17 @@ public class ActionDataEditor : EditorWindow
 
             // 帧属性编辑
             frameData.hitLayers = LayerMaskField("攻击层级", frameData.hitLayers);
-            frameData.damage = EditorGUILayout.IntField("伤害", frameData.damage);
-            frameData.knockbackForce = EditorGUILayout.FloatField("击退力", frameData.knockbackForce);
+            frameData.damage = EditorGUILayout.IntField(new GUIContent("附加伤害", "最终伤害 = 技能基础伤害(baseDamage) + 此附加伤害"), frameData.damage);
+            frameData.knockbackForce = EditorGUILayout.Vector2Field(new GUIContent("附加击退力", "最终击退力 = 技能基础击退力 + 此附加击退力"), frameData.knockbackForce);
+            frameData.allowIndependentHit = EditorGUILayout.Toggle(new GUIContent("独立伤害帧", "允许此帧在同一次攻击中再次对已命中的目标造成伤害"), frameData.allowIndependentHit);
 
-            // 眩晕设置
+            // 效果列表设置
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("眩晕设置", EditorStyles.miniBoldLabel);
-            frameData.causeStun = EditorGUILayout.Toggle("造成眩晕", frameData.causeStun);
-            if (frameData.causeStun)
-            {
-                frameData.stunDuration = EditorGUILayout.FloatField("眩晕时间", frameData.stunDuration);
-            }
+            EditorGUILayout.LabelField("效果列表", EditorStyles.miniBoldLabel);
+
+            // 创建序列化对象来正确编辑effects列表
+            // 备用方案：手动绘制效果列表
+            DrawEffectsListManually(frameData, attack);
 
             // 攻击框形状编辑
             EditorGUI.BeginChangeCheck();
@@ -1593,6 +1580,53 @@ public class ActionDataEditor : EditorWindow
             frameData.hitSound = (AudioClip)EditorGUILayout.ObjectField("命中音效", frameData.hitSound, typeof(AudioClip), false);
 
             EditorGUI.indentLevel--;
+        }
+
+        EditorGUILayout.EndVertical();
+    }
+
+    // 手动绘制效果列表的备用方法
+    private void DrawEffectsListManually(AttackFrameData frameData, AttackActionData attackActionData)
+    {
+        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+        // 显示当前效果数量
+        EditorGUILayout.LabelField($"效果数量: {frameData.effects.Count}");
+
+        // 绘制每个效果
+        for (int i = 0; i < frameData.effects.Count; i++)
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            // 效果对象字段
+            frameData.effects[i] = (EffectData)EditorGUILayout.ObjectField($"效果 {i + 1}", frameData.effects[i], typeof(EffectData), false);
+
+            // 删除按钮
+            if (GUILayout.Button("删除", GUILayout.Width(50)))
+            {
+                frameData.effects.RemoveAt(i);
+                i--; // 调整索引
+                EditorUtility.SetDirty(attackActionData);
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            // 显示效果详情（如果已分配）
+            if (frameData.effects[i] != null)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.LabelField($"名称: {frameData.effects[i].effectName}", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField($"类型: {frameData.effects[i].category}", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField($"持续时间: {frameData.effects[i].duration}秒", EditorStyles.miniLabel);
+                EditorGUI.indentLevel--;
+            }
+        }
+
+        // 添加新效果按钮
+        if (GUILayout.Button("添加新效果"))
+        {
+            frameData.effects.Add(null);
+            EditorUtility.SetDirty(attackActionData);
         }
 
         EditorGUILayout.EndVertical();

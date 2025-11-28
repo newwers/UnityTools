@@ -2,40 +2,89 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TestDummy : MonoBehaviour
+/// <summary>
+/// 训练假人组件
+/// 用于测试攻击系统、Buff系统和伤害计算
+/// 提供了完整的受击反馈、状态管理和自动攻击功能
+/// </summary>
+public class TestDummy : MonoBehaviour, IDamageable, IStunnable
 {
     [Header("假人设置")]
-    public int maxHealth = 100;
-    public bool isInvincible = false; // 无敌模式，用于测试不会死亡
+    [Tooltip("假人的角色属性")]
+    public CharacterAttributes CharacterAttributes;
+
+    [Tooltip("Buff系统组件，用于管理假人身上的Buff效果")]
+    public BuffSystem BuffSystem;
+
+    [Tooltip("无敌模式，启用后不会死亡（用于测试）")]
+    public bool isInvincible = false;
+
+    [Tooltip("是否在屏幕上显示调试信息")]
     public bool showDebugInfo = true;
 
     [Header("自动攻击设置")]
-    public bool enableAutoAttack = false; // 是否启用自动攻击
-    public float attackInterval = 2f; // 攻击间隔时间
-    public AttackActionData attackData; // 攻击配置数据
+    [Tooltip("是否启用自动攻击功能")]
+    public bool enableAutoAttack = false;
+
+    [Tooltip("自动攻击的间隔时间（秒）")]
+    public float attackInterval = 2f;
+
+    [Tooltip("自动攻击使用的攻击数据")]
+    public AttackActionData attackData;
 
     [Header("被击反馈")]
+    [Tooltip("受击时的闪烁颜色")]
     public Color hitColor = Color.red;
+
+    [Tooltip("受击闪烁持续时间（秒）")]
     public float hitFlashDuration = 0.1f;
+
+    [Tooltip("受击特效预制体")]
     public GameObject hitEffectPrefab;
+
+    [Tooltip("受击音效")]
     public AudioClip hitSound;
 
     [Header("硬直设置")]
+    [Tooltip("当前是否处于硬直状态")]
     public bool isStunned = false;
+
+    /// <summary>
+    /// 硬直剩余时间
+    /// </summary>
     private float stunTimer = 0f;
 
-    // 添加硬直状态事件
+    /// <summary>
+    /// 硬直开始事件
+    /// </summary>
     public System.Action OnStunStart;
+
+    /// <summary>
+    /// 硬直结束事件
+    /// </summary>
     public System.Action OnStunEnd;
 
     [Header("动画设置")]
+    [Tooltip("受伤动画触发器名称")]
     public string hurtTriggerName = "Hurt";
+
+    [Tooltip("死亡动画触发器名称")]
     public string dieTriggerName = "Die";
+
+    [Tooltip("重置动画触发器名称")]
     public string resetTriggerName = "Reset";
 
+    [Tooltip("硬直动画布尔参数名称")]
+    public string stunBoolName = "Stun";
+
     [Header("状态显示")]
-    [SerializeField] private int currentHealth;
-    [SerializeField] private bool isDead = false;
+    [SerializeField]
+    [Tooltip("是否已死亡")]
+    private bool isDead = false;
+
+    public bool IsDead => isDead;
+
+    public Transform Transform => transform;
 
     // 组件引用
     private Rigidbody2D rb;
@@ -43,21 +92,38 @@ public class TestDummy : MonoBehaviour
     private Animator animator;
     private Color originalColor;
 
-    // 被击计时器
+    /// <summary>
+    /// 受击闪烁计时器
+    /// </summary>
     private float hitFlashTimer = 0f;
 
     // 自动攻击相关变量
     private float attackTimer = 0f;
-    private List<GameObject> potentialTargets = new List<GameObject>(); // 潜在攻击目标
+    private List<GameObject> potentialTargets = new List<GameObject>();
 
-    // 事件
-    public System.Action<int, int> OnHealthChanged; // 当前血量, 最大血量
+    /// <summary>
+    /// 生命值改变事件 (当前血量, 最大血量)
+    /// </summary>
+    public System.Action<float, float> OnHealthChanged;
+
+    /// <summary>
+    /// 死亡事件
+    /// </summary>
     public System.Action OnDeath;
-    public System.Action<Vector2, float> OnHit; // 击退方向, 击退力
+
+    /// <summary>
+    /// 受击事件 (击退方向, 击退力)
+    /// </summary>
+    public System.Action<Vector2, Vector2> OnHit;
 
     [Header("动作优先级")]
-    [SerializeField] private int currentActionPriority = 0; // 当前执行动作的优先级
+    [SerializeField]
+    [Tooltip("当前执行动作的优先级，用于判断是否可以被打断")]
+    private int currentActionPriority = 0;
 
+    /// <summary>
+    /// 初始化组件引用和默认状态
+    /// </summary>
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -69,18 +135,31 @@ public class TestDummy : MonoBehaviour
             originalColor = spriteRenderer.color;
         }
 
-        currentHealth = maxHealth;
         isDead = false;
 
         // 初始化自动攻击计时器
         attackTimer = attackInterval;
     }
 
+    /// <summary>
+    /// 初始化BuffSystem
+    /// </summary>
     private void Start()
     {
-        LogManager.Log($"[TestDummy] 假人初始化完成，血量: {currentHealth}/{maxHealth}");
+        // 初始化BuffSystem，假人没有CharacterLogic，传入null
+        if (BuffSystem != null && CharacterAttributes != null)
+        {
+            BuffSystem.Init(CharacterAttributes, null, this);
+            LogManager.Log($"[TestDummy] BuffSystem初始化完成");
+        }
+
+        LogManager.Log($"[TestDummy] 假人初始化完成，血量: {CharacterAttributes.maxHealth}");
     }
 
+    /// <summary>
+    /// 每帧更新
+    /// 处理硬直计时、受击闪烁效果和自动攻击
+    /// </summary>
     private void Update()
     {
         // 更新硬直计时器
@@ -115,8 +194,10 @@ public class TestDummy : MonoBehaviour
         }
     }
 
-
-
+    /// <summary>
+    /// 在屏幕上显示调试信息
+    /// 显示假人的血量和状态
+    /// </summary>
     private void OnGUI()
     {
         if (showDebugInfo)
@@ -129,7 +210,7 @@ public class TestDummy : MonoBehaviour
             style.alignment = TextAnchor.MiddleCenter;
             style.fontSize = 12;
 
-            string statusText = $"HP: {currentHealth}/{maxHealth}\n";
+            string statusText = $"HP: {CharacterAttributes.currentHealth}/{CharacterAttributes.maxHealth}\n";
             statusText += isDead ? "状态: 死亡" : "状态: 存活";
 
             GUI.Label(new Rect(screenPos.x - 50, Screen.height - screenPos.y, 100, 50), statusText, style);
@@ -140,25 +221,33 @@ public class TestDummy : MonoBehaviour
 
     /// <summary>
     /// 执行自动攻击
+    /// 启动攻击检测流程
     /// </summary>
     private void PerformAutoAttack()
     {
         if (attackData == null) return;
-        currentActionPriority = CharacterLogic.DashPriority;//攻击优先级设为150
+
+        currentActionPriority = CharacterLogic.DashPriority;
         //LogManager.Log($"[TestDummy] 执行自动攻击: {attackData.attackName}");
 
-        // 使用AttackHitDetector进行攻击检测
+        // 使用统一的攻击流程
         StartCoroutine(ExecuteAttackWithHitDetector());
     }
 
 
     /// <summary>
     /// 使用AttackHitDetector执行攻击序列
+    /// 协调攻击的前摇、攻击中、后摇各个阶段
+    /// 使用统一的攻击流程，与CharacterAttackController保持一致
     /// </summary>
     private IEnumerator ExecuteAttackWithHitDetector()
     {
         if (attackData == null) yield break;
 
+        // 技能释放前效果
+        CharacterAttackController.ApplySkillEffectsOnCast(attackData, gameObject);
+
+        // 开始攻击检测，获取attackId
         string attackId = AttackHitDetector.Instance.StartAttackDetection(
             attackData,
             transform.position,
@@ -221,6 +310,9 @@ public class TestDummy : MonoBehaviour
             yield return null;
         }
 
+        // 技能释放后的效果，传递attackId以获取受击方信息
+        CharacterAttackController.ApplySkillEffectsOnComplete(attackData, gameObject, attackId);
+
         // 结束攻击检测
         AttackHitDetector.Instance.EndAttackDetection(attackId);
 
@@ -228,13 +320,8 @@ public class TestDummy : MonoBehaviour
         ClearAttackPreview();
 #endif
 
-        // 清理动画参数
-        if (animator != null && attackData.animationParameters != null)
-        {
-            //ClearAttackAnimationParameter(attackData);
-        }
 
-        currentActionPriority = CharacterLogic.IdlePriority; // 恢复默认优先级
+        currentActionPriority = CharacterLogic.IdlePriority;
 
         //LogManager.Log($"[TestDummy] 攻击完成");
     }
@@ -396,33 +483,43 @@ public class TestDummy : MonoBehaviour
 
     /// <summary>
     /// 施加硬直效果
-    /// 弹反后,由攻击施加硬直
+    /// 由攻击系统调用，使假人进入硬直状态，无法行动
+    /// 支持刷新眩晕时间：如果假人已经处于眩晕状态，会更新眩晕时间为新的持续时间
     /// </summary>
+    /// <param name="duration">硬直持续时间（秒）</param>
     public void ApplyStun(float duration)
     {
-        if (isStunned || isDead) return;
+        if (isDead) return;
 
-        currentActionPriority = CharacterLogic.StunPriority; // 硬直优先级设为300
+        if (isStunned)
+        {
+            stunTimer = duration;
+            LogManager.Log($"[TestDummy] 刷新硬直时间: {duration}秒");
+            return;
+        }
+
+        currentActionPriority = CharacterLogic.StunPriority;
         isStunned = true;
         stunTimer = duration;
 
         LogManager.Log($"[TestDummy] 被硬直! 持续时间: {duration}秒");
 
-        // 触发硬直动画
-        if (animator != null)
+        if (animator != null && !string.IsNullOrEmpty(stunBoolName))
         {
-            animator.SetBool("Stun", true);
+            animator.SetBool(stunBoolName, true);
         }
 
         OnStunStart?.Invoke();
 
-        // 停止当前动作
         if (enableAutoAttack)
         {
             StopAllCoroutines();
         }
     }
 
+    /// <summary>
+    /// 从硬直状态恢复
+    /// </summary>
     private void RecoverFromStun()
     {
         isStunned = false;
@@ -430,9 +527,9 @@ public class TestDummy : MonoBehaviour
 
         LogManager.Log($"[TestDummy] 硬直结束");
 
-        if (animator != null)
+        if (animator != null && !string.IsNullOrEmpty(stunBoolName))
         {
-            animator.SetBool("Stun", false);
+            animator.SetBool(stunBoolName, false);
         }
 
         OnStunEnd?.Invoke();
@@ -445,25 +542,70 @@ public class TestDummy : MonoBehaviour
     }
 
     /// <summary>
-    /// 受到攻击
+    /// 实现IDamageable接口的TakeDamage方法
+    /// 统一处理来自攻击系统的伤害
     /// </summary>
-    /// <param name="damage">伤害值</param>
-    /// <param name="knockbackDirection">击退方向</param>
-    /// <param name="knockbackForce">击退力</param>
-    /// <param name="hitPosition">命中位置</param>
-    public void TakeDamage(ActionData attackData, AttackFrameData frameData, Vector2 knockbackDirection, float knockbackForce, Vector2 hitPosition)
+    /// <param name="damageInfo">伤害信息</param>
+    /// <param name="frameData">攻击帧数据</param>
+    /// <param name="attacker">攻击者</param>
+    /// <summary>
+    /// 实现IDamageable接口的TakeDamage方法
+    /// 用于接收来自新攻击系统的伤害
+    /// </summary>
+    public void TakeDamage(DamageInfo damageInfo, AttackActionData attackActionData, AttackFrameData frameData, GameObject attacker)
     {
         if (isDead || isInvincible) return;
 
-        // 计算伤害
-        currentHealth = Mathf.Max(0, currentHealth - frameData.damage);
+        if (BuffSystem != null && CharacterAttributes.isInvincible)
+        {
+            LogManager.Log($"[TestDummy] 处于无敌状态（Buff效果），免疫伤害");
+            return;
+        }
+        Vector2 knockbackDirection = (transform.position - attacker.transform.position).normalized;
 
-        LogManager.Log($"[TestDummy] 受到伤害: {frameData.damage}, 剩余血量: {currentHealth}/{maxHealth}");
+        // 计算最终击退力：技能基础击退力 + 攻击帧附加击退力
+        Vector2 finalKnockbackForce = frameData.knockbackForce;
+        if (damageInfo.skillData != null)
+        {
+            finalKnockbackForce += damageInfo.skillData.knockbackForce;
+        }
+
+        TakeDamage(attacker, attackActionData, frameData, knockbackDirection, finalKnockbackForce, transform.position);
+    }
+
+    /// <summary>
+    /// 受到攻击伤害
+    /// 由AttackHitDetector在检测到命中时调用
+    /// 处理伤害计算、受击反馈、硬直判定、击退效果等
+    /// 注意：此方法不处理Buff应用，Buff由AttackHitDetector通过BuffSystem直接应用
+    /// </summary>
+    /// <param name="attackData">攻击动作数据</param>
+    /// <param name="frameData">攻击帧数据，包含伤害、硬直等信息</param>
+    /// <param name="knockbackDirection">击退方向</param>
+    /// <param name="knockbackForce">击退力</param>
+    /// <param name="hitPosition">命中位置，用于播放特效</param>
+    public void TakeDamage(GameObject attacker, AttackActionData attackActionData, AttackFrameData frameData, Vector2 knockbackDirection, Vector2 knockbackForce, Vector2 hitPosition)
+    {
+        // 检查无敌和死亡状态
+        if (isDead || isInvincible) return;
+
+        // 检查BuffSystem的无敌状态（由Buff效果产生的无敌）
+        if (BuffSystem != null && CharacterAttributes.isInvincible)
+        {
+            LogManager.Log($"[TestDummy] 处于无敌状态（Buff效果），免疫伤害");
+            return;
+        }
+
+        // 应用伤害到生命值
+        CharacterLogic attackerLogic = attacker.GetComponent<CharacterLogic>();
+        var damageInfo = AttackHitDetector.CreateDamageInfo(attackActionData, frameData, attacker);
+        ApplyDamageWithCalculation(attackerLogic, damageInfo, attackActionData, frameData, attacker);
+
 
         // 检查是否造成眩晕
-        if (frameData.causeStun)
+        if (isStunned)
         {
-            ApplyStun(frameData.stunDuration);
+            LogManager.Log($"[TestDummy] 已处于硬直状态，忽略新的受击硬直");
         }
         else
         {
@@ -473,7 +615,7 @@ public class TestDummy : MonoBehaviour
             // 触发Hurt动画
             if (shouldPlayHitAnimation)
             {
-                // 播放受击动画
+                // 播放受击动画，打断当前动作
                 if (animator != null && !string.IsNullOrEmpty(hurtTriggerName))
                 {
                     animator.SetTrigger(hurtTriggerName);
@@ -482,53 +624,106 @@ public class TestDummy : MonoBehaviour
             }
             else
             {
-                // 只播放闪白效果，不播放受击动画
-                LogManager.Log($"[TestDummy] 只播放闪白效果，不打断当前动作");
+                // 只播放闪白效果，不打断当前动作
+                LogManager.Log($"[TestDummy] 攻击优先级不足，只播放闪白效果，不打断当前动作");
             }
         }
 
-
-
         // 触发事件
-        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+        OnHealthChanged?.Invoke(CharacterAttributes.currentHealth, CharacterAttributes.maxHealth);
         OnHit?.Invoke(knockbackDirection, knockbackForce);
 
-
-        // 视觉反馈
-        PlayHitFeedback(hitPosition);//闪白效果总是播放
+        // 视觉反馈（闪白效果总是播放）
+        PlayHitFeedback(hitPosition);
 
         // 击退效果
-        if (rb != null && knockbackForce > 0)
+        if (rb != null && knockbackForce.magnitude > 0)
         {
             rb.AddForce(knockbackDirection.normalized * knockbackForce, ForceMode2D.Impulse);
         }
 
         // 检查死亡
-        if (currentHealth <= 0)
+        if (CharacterAttributes.currentHealth <= 0)
         {
             Die();
         }
+    }
 
 
+    /// <summary>
+    /// 应用带属性计算的伤害（攻击者是CharacterLogic时使用）
+    /// </summary>
+    private void ApplyDamageWithCalculation(CharacterLogic attackerLogic, DamageInfo damageInfo, AttackActionData attackActionData, AttackFrameData frameData, GameObject attacker)
+    {
+        if (damageInfo.skillData == null)
+        {
+            LogManager.LogWarning($"[TestDummy] 攻击没有配置 SkillData");
+            return;
+        }
 
+        var attackerAttributes = attackerLogic.PlayerAttributes?.characterAtttibute;
+        var targetAttributes = CharacterAttributes;
+        var attackerBuffSystem = attackerLogic.buffSystem;
+        var targetBuffSystem = BuffSystem;
+
+        if (attackerAttributes == null)
+        {
+            return;
+        }
+
+        DamageResult result = DamageCalculator.CalculateDamage(
+            damageInfo,
+            attackerAttributes,
+            targetAttributes,
+            attackerBuffSystem,
+            targetBuffSystem
+        );
+
+        if (result.isMiss)
+        {
+            LogManager.Log("[TestDummy] 攻击未命中（闪避/无敌）");
+            return;
+        }
+
+        if (!result.isBlocked && result.healthDamage > 0)
+        {
+            CharacterAttributes.ChangeHealth(-Mathf.RoundToInt(result.healthDamage));
+            LogManager.Log($"[TestDummy] 造成伤害: {result.healthDamage}{(result.isCritical ? " (暴击" : "")},剩余血量: {CharacterAttributes.currentHealth}/{CharacterAttributes.maxHealth}");
+
+            bool died = CharacterAttributes.currentHealth <= 0;
+            if (died)
+            {
+                Die();
+                return;
+            }
+        }
+        else if (result.isBlocked)
+        {
+            LogManager.Log("[TestDummy] 攻击被格挡");
+            // 可以在这里添加格挡特效或音效
+            return;
+        }
     }
 
     /// <summary>
     /// 判断是否应该播放受击动画
+    /// 根据攻击优先级和当前动作优先级判断是否应该被打断
     /// </summary>
+    /// <param name="priority">攻击的优先级</param>
+    /// <returns>如果应该播放受击动画返回true</returns>
     private bool ShouldPlayHitAnimation(int priority)
     {
+        // 攻击优先级必须高于受击优先级，且高于当前动作优先级
         return priority > CharacterLogic.HurtPriority && currentActionPriority < priority;
     }
 
-    /// <summary>
-    /// 受到攻击（简化版）
-    /// </summary>
-    public void TakeDamage(ActionData attackData, AttackFrameData frameData, Vector2 knockbackDirection, float knockbackForce)
-    {
-        TakeDamage(attackData, frameData, knockbackDirection, knockbackForce, transform.position);
-    }
 
+
+    /// <summary>
+    /// 播放受击视觉反馈效果
+    /// 包括颜色闪烁、命中特效和音效
+    /// </summary>
+    /// <param name="hitPosition">命中位置</param>
     private void PlayHitFeedback(Vector2 hitPosition)
     {
         // 颜色闪白
@@ -551,6 +746,10 @@ public class TestDummy : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 假人死亡处理
+    /// 触发死亡动画、事件、禁用碰撞器和物理
+    /// </summary>
     private void Die()
     {
         isDead = true;
@@ -566,7 +765,7 @@ public class TestDummy : MonoBehaviour
         // 触发死亡事件
         OnDeath?.Invoke();
 
-        // 死亡效果
+        // 死亡视觉效果
         if (spriteRenderer != null)
         {
             spriteRenderer.color = Color.gray;
@@ -589,10 +788,11 @@ public class TestDummy : MonoBehaviour
 
     /// <summary>
     /// 重置假人状态
+    /// 将假人恢复到初始状态，用于重复测试
     /// </summary>
     public void ResetDummy()
     {
-        currentHealth = maxHealth;
+        CharacterAttributes.currentHealth = CharacterAttributes.maxHealth;
         isDead = false;
 
         // 清除硬直状态
@@ -633,12 +833,14 @@ public class TestDummy : MonoBehaviour
             spriteRenderer.color = originalColor;
         }
 
-        LogManager.Log($"[TestDummy] 假人已重置，血量: {currentHealth}/{maxHealth}");
+        LogManager.Log($"[TestDummy] 假人已重置，血量: {CharacterAttributes.currentHealth}/{CharacterAttributes.maxHealth}");
     }
 
     /// <summary>
     /// 设置无敌模式
+    /// 用于测试，开启后假人不会受到伤害
     /// </summary>
+    /// <param name="invincible">是否无敌</param>
     public void SetInvincible(bool invincible)
     {
         isInvincible = invincible;
@@ -648,12 +850,13 @@ public class TestDummy : MonoBehaviour
     /// <summary>
     /// 直接设置血量（用于测试）
     /// </summary>
+    /// <param name="health">目标血量值</param>
     public void SetHealth(int health)
     {
-        currentHealth = Mathf.Clamp(health, 0, maxHealth);
-        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+        CharacterAttributes.currentHealth = Mathf.Clamp(health, 0, CharacterAttributes.maxHealth);
+        OnHealthChanged?.Invoke(CharacterAttributes.currentHealth, CharacterAttributes.maxHealth);
 
-        if (currentHealth <= 0 && !isDead)
+        if (CharacterAttributes.currentHealth <= 0 && !isDead)
         {
             Die();
         }
@@ -664,7 +867,7 @@ public class TestDummy : MonoBehaviour
     {
         // 绘制生命值条
         Vector3 barPos = transform.position + Vector3.up * 1.5f;
-        float healthPercent = (float)currentHealth / maxHealth;
+        float healthPercent = (float)CharacterAttributes.currentHealth / CharacterAttributes.maxHealth;
 
         Gizmos.color = Color.red;
         Gizmos.DrawWireCube(barPos, new Vector3(1f, 0.2f, 0f));

@@ -14,13 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   acitonName: "Warrior_\u79FB\u52A8\u884C\u4E3A"
   priority: 0
+  character: {fileID: 8009572862484974867, guid: 5b89e6adbb096704db025a49a19f9516, type: 3}
   animationClip: {fileID: 7400000, guid: aa852921ab2da0f4aaee7788209e4ca4, type: 2}
   frameRate: 10
-  animationParameterType: 3
-  animationParameterName: MoveX
-  animationIntValue: 1
-  animationFloatValue: 1
-  animationBoolValue: 1
+  animationParameters: []
   canCancel: 1
   moveSpeed: 3
   acceleration: 15

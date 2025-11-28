@@ -1,8 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-
+// 添加触发类型枚举
+public enum AttackTriggerType
+{
+    Tap,        // 点击触发
+    LongPress,       // 长按触发,按住直到 holdTimeThreshold 达到后发起攻击（在 Update 中检测 AttackHoldTime）。
+    Hold      // 按住时持续触发技能，松开后结束
+}
 
 // 攻击框形状枚举
 public enum HitboxType
@@ -45,10 +51,9 @@ public class AttackFrameData
     public LayerMask hitLayers;
 
 
-    //[Header("独立攻击帧(同一攻击多次计算)")]
-    //public bool IndependentAttack;
-    //// 独立攻击帧检测频率
-    //public float independentAttackInterval = 0.1f;
+    [Header("命中行为")]
+    [Tooltip("启用后此帧会在同一次攻击中独立结算伤害，不受已有命中记录限制")]
+    public bool allowIndependentHit = false;
 
     [Header("攻击框设置")]
     public HitboxType hitboxType = HitboxType.Rectangle;
@@ -61,12 +66,16 @@ public class AttackFrameData
     public Vector2 hitboxEndPoint = new Vector2(1f, 0f);
 
     [Header("伤害设置")]
-    public int damage = 10;
-    public float knockbackForce = 5f;
+    [Tooltip("附加伤害值，最终伤害 = 技能基础伤害(baseDamage) + 此附加伤害")]
+    public int damage = 0;
+    
+    [Header("击退力")]
+    [Tooltip("附加击退力，最终击退力 = 技能基础击退力 + 此附加击退力")]
+    public Vector2 knockbackForce = new Vector2(0, 0);
 
-    [Header("眩晕设置")]
-    public bool causeStun = false; // 是否造成眩晕
-    public float stunDuration = 1.0f; // 眩晕持续时间
+    [Header("效果列表")]
+    [Tooltip("此攻击帧施加的效果列表，可以包含眩晕、减速等各种Buff/Debuff")]
+    public List<EffectData> effects = new List<EffectData>();
 
     [Header("特效")]
     public GameObject hitEffect;
@@ -81,6 +90,17 @@ public class AttackFrameData
 [CreateAssetMenu(fileName = "New Attack Action Data", menuName = "Character System/Attack Action Data")]
 public class AttackActionData : ActionData
 {
+    [Header("技能数据")]
+    public SkillData skillData;
+
+    [Header("攻击触发方式")]
+    public AttackTriggerType triggerType = AttackTriggerType.Tap; // 触发方式
+    [Range(0, 2f)] public float longPressTimeThreshold = 0.3f; // 长按时间阈值
+
+    [Header("hold攻击设置")]
+    public float holdTickInterval = 0.1f; // 持续触发的间隔时间
+    public int maxHoldTicks = 10; // 最大触发次数限制
+
     [Header("攻击时间设置（秒）")]
     [Range(0, 2f)] public float windUpTime = 0.1f;     // 前摇时间
     [Range(0, 2f)] public float activeTime = 0.2f;     // 攻击中时间
@@ -99,7 +119,9 @@ public class AttackActionData : ActionData
 
     [Header("攻击位移设置")]
     public bool enableMovement = false;
-    public float movementSpeed = 3f;
+    [Header("是否累加力")]
+    public bool IsAccumulateForce = false;
+    public Vector2 movementSpeed = new Vector2(10, 0);
     public AnimationCurve movementCurve = AnimationCurve.Linear(0, 1, 1, 0);
 
     [Header("连招设置")]

@@ -14,13 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   acitonName: "Knight\u79FB\u52A8\u884C\u4E3A"
   priority: 0
+  character: {fileID: 5771301279390029218, guid: 825b2b521de0e0146b836fb7a8d11906, type: 3}
   animationClip: {fileID: 7400000, guid: e58542e6cdcad974284618515fe0cf15, type: 2}
   frameRate: 12
-  animationParameterType: 0
-  animationParameterName: Attack
-  animationIntValue: 1
-  animationFloatValue: 1
-  animationBoolValue: 1
+  animationParameters: []
   canCancel: 1
   moveSpeed: 3
   acceleration: 15

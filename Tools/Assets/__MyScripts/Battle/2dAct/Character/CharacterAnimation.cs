@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
+[DisallowMultipleComponent]
 public class CharacterAnimation : MonoBehaviour
 {
     [Header("动画设置")]
@@ -128,7 +129,7 @@ public class CharacterAnimation : MonoBehaviour
         animator.SetFloat(moveX, Mathf.Abs(moveInputX));
 
         // 地面检测
-        //animator.SetBool(grounded, logic.IsGrounded);
+        animator.SetBool(grounded, logic.IsGrounded);
 
         // 垂直速度
         animator.SetFloat(airSpeedY, rb.linearVelocity.y);
@@ -152,17 +153,17 @@ public class CharacterAnimation : MonoBehaviour
         {
             case PlayerState.Dashing:
                 animator.SetFloat(animRollSpeed, dashAnimationLength / logic.actionManager.dashAction.dashDuration);
-                animator.SetTrigger(roll);
+                //animator.SetTrigger(roll);
                 break;
 
-            case PlayerState.Blocking:
-                animator.SetTrigger(block);
-                animator.SetBool(idleBlock, true);
-                break;
+            //case PlayerState.Blocking:
+            //    animator.SetTrigger(block);
+            //    animator.SetBool(idleBlock, true);
+            //    break;
 
-            case PlayerState.Stunned:
+            case PlayerState.Stunned://眩晕状态
                 OnStunned();
-                break;
+                return;//眩晕状态不处理后续动画参数设置,否则会覆盖眩晕动画,眩晕没有对应的ActionData,后面看看要不要统一
         }
 
         SetActionAnimationParameter(logic.currentActionData);
@@ -221,8 +222,7 @@ public class CharacterAnimation : MonoBehaviour
 
     private void OnDeath()
     {
-        animator.SetBool("noBlood", false);
-        animator.SetTrigger(death);
+        //animator.SetTrigger(death);//动画在OnStateChanged中进行控制播放
     }
     #endregion
 
@@ -244,7 +244,17 @@ public class CharacterAnimation : MonoBehaviour
     }
     #endregion
 
-
+    public void SetAttackAnimationSpeed(AttackActionData attackData, float time)
+    {
+        //根据给定时间设置动画速度
+        if (attackData != null && attackData.animationClip != null)
+        {
+            float actualLength = attackData.animationClip.length;
+            float speedMultiplier = actualLength / time; //动画播放速度 = 原始播放时间 / 期望播放时间
+            LogManager.Log($"[CharacterAnimation] 设置攻击动画速度: {speedMultiplier} for {attackData.acitonName}");
+            animator.SetFloat("AttackSpeed", speedMultiplier);
+        }
+    }
     // 添加攻击动画速度控制
     public void SetAttackAnimationSpeed(AttackPhase phase, AttackActionData attackData)
     {
@@ -295,6 +305,7 @@ public class CharacterAnimation : MonoBehaviour
 
         foreach (var param in actionData.animationParameters)
         {
+            //LogManager.Log($"[CharacterAnimation] 设置动画参数: {param.parameterName}, 类型: {param.type}");
             switch (param.type)
             {
                 case ActionData.AnimationParameterType.Trigger:
@@ -312,7 +323,7 @@ public class CharacterAnimation : MonoBehaviour
             }
         }
 
-        //LogManager.Log($"[CharacterAnimation] 设置动画参数: {actionData.animationParameterName}, 类型: {attackData.animationParameterType}");
+
     }
 
 }

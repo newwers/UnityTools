@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   acitonName: Warrior_FallingAction
   priority: 0
+  character: {fileID: 8009572862484974867, guid: 5b89e6adbb096704db025a49a19f9516, type: 3}
   animationClip: {fileID: 7400000, guid: 9587ae898133e8144b76c4532c6796af, type: 2}
   frameRate: 10
   animationParameters:

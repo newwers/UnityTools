@@ -55,4 +55,15 @@ public static class LogManager
     {
         if (EnableLogs) Debug.Log($"[{tag}] {message}");
     }
+
+    //打印红色log
+    public static void Log_Red(object message)
+    {
+        if (EnableLogs) Debug.Log($"<color=red>{message}</color>");
+    }
+    //打印绿色log
+    public static void Log_Green(object message)
+    {
+        if (EnableLogs) Debug.Log($"<color=green>{message}</color>");
+    }
 }

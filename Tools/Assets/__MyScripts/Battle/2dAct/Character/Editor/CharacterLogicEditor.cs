@@ -48,7 +48,7 @@ public class CharacterLogicEditor : Editor
                 }
             }
 
-            EditorGUILayout.LabelField($"攻击输入缓冲: {characterLogic.hasBufferedAttack}");
+            EditorGUILayout.LabelField($"攻击输入缓冲: {characterLogic.AttackController.hasBufferedAttack}");
 
             EditorGUI.indentLevel--;
         }
