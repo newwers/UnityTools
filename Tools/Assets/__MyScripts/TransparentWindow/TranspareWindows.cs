@@ -221,40 +221,5 @@ public class TranspareWindows : MonoBehaviour
         //MoveWindow(hwnd, config.InitializationPositionX, config.InitializationPositionY, Screen.width, Screen.height, true);
     }
 
-    public void Wallpaper()
-    {
-        m_GWL_STYLE = GetWindowLong(hwnd, GWL_STYLE);
-        IntPtr hWnd = FindWindow("Shell_TrayWnd", null);
-        RECT rect = default(RECT);
-        GetWindowRect(hWnd, ref rect);
-        if (rect.Height < rect.Width)
-        {
-            //taskbarHeight = rect.Height;
-        }
-        SetWindowPos(hwnd, -2, 0, 0, 0, 0, 3U | SWP_FRAMECHANGED);
-        ApplyDwmFix(0);
-    }
-
-    public void OrdinaryWindow()
-    {
-        int dwNewLong = m_GWL_STYLE;
-        int dwNewLong2 = 256;
-        SetWindowLong(hwnd, GWL_STYLE, dwNewLong);
-        SetWindowLong(hwnd, GWL_EXSTYLE, dwNewLong2);
-        SetParent(hwnd, GetDesktopWindow());
-        ApplyDwmFix(1);
-    }
-
-    private void ApplyDwmFix(int inset)
-    {
-        MARGINS margins = new MARGINS
-        {
-            cxLeftWidth = inset,
-            cxRightWidth = inset,
-            cyTopHeight = inset,
-            cyBottomHeight = inset
-        };
-        DwmExtendFrameIntoClientArea(hwnd, ref margins);
-    }
 
 }
