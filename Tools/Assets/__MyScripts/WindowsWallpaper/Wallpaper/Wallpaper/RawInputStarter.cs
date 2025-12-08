@@ -5,6 +5,7 @@ public class RawInputStarter : MonoBehaviour
     // Token: 0x0600013A RID: 314 RVA: 0x000076E5 File Offset: 0x000058E5
     private void OnEnable()
     {
+        print($"RawInputStarter OnEnable");
         this._rawWindow = new RawInputWindow();
     }
 

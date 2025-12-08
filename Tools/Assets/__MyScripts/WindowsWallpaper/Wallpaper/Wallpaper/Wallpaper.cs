@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
@@ -6,6 +7,7 @@ using UnityEngine;
 
 public class Wallpaper : MonoBehaviour
 {
+    public RawInputStarter RawInputStarter;
     public Texture2D icon;
     private NotifyIcon notifyIcon;
     public static bool isWallpaperMode = false;
@@ -117,7 +119,6 @@ public class Wallpaper : MonoBehaviour
     public static int currentStyle;
 
 
-
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -127,6 +128,8 @@ public class Wallpaper : MonoBehaviour
         //var hand = FindWindow("UnityWndClass", UnityEngine.Application.productName);
         Debug.Log($"Unity窗口句柄1: {unityHwnd}");
         LoadContextMenu();
+
+        StartCoroutine(DelayFullScreen());
     }
 
 
@@ -142,22 +145,12 @@ public class Wallpaper : MonoBehaviour
         ExitWallparer();
     }
 
-    private void OnApplicationQuit()
-    {
-        ExitWallparer();
-    }
+    //private void OnApplicationQuit()
+    //{
+    //    ExitWallparer();
+    //}
 
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.W))
-        {
-            SetWallpaper();
-        }
-        if (Input.GetKeyDown(KeyCode.Q))
-        {
-            ExitWallparer();
-        }
-    }
+
 
     void LoadContextMenu()
     {
@@ -178,14 +171,31 @@ public class Wallpaper : MonoBehaviour
         menuItem2.Index = 1;
         menuItem2.Text = "退出游戏";
 
+        MenuItem menuItem3 = new MenuItem();
+        menuItem3.Click += new System.EventHandler(OnFullScreenClick);
+        menuItem3.Index = 2;
+        menuItem3.Text = "全屏";
+
 
         var contextMenu = new System.Windows.Forms.ContextMenu();
+        contextMenu.MenuItems.Add(menuItem3);
         contextMenu.MenuItems.Add(menuItem);
         contextMenu.MenuItems.Add(menuItem2);
 
 
 
         notifyIcon.ContextMenu = contextMenu;
+    }
+
+    private void OnFullScreenClick(object sender, EventArgs e)
+    {
+        FullScreen();
+    }
+
+    public void Test()
+    {
+        print("测试点击");
+        StartCoroutine(FirstEnterWallpaper());
     }
 
     private void OnWindowedClick(object sender, EventArgs e)
@@ -198,8 +208,9 @@ public class Wallpaper : MonoBehaviour
         UnityEngine.Application.Quit();
     }
 
-    public static void ExitWallparer()
+    public void ExitWallparer()
     {
+
         SetWindowLong(unityHwnd, GWL_STYLE, (ulong)currentStyle);
         SetWindowLong(unityHwnd, GWL_EXSTYLE, 0);//256是窗口化,0是全屏
 
@@ -213,6 +224,10 @@ public class Wallpaper : MonoBehaviour
         RefreshDesktop();
 
         ApplyDwmFix(0);
+        if (RawInputStarter)
+        {
+            RawInputStarter.gameObject.SetActive(false);
+        }
     }
 
 
@@ -223,8 +238,28 @@ public class Wallpaper : MonoBehaviour
         Debug.Log("退出壁纸模式，刷新桌面");
     }
 
+    public IEnumerator DelayFullScreen()
+    {
+        yield return new WaitForSeconds(1f);
+        FullScreen();
+    }
+    /// <summary>
+    /// 因为第一次设置壁纸模式时，会出现获取不到鼠标点击问题,所以这边进两次就可以了
+    /// </summary>
+    /// <returns></returns>
+    public IEnumerator FirstEnterWallpaper()
+    {
+        SetWallpaper();
+        yield return new WaitForSeconds(0.2f);
+        ExitWallparer();
+        yield return new WaitForSeconds(0.2f);
+        SetWallpaper();
+    }
+
     public void SetWallpaper()
     {
+        //SetWindowPos(unityHwnd, (IntPtr)(-2), 0, 0, 0, 0, 3U | 32u);
+
         IntPtr background = GetBackground();
         backgroundHwnd = background;
         if (background == IntPtr.Zero)
@@ -238,14 +273,25 @@ public class Wallpaper : MonoBehaviour
             return;
         }
         var hwnd = SetParent(unityHwnd, background);
-        SetWindowLong(unityHwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);//96000000
-        //SetWindowLong(unityHwnd, GWL_EXSTYLE, WS_EX_LAYERED);//134742016U  08080000
-        SetWindowLong(unityHwnd, GWL_EXSTYLE, 0);
+        //SetWindowLong(unityHwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);//96000000
+        //SetWindowLong(unityHwnd, GWL_EXSTYLE, 0);
+        SetWindowLong(unityHwnd, GWL_STYLE, 1342177280U);//134742016U  08080000
+        SetWindowLong(unityHwnd, GWL_EXSTYLE, 134742016U);
         SetLayeredWindowAttributes(unityHwnd, 0U, byte.MaxValue, 2U);
-        SetWindowPos(unityHwnd, IntPtr.Zero, 0, 0, UnityEngine.Screen.width, UnityEngine.Screen.height, 64U);//这边窗体多大壁纸就多大,如果想全屏大小就用Display.main.systemWidth, Display.main.systemHeight
-        UnityEngine.Screen.SetResolution(UnityEngine.Screen.width, UnityEngine.Screen.height, false);
+        SetWindowPos(unityHwnd, IntPtr.Zero, 0, 0, Display.main.systemWidth, Display.main.systemHeight, 64U);
         isWallpaperMode = true;
-        print($"设置壁纸窗体句柄,unityHwnd:{unityHwnd},background句柄:{background},hwnd:{hwnd}");
+        print($"设置壁纸 窗体句柄,unityHwnd:{unityHwnd},background句柄:{background},hwnd:{hwnd}");
+        UnityEngine.Screen.SetResolution(Display.main.systemWidth, Display.main.systemHeight, false);
+
+        RawInputStarter.gameObject.SetActive(true);
+        ApplyDwmFix(0);
+    }
+
+    public void FullScreen()
+    {
+        SetWindowLong(unityHwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);//(ulong)-1778384896
+        SetWindowLong(unityHwnd, GWL_EXSTYLE, 0UL);
+        SetWindowPos(unityHwnd, (IntPtr)(-2), 0, 0, Display.main.systemWidth, Display.main.systemHeight, 64u | 32u);
         ApplyDwmFix(0);
     }
 

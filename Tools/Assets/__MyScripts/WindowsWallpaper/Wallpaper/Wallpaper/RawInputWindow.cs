@@ -23,8 +23,11 @@ public class RawInputWindow : NativeWindow, IDisposable
             Height = 0,
             Parent = IntPtr.Zero
         });
+        UnityEngine.Debug.Log($"RawInputHandler 开始创建对象");
         this._handler = new RawInputHandler();
+        UnityEngine.Debug.Log($"RawInputHandler 注册设备,base.Handle:{base.Handle}");
         this._handler.RegisterDevices(base.Handle);
+        UnityEngine.Debug.Log($"RawInputWindow 构造函数完成");
     }
 
     // Token: 0x0600015D RID: 349 RVA: 0x00007E4B File Offset: 0x0000604B
