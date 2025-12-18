@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-[CreateAssetMenu(fileName = "New Block Action Data", menuName = "Character System/Block Action Data")]
+[CreateAssetMenu(fileName = "New Block Action Data", menuName = "Character System/Character Action/Block Action Data")]
 public class BlockActionData : ActionData
 {
     // 格挡和弹反相关字段

@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>
 /// 行为数据
 /// </summary>
-[CreateAssetMenu(fileName = "New Action Data", menuName = "Character System/Aciton Data")]
+[CreateAssetMenu(fileName = "New Action Data", menuName = "Character System/Character Action/Aciton Data")]
 public class ActionData : ScriptableObject
 {
     [System.Serializable]

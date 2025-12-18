@@ -29,7 +29,7 @@ MonoBehaviour:
     animationFloatValue: 1
     animationBoolValue: 0
   canCancel: 1
-  skillData: {fileID: 0}
+  skillData: {fileID: 11400000, guid: e1a91d5f343c8f04b9c5bac0561c08a5, type: 2}
   triggerType: 0
   longPressTimeThreshold: 0.3
   holdTickInterval: 0.1
@@ -78,8 +78,9 @@ MonoBehaviour:
     isAttackFrame: 1
     hitLayers:
       serializedVersion: 2
-      m_Bits: 256
+      m_Bits: 384
     allowIndependentHit: 0
+    maxHitTargets: 0
     hitboxType: 0
     hitboxOffset: {x: 0.5, y: 0.93}
     hitboxSize: {x: 1.96, y: 1.04}

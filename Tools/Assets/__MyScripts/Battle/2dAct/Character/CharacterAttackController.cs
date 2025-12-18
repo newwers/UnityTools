@@ -1,4 +1,13 @@
+
 using UnityEngine;
+
+
+public enum AttackPhase
+{
+    WindUp,     // 前摇阶段
+    Active,     // 攻击中阶段,只有在攻击阶段才进行命中攻击帧检测
+    Recovery    // 后摇阶段
+}
 
 /// <summary>
 /// 负责角色攻击生命周期：发起、阶段控制、命中检测、连招缓冲与结束。
@@ -9,7 +18,7 @@ public class CharacterAttackController : MonoBehaviour
 {
     // 发布攻击开始/结束事件（放在类成员区域）
     public System.Action<AttackActionData> OnAttackStarted;
-    public System.Action OnAttackEnded;
+    public System.Action<bool> OnAttackEnded;
 
     [Header("配置/引用")]
     public ActionManager actionManager;
@@ -49,6 +58,7 @@ public class CharacterAttackController : MonoBehaviour
         characterLogic = GetComponent<CharacterLogic>();
         inputHandler = GetComponent<InputHandler>();
         attackVisualizer = GetComponent<AttackHitVisualizer>();
+
 
         if (actionManager == null)
             actionManager = characterLogic.actionManager;
@@ -97,7 +107,25 @@ public class CharacterAttackController : MonoBehaviour
     // 外部调用判定是否处于攻击生命周期
     public bool IsAttacking()
     {
-        return currentAttackActionData != null;
+        return characterLogic.IsAttacking();
+    }
+
+    public bool IsSkillOnCooldown(AttackActionData attackData)
+    {
+        if (characterLogic.SkillCooldownManager == null) return false;
+        return characterLogic.SkillCooldownManager.IsOnCooldown(attackData);
+    }
+
+    public float GetSkillRemainingCooldown(AttackActionData attackData)
+    {
+        if (characterLogic.SkillCooldownManager == null) return 0f;
+        return characterLogic.SkillCooldownManager.GetRemainingCooldown(attackData);
+    }
+
+    public float GetSkillCooldown(AttackActionData attackData)
+    {
+        if (characterLogic.SkillCooldownManager == null) return 0f;
+        return characterLogic.SkillCooldownManager.GetCooldown(attackData);
     }
 
     // 设置/消费缓冲输入
@@ -138,13 +166,13 @@ public class CharacterAttackController : MonoBehaviour
     /// 参数由上层 CharacterLogic 提供（是否冲刺、是否在地面、是否处于弹反状态、是否允许弹反）。
     /// 面向方向使用 transform.localScale.x > 0 判断（保持与 CharacterLogic Flip 一致）。
     /// </summary>
-    public void TryPerformAttack(bool isDashing, bool isGrounded, bool isParryState, bool canParry)
+    public bool TryPerformAttack(bool isDashing, bool isGrounded, bool isParryState, bool canParry)
     {
         if (actionManager == null)
         {
             Debug.LogError("[CharacterAttackController] actionManager 未设置，无法执行攻击。");
             ConsumeBufferedAttack();
-            return;
+            return false;
         }
 
         // 清除缓冲（调用者希望立即消费）
@@ -176,48 +204,47 @@ public class CharacterAttackController : MonoBehaviour
             else
             {
                 Debug.LogError("[CharacterAttackController] 没有配置普通攻击序列!");
-                return;
+                return false;
             }
         }
 
         if (selected == null)
-            return;
+            return false;
 
         switch (selected.triggerType)
         {
             case AttackTriggerType.Tap:
-                BeginAttack(selected);
-                break;
+                return BeginAttack(selected);
 
             case AttackTriggerType.LongPress:
                 if (inputHandler != null && inputHandler.AttackHoldTime >= selected.longPressTimeThreshold)
                 {
-                    BeginAttack(selected);
+                    return BeginAttack(selected);
                 }
                 else
                 {
                     pendingLongPressAttack = selected;
                 }
                 break;
-
             case AttackTriggerType.Hold:
                 StartHoldAttack(selected);
                 break;
 
             default:
-                BeginAttack(selected);
-                break;
+                return BeginAttack(selected);
         }
+
+        return true;
     }
 
     // 开始一次新的攻击生命周期
-    private void BeginAttack(AttackActionData attackData)
+    private bool BeginAttack(AttackActionData attackData)
     {
-        if (attackData == null) return;
+        if (attackData == null) return false;
 
         if (!CanPerformAttack(attackData))
         {
-            return;
+            return false;
         }
 
         ConsumeAttackResources(attackData);
@@ -229,15 +256,17 @@ public class CharacterAttackController : MonoBehaviour
 
         if (animHandler != null)
         {
-            animHandler.SetActionAnimationParameter(currentAttackActionData);
-            animHandler.SetAttackAnimationSpeed(currentAttackPhase, currentAttackActionData);
+            CharacterAnimation.SetActionAnimationParameter(animHandler.Animator, currentAttackActionData);
+            CharacterAnimation.SetAttackAnimationSpeed(animHandler.Animator, characterLogic.PlayerAttributes, currentAttackPhase, currentAttackActionData);
         }
 
         // 应用技能释放前的效果
-        ApplySkillEffectsOnCast(attackData, gameObject);
+        ApplySkillEffectsOnCast(attackData, characterLogic);
 
         LogManager.Log($"[CharacterAttackController] 开始攻击: {attackData.acitonName}");
         OnAttackStarted?.Invoke(attackData);
+
+        return true;
     }
 
     // 攻击分段（前摇/命中/后摇）更新
@@ -265,7 +294,7 @@ public class CharacterAttackController : MonoBehaviour
                         transform.position,
                         facingRight,
                         currentAttackTimer,
-                        gameObject);
+                        characterLogic);
                 }
 
                 if (currentAttackActionData != null && currentAttackTimer >= currentAttackActionData.windUpTime + currentAttackActionData.activeTime)
@@ -297,11 +326,11 @@ public class CharacterAttackController : MonoBehaviour
                 currentAttackActionData,
                 transform.position,
                 facingRight,
-                gameObject);
+                characterLogic);
         }
 
         if (animHandler != null)
-            animHandler.SetAttackAnimationSpeed(currentAttackPhase, currentAttackActionData);
+            CharacterAnimation.SetAttackAnimationSpeed(animHandler.Animator, characterLogic.PlayerAttributes, currentAttackPhase, currentAttackActionData);
 
         Debug.Log("[CharacterAttackController] 进入攻击激活阶段");
     }
@@ -311,18 +340,18 @@ public class CharacterAttackController : MonoBehaviour
         currentAttackPhase = AttackPhase.Recovery;
 
         if (animHandler != null)
-            animHandler.SetAttackAnimationSpeed(currentAttackPhase, currentAttackActionData);
+            CharacterAnimation.SetAttackAnimationSpeed(animHandler.Animator, characterLogic.PlayerAttributes, currentAttackPhase, currentAttackActionData);
 
         Debug.Log("[CharacterAttackController] 进入后摇阶段");
     }
 
-    private void StartHoldAttack(AttackActionData attackData)
+    private bool StartHoldAttack(AttackActionData attackData)
     {
-        if (attackData == null) return;
+        if (attackData == null) return false;
 
         if (!CanPerformAttack(attackData))
         {
-            return;
+            return false;
         }
 
         ConsumeAttackResources(attackData);
@@ -332,15 +361,16 @@ public class CharacterAttackController : MonoBehaviour
         holdTickCount = 0;
 
         // 应用技能释放前的效果
-        ApplySkillEffectsOnCast(attackData, gameObject);
+        ApplySkillEffectsOnCast(attackData, characterLogic);
 
         LogManager.Log($"[CharacterAttackController] 开始Hold攻击: {attackData.acitonName}");
         PerformHoldAttackTick();
         if (animHandler != null && activeHoldAttack.animationClip.isLooping)
         {
-            animHandler.SetAttackAnimationSpeed(activeHoldAttack, activeHoldAttack.holdTickInterval);
-            animHandler.SetActionAnimationParameter(activeHoldAttack);
+            CharacterAnimation.SetAttackAnimationSpeed(animHandler.Animator, characterLogic.PlayerAttributes, activeHoldAttack, activeHoldAttack.holdTickInterval);
+            CharacterAnimation.SetActionAnimationParameter(animHandler.Animator, activeHoldAttack);
         }
+        return true;
     }
 
     private void UpdateHoldAttack(float delta)
@@ -377,7 +407,7 @@ public class CharacterAttackController : MonoBehaviour
                 activeHoldAttack,
                 transform.position,
                 facingRight,
-                gameObject);
+                characterLogic);
             // 立即进行一次命中检测,不走通用的前摇后摇逻辑
             AttackHitDetector.Instance.CheckHitForFrame(
                 tickAttackId,
@@ -385,15 +415,15 @@ public class CharacterAttackController : MonoBehaviour
                 transform.position,
                 facingRight,
                 0f,
-                gameObject);
+                characterLogic);
 
             AttackHitDetector.Instance.EndAttackDetection(tickAttackId);
         }
 
         if (animHandler != null && activeHoldAttack.animationClip.isLooping == false)//动画不循环的时候,才需要每次执行攻击都播放一次攻击动画
         {
-            animHandler.SetAttackAnimationSpeed(activeHoldAttack, activeHoldAttack.holdTickInterval);//设置攻击速度
-            animHandler.SetActionAnimationParameter(activeHoldAttack);//设置攻击动画
+            CharacterAnimation.SetAttackAnimationSpeed(animHandler.Animator, characterLogic.PlayerAttributes, activeHoldAttack, activeHoldAttack.holdTickInterval);//设置攻击速度
+            CharacterAnimation.SetActionAnimationParameter(animHandler.Animator, activeHoldAttack);//设置攻击动画
         }
 
         LogManager.Log($"[CharacterAttackController] Hold攻击触发第{holdTickCount + 1}次");
@@ -407,14 +437,14 @@ public class CharacterAttackController : MonoBehaviour
 
         // Hold攻击没有统一的attackId，所以传null
         // 如果需要对Hold攻击也支持受击方效果，需要改进实现方式
-        ApplySkillEffectsOnComplete(activeHoldAttack, gameObject, null);
+        ApplySkillEffectsOnComplete(activeHoldAttack, characterLogic, null);
 
         activeHoldAttack = null;
         holdAttackTimer = 0f;
         holdTickCount = 0;
     }
 
-    public void EndAttack()
+    public void EndAttack(bool isBreak = false)
     {
         if (currentAttackActionData == null || m_isEndingAttack) return;
 
@@ -422,9 +452,12 @@ public class CharacterAttackController : MonoBehaviour
         Debug.Log("[CharacterAttackController] 攻击结束");
 
         // 应用技能释放后的效果，传递attackId以便获取受击方信息
-        ApplySkillEffectsOnComplete(currentAttackActionData, gameObject, currentAttackId);
+        if (isBreak == false)//未中断才触发结束效果
+        {
+            ApplySkillEffectsOnComplete(currentAttackActionData, characterLogic, currentAttackId);
+        }
 
-        OnAttackEnded?.Invoke();
+        OnAttackEnded?.Invoke(isBreak);
 
         m_isEndingAttack = false;
 
@@ -433,12 +466,12 @@ public class CharacterAttackController : MonoBehaviour
             AttackHitDetector.Instance.EndAttackDetection(currentAttackId);
             currentAttackId = null;
         }
-
+#if UNITY_EDITOR
         if (attackVisualizer != null)
         {
             attackVisualizer.ClearFrameData();
         }
-
+#endif
         currentAttackActionData = null;
         currentAttackPhase = AttackPhase.WindUp;
         currentAttackTimer = 0f;
@@ -450,22 +483,21 @@ public class CharacterAttackController : MonoBehaviour
     }
 
 
-    public void StartAttack(AttackActionData attackData)
+    public bool StartAttack(AttackActionData attackData)
     {
-        if (attackData == null) return;
+        if (attackData == null) return false;
 
         ConsumeBufferedAttack();
 
         switch (attackData.triggerType)
         {
             case AttackTriggerType.Tap:
-                BeginAttack(attackData);
-                break;
+                return BeginAttack(attackData);
 
             case AttackTriggerType.LongPress:
                 if (inputHandler != null && inputHandler.AttackHoldTime >= attackData.longPressTimeThreshold)
                 {
-                    BeginAttack(attackData);
+                    return BeginAttack(attackData);
                 }
                 else
                 {
@@ -478,9 +510,9 @@ public class CharacterAttackController : MonoBehaviour
                 break;
 
             default:
-                BeginAttack(attackData);
-                break;
+                return BeginAttack(attackData);
         }
+        return true;
     }
 
     bool CanPerformAttack(AttackActionData attackData)
@@ -489,6 +521,13 @@ public class CharacterAttackController : MonoBehaviour
         {
             LogManager.LogWarning($"[CharacterAttackController] 攻击 {attackData.acitonName} 没有配置 SkillData");
             return true;
+        }
+
+        if (characterLogic.SkillCooldownManager != null && characterLogic.SkillCooldownManager.IsOnCooldown(attackData))
+        {
+            float remaining = characterLogic.SkillCooldownManager.GetRemainingCooldown(attackData);
+            LogManager.Log($"[CharacterAttackController] 技能 {attackData.acitonName} 冷却中，剩余时间: {remaining:F2}秒");
+            return false;
         }
 
         if (characterLogic == null || characterLogic.PlayerAttributes == null)
@@ -517,6 +556,11 @@ public class CharacterAttackController : MonoBehaviour
 
             LogManager.Log($"[CharacterAttackController] 消耗能量: {energyCost}, 剩余: {characterLogic.PlayerAttributes.characterAtttibute.currentEnergy}");
         }
+
+        if (characterLogic.SkillCooldownManager != null)
+        {
+            characterLogic.SkillCooldownManager.StartCooldown(attackData);
+        }
     }
 
     /// <summary>
@@ -524,7 +568,9 @@ public class CharacterAttackController : MonoBehaviour
     /// 在技能开始执行时触发，通常用于自身增益、消耗buff等
     /// </summary>
     /// <param name="attackData">攻击动作数据</param>
-    public static void ApplySkillEffectsOnCast(AttackActionData attackData, GameObject self)
+    /// <param name="self">攻击者</param>
+    /// <param name="targetedEnemy">索敌目标，技能释放前锁定的目标</param>
+    public static void ApplySkillEffectsOnCast(AttackActionData attackData, CharacterBase self, CharacterBase targetedEnemy = null)
     {
         if (attackData == null || attackData.skillData == null) return;
         if (attackData.skillData.effectsOnCast == null || attackData.skillData.effectsOnCast.Count == 0) return;
@@ -534,7 +580,15 @@ public class CharacterAttackController : MonoBehaviour
             if (effect != null)
             {
                 // 根据效果目标类型选择施加对象
-                GameObject effectReceiver = (effect.effectTarget == EffectTarget.Attacker) ? self : null;
+                CharacterBase effectReceiver = null;
+                if (effect.effectTarget == EffectTarget.Attacker)
+                {
+                    effectReceiver = self;
+                }
+                else if (effect.effectTarget == EffectTarget.Target)
+                {
+                    effectReceiver = targetedEnemy;
+                }
 
                 if (effectReceiver == null)
                 {
@@ -543,7 +597,7 @@ public class CharacterAttackController : MonoBehaviour
                 }
 
                 // 获取BuffSystem组件
-                var receiverBuffSystem = effectReceiver.GetComponentInParent<BuffSystem>();
+                var receiverBuffSystem = effectReceiver.BuffSystem;
                 if (receiverBuffSystem == null)
                 {
                     LogManager.LogWarning($"[CharacterAttackController] 效果接收者 {effectReceiver.name} 没有BuffSystem组件，无法应用技能释放前效果 {effect.effectName}");
@@ -551,7 +605,7 @@ public class CharacterAttackController : MonoBehaviour
                 }
 
                 // 应用效果
-                receiverBuffSystem.ApplyBuff(effect, self);
+                receiverBuffSystem.ApplyBuff(effect, self, targetedEnemy);
                 LogManager.Log($"[CharacterAttackController] 应用技能释放前效果: {effect.effectName} 到 {effectReceiver.name}");
             }
         }
@@ -565,13 +619,13 @@ public class CharacterAttackController : MonoBehaviour
     /// <param name="attackData">攻击动作数据</param>
     /// <param name="self">攻击者</param>
     /// <param name="attackId">攻击ID，用于从AttackHitDetector获取DamageInfo中的受击方信息</param>
-    public static void ApplySkillEffectsOnComplete(AttackActionData attackData, GameObject self, string attackId = null)
+    public static void ApplySkillEffectsOnComplete(AttackActionData attackData, CharacterBase self, string attackId = null)
     {
         if (attackData == null || attackData.skillData == null) return;
         if (attackData.skillData.effectsOnComplete == null || attackData.skillData.effectsOnComplete.Count == 0) return;
 
         // 从AttackHitDetector获取DamageInfo，以获得受击方信息
-        GameObject target = null;
+        CharacterBase target = null;
         if (!string.IsNullOrEmpty(attackId) && AttackHitDetector.Instance != null)
         {
             DamageInfo damageInfo = AttackHitDetector.Instance.GetAttackDamageInfo(attackId);
@@ -586,16 +640,16 @@ public class CharacterAttackController : MonoBehaviour
             if (effect != null)
             {
                 // 根据效果目标类型选择施加对象
-                GameObject effectReceiver = (effect.effectTarget == EffectTarget.Attacker) ? self : target;
+                var effectReceiver = (effect.effectTarget == EffectTarget.Attacker) ? self : target;
 
                 if (effectReceiver == null)
                 {
-                    LogManager.LogWarning($"[CharacterAttackController] 技能释放后效果 {effect.effectName} 的目标类型为Target，但没有目标对象");
+                    //LogManager.LogWarning($"[CharacterAttackController] 技能释放后效果 {effect.effectName} 的目标类型为Target，但没有目标对象");
                     continue;
                 }
 
                 // 获取BuffSystem组件
-                var receiverBuffSystem = effectReceiver.GetComponentInParent<BuffSystem>();
+                var receiverBuffSystem = effectReceiver.GetComponent<BuffSystem>();
                 if (receiverBuffSystem == null)
                 {
                     LogManager.LogWarning($"[CharacterAttackController] 效果接收者 {effectReceiver.name} 没有BuffSystem组件，无法应用技能释放后效果 {effect.effectName}");
@@ -603,7 +657,7 @@ public class CharacterAttackController : MonoBehaviour
                 }
 
                 // 应用效果
-                receiverBuffSystem.ApplyBuff(effect, self);
+                receiverBuffSystem.ApplyBuff(effect, self, target);
                 LogManager.Log($"[CharacterAttackController] 应用技能释放后效果: {effect.effectName} 到 {effectReceiver.name}");
             }
         }

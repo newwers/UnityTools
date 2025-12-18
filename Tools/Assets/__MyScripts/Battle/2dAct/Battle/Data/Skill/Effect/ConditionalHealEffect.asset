@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7064df54bed77149ae61790ac5706e3, type: 3}
+  m_Name: ConditionalHealEffect
+  m_EditorClassIdentifier: 
+  effectName: "\u6301\u7EED\u56DE\u8840"
+  category: 18
+  damageCalcType: 0
+  icon: {fileID: 0}
+  effectTarget: 0
+  requireHit: 1
+  duration: 10
+  isPermanent: 0
+  tickInterval: 1
+  parameters:
+  - name: value
+    value: 1
+    description: "\u6301\u7EED\u56DE\u8840_10\u79D2_\u6BCF\u79D21\u70B9"
+  vfxPrefab: {fileID: 0}
+  sfxClip: {fileID: 0}
+  uiTintColor: {r: 1, g: 1, b: 1, a: 1}
+  canStack: 1
+  maxStacks: 10
+  initialStacks: 1
+  stacksPerApplication: 1
+  stackBehavior: 0

@@ -32,27 +32,36 @@ public enum PlayerState
 }
 
 
-public enum AttackPhase
+
+public class CharacterLogic : CharacterBase
 {
-    WindUp,     // 前摇阶段
-    Active,     // 攻击中阶段,只有在攻击阶段才进行命中攻击帧检测
-    Recovery    // 后摇阶段
-}
-[DisallowMultipleComponent]
-public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
-{
+    private const int JUMP_PROTECTION_FRAME_COUNT = 3; // 跳跃保护3帧
+
+    private int EnemyLayer;
+    private int PlayerLayer;
+
     // 逻辑事件
     public System.Action<PlayerState, PlayerState> OnStateChanged;
     public System.Action<int> OnAttackCombo;
     public System.Action OnJump;
     public System.Action OnLandAction;
-    public System.Action<AttackActionData, AttackFrameData, GameObject> OnHurt;
+    public System.Action<AttackActionData, AttackFrameData, CharacterBase> OnHurt;
     public System.Action OnDeath;
     // 添加格挡成功事件
     public System.Action OnBlockSuccess; // 格挡成功
     public System.Action<GameObject> OnParrySuccess; // 弹反成功（参数为被弹反的敌人）
     //硬直事件
     public System.Action OnStunned;
+
+    // 多段跳跃相关
+    [Header("多段跳跃状态")]
+    [FieldReadOnly]
+    [Tooltip("当前剩余空中跳跃次数")]
+    public int currentAirJumpsRemaining = 0;
+
+    [FieldReadOnly]
+    [Tooltip("额外的跳跃次数（通过Buff获得）")]
+    public int extraJumpCount = 0;
 
 
 
@@ -63,9 +72,8 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
     [Tooltip("角色数据库")]
     public CharacterDatabase characterDatabase;
 
-    [Header("属性组件")]
-    public PlayerAttributes playerAttributes;
-    public BuffSystem buffSystem;
+
+    public SkillCooldownManager SkillCooldownManager;
 
     private GameObject characterInstance;
     private readonly Dictionary<string, GameObject> characterInstanceCache = new Dictionary<string, GameObject>();
@@ -91,24 +99,17 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
 
 
 
-
-    [FieldReadOnly]
-    public bool isFacingRight = true;
-
     // 组件引用
-    private Rigidbody2D rb;
+
     private InputHandler inputHandler;
     private CharacterAnimation animHandler;
-    private BoxCollider2D boxCollider2D;
 
     private int jumpProtectionFrames = 0;
-    private const int JUMP_PROTECTION_FRAME_COUNT = 3; // 跳跃保护3帧
 
     // 逻辑状态
     private bool m_IsGrounded;
     private float lastGroundedTime;
     private float lastDashTime;
-    private float lastAttackTime;
 
     // 格挡状态
     /// <summary>
@@ -119,19 +120,13 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
     private float parryWindowStartTime = 0f;
     private bool canParry = false; // 是否可以触发弹反
 
-    [Header("动作优先级")]
-    [FieldReadOnly]
-    [SerializeField]
-    private int currentActionPriority = 0; // 当前执行动作的优先级
     private Coroutine m_RecoverFromHurt_Coroutine;
     private float stunTimer = 0f;
-    public const int StunPriority = 300; // 硬直优先级最高
-    public const int BlockPriority = 200; // 格挡优先级
-    public const int ParryPriority = 250; // 弹反优先级
-    public const int DashPriority = 150; // 冲刺优先级
-    public const int HurtPriority = 100; // 受伤优先级
-    public const int IdlePriority = 0; // 待机优先级
 
+
+    private string currentCharacterName;
+    private string specialAttackOriginalCharacterName;
+    private bool isSpecialAttackActive = false;
 
 
     public InputHandler InputHandler
@@ -148,40 +143,22 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
         get { return CurrentState == PlayerState.Stunned; }
     }
 
-    public PlayerAttributes PlayerAttributes => playerAttributes;
 
-    public bool IsAttacking()
+    public override bool IsDead => CurrentState == PlayerState.Death || (PlayerAttributes != null && PlayerAttributes.IsDead);
+
+
+    protected override void Awake()
     {
-        return CurrentState == PlayerState.Attacking ||
-               CurrentState == PlayerState.HeavyAttacking ||
-               CurrentState == PlayerState.DashAttacking ||
-               CurrentState == PlayerState.JumpAttacking ||
-               CurrentState == PlayerState.Parrying;//弹反也算攻击状态
-    }
+        base.Awake();
 
+        EnemyLayer = LayerMask.NameToLayer("Enemy");
+        PlayerLayer = LayerMask.NameToLayer("Player");
 
-    private string currentCharacterName;
-    private string specialAttackOriginalCharacterName;
-    private bool isSpecialAttackActive = false;
-
-    public bool IsDead => CurrentState == PlayerState.Death || (playerAttributes != null && playerAttributes.IsDead);
-
-    public Transform Transform => transform;
-
-
-    private void Awake()
-    {
-        rb = GetComponent<Rigidbody2D>();
         inputHandler = GetComponent<InputHandler>();
         attackController = GetComponent<CharacterAttackController>();
-        boxCollider2D = GetComponent<BoxCollider2D>();
-        buffSystem = GetComponent<BuffSystem>();
 
 
         InitializeCharacter();
-
-        playerAttributes?.Initialize();
-        buffSystem.Init(playerAttributes.characterAtttibute, this, this);
 
         currentActionData = actionManager != null ? (ActionData)actionManager.idleAction : null;
     }
@@ -211,6 +188,10 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
             attackController.OnAttackStarted += HandleAttackControllerStarted;
             attackController.OnAttackEnded += HandleAttackControllerEnded;
         }
+        if (PlayerAttributes)
+        {
+            PlayerAttributes.characterAtttibute.OnDeath += HandleDeath;
+        }
     }
 
 
@@ -236,6 +217,10 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
         {
             attackController.OnAttackStarted -= HandleAttackControllerStarted;
             attackController.OnAttackEnded -= HandleAttackControllerEnded;
+        }
+        if (PlayerAttributes)
+        {
+            PlayerAttributes.characterAtttibute.OnDeath -= HandleDeath;
         }
     }
 
@@ -276,7 +261,7 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
         Physics2D.IgnoreCollision(boxCollider2D, platformCollider, true);
         Vector3 halfHeight = new Vector3(0, boxCollider2D.size.y / 2, 0);
         RaycastHit2D hit = Physics2D.Raycast(transform.position + halfHeight, Vector2.down, 10f, actionManager.jumpAction.groundLayer);
-        while (hit.collider != null && hit.collider.TryGetComponent<PlatformEffector2D>(out _))
+        while (hit.collider != null && hit.collider.TryGetComponent<PlatformEffector2D>(out _))//todo:往下跳的时候,持续检测,直到不在平台上为止,这边可能比较费性能,后续可以优化
         {
             hit = Physics2D.Raycast(transform.position + halfHeight, Vector2.down, 10f, actionManager.jumpAction.groundLayer);
             yield return null;
@@ -327,6 +312,13 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
         }
 
 
+        if (SkillCooldownManager != null && SkillCooldownManager.IsOnCooldown(specialAttackData))
+        {
+            float remaining = SkillCooldownManager.GetRemainingCooldown(specialAttackData);
+            LogManager.Log($"[CharacterLogic] {label}冷却中，剩余时间: {remaining:F2}秒");
+            return;
+        }
+
         var specialAttackToExecute = specialAttackData;
 
         specialAttackOriginalCharacterName = currentCharacterName;
@@ -346,12 +338,10 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
         {
             attackController.StartAttack(specialAttackToExecute);
         }
-        //else
-        //{
-        //    HandleAttackStarted();
-        //}
     }
-
+    /// <summary>
+    /// 角色切换
+    /// </summary>
     private void HandleAssistAttack()
     {
         if (!HasAlternateCharacter())
@@ -371,6 +361,8 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
             LogManager.Log("[CharacterLogic] 眩晕中，暂不允许切换角色");
             return;
         }
+        //todo:后面加一个切换角色是否cd中
+
 
         string nextCharacterName = GetNextCharacterName();
         TrySwitchCharacter(nextCharacterName);
@@ -486,7 +478,7 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
     /// <summary>
     /// 旧版受伤处理器（用于兼容旧代码）
     /// </summary>
-    private void OnHurtHandler(AttackActionData attackData, AttackFrameData frameData, GameObject attacker)
+    private void OnHurtHandler(AttackActionData attackData, AttackFrameData frameData, CharacterBase attacker)
     {
         if (IsDead) return; // 已死亡则忽略受伤事件
 
@@ -497,7 +489,7 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
         animHandler?.OnHurt(shouldPlayHitAnimation);
         if (shouldPlayHitAnimation)//只有播放受击动画时才切换状态
         {
-            ChangeState(PlayerState.Hurt);
+            ChangeState(PlayerState.Hurt);//todo:打断攻击时,如何中断伤害?
             //根据受伤时间,切换回之前的状态
             if (m_RecoverFromHurt_Coroutine != null)
             {
@@ -529,6 +521,14 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
         }
 
         OnHurt?.Invoke(attackData, frameData, attacker);
+    }
+
+    public void AddForce(Vector2 force)
+    {
+        if (rb)
+        {
+            rb.AddForce(force, ForceMode2D.Impulse);
+        }
     }
 
     private void InitializeCharacter()
@@ -663,7 +663,6 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
         isParryWindowActive = false;
         canParry = false;
         isHeavyAttackCharging = false;
-        currentActionPriority = IdlePriority;
         currentActionData = actionManager != null ? (ActionData)actionManager.idleAction : null;
 
         if (refreshStateImmediately)
@@ -687,13 +686,13 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
 
     private bool ShouldPlayHitAnimation(int priority)
     {
-        return priority > HurtPriority && currentActionPriority < priority;//只有当攻击优先级高于硬直优先级且当前动作优先级低于攻击优先级时才播放受击动画
+        return DamageCalculator.ShouldPlayHitAnimation(priority, PlayerAttributes.characterAtttibute);//非霸体时才播放受击动画
     }
 
     /// <summary>
     /// 处理格挡成功
     /// </summary>
-    private void HandleBlockSuccess(ActionData attackData, AttackFrameData frameData, GameObject attacker)
+    private void HandleBlockSuccess(ActionData attackData, AttackFrameData frameData, CharacterBase attacker)
     {
         LogManager.Log($"[CharacterLogic] 格挡成功! 来自 {attacker.name} 的攻击");
 
@@ -799,29 +798,6 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
             return false;
         }
         return true;
-        switch (CurrentState)
-        {
-            case PlayerState.Down:
-            case PlayerState.GettingUp:
-            case PlayerState.Stunned:
-            case PlayerState.Dashing:
-            case PlayerState.Blocking:
-            case PlayerState.Parrying:
-                // 这些状态需要特定条件才能退出，不能自动刷新
-                return false;
-
-            // 攻击状态在结束后应该可以被刷新
-            case PlayerState.Attacking:
-            case PlayerState.HeavyAttacking:
-            case PlayerState.DashAttacking:
-            case PlayerState.JumpAttacking:
-            case PlayerState.SpecialAttacking:
-                // 只有在攻击结束后（没有当前攻击数据）才可以刷新
-                return currentAttackActionData == null;
-
-            default:
-                return true;
-        }
     }
 
     /// <summary>
@@ -890,10 +866,9 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
     /// </summary>
     private void OnLand()
     {
-        //if (CurrentState == PlayerState.JumpAttacking)//在空中攻击落地时,直接结束攻击
-        //{
-        //    //EndAttack();//切换状态时会调用breakAttack,就会清除攻击数据
-        //}
+        // 落地时重置空中跳跃次数
+        ResetAirJumps();
+
         OnLandAction?.Invoke();
     }
 
@@ -958,8 +933,9 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
 
     private void HandleDashState()
     {
+        float finalDashSpeed = GetFinalDashSpeed();
         float dashDirection = isFacingRight ? 1f : -1f;
-        rb.linearVelocity = new Vector2(dashDirection * actionManager.dashAction.dashSpeed, rb.linearVelocity.y);
+        rb.linearVelocity = new Vector2(dashDirection * finalDashSpeed, rb.linearVelocity.y);
     }
 
     private void HandleBlockState()
@@ -969,7 +945,9 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
         {
             moveInputX = inputHandler.MoveInput.x;
         }
-        rb.linearVelocity = new Vector2(moveInputX * actionManager.moveAction.moveSpeed * 0.3f, rb.linearVelocity.y);
+
+        float finalMoveSpeed = GetFinalMoveSpeed();
+        rb.linearVelocity = new Vector2(moveInputX * finalMoveSpeed * 0.3f, rb.linearVelocity.y);
     }
 
     private void HandleAttackState()
@@ -1024,13 +1002,10 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
 
         // 与原逻辑保持一致，让 currentActionData 指向当前攻击数据
         currentActionData = attackData != null ? (ActionData)attackData : null;
-
-        // 记录最近一次攻击时间
-        lastAttackTime = Time.time;
     }
 
     // 处理攻击子系统结束的回调
-    private void HandleAttackControllerEnded()
+    private void HandleAttackControllerEnded(bool isBreak)
     {
         // 如果刚结束的是弹反攻击，走弹反结束路径；否则刷新状态
         if (CurrentState == PlayerState.Parrying)
@@ -1075,8 +1050,9 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
     /// 支持刷新眩晕时间：如果角色已经处于眩晕状态，会更新眩晕时间为新的持续时间
     /// </summary>
     /// <param name="duration">硬直持续时间（秒）</param>
-    public void ApplyStun(float duration)
+    public override void ApplyStun(float duration)
     {
+        base.ApplyStun(duration);
         if (CurrentState == PlayerState.Stunned)
         {
             stunTimer = duration;
@@ -1084,7 +1060,6 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
             return;
         }
 
-        currentActionPriority = StunPriority;
         stunTimer = duration;
 
         LogManager.Log($"[CharacterLogic] 施加硬直时间: {duration}秒");
@@ -1113,7 +1088,7 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
     private void BreakAttack()
     {
         // 由攻击子系统处理打断和清理
-        attackController?.EndAttack();
+        attackController?.EndAttack(true);
 
         // 保持上层状态一致性
         currentActionData = actionManager != null ? (ActionData)actionManager.idleAction : null;
@@ -1192,18 +1167,16 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
 
     private void HandleDashInput()
     {
-        // 冲刺优先级第二高，可以打断攻击和跳跃
         if (CanDash())
         {
-            // 如果当前正在跳跃，先结束跳跃
             if (CurrentState == PlayerState.Jumping || CurrentState == PlayerState.Falling)
             {
-                // 跳跃中可以立即切换到冲刺
                 ChangeState(PlayerState.Dashing);
             }
 
             PerformDash();
         }
+
     }
     /// <summary>
     /// 玩家攻击输入处理
@@ -1295,7 +1268,6 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
     /// </summary>
     private void PerformAttack()
     {
-        // 旧实现已迁移到 attackController，保留兼容调用路径
         if (attackController == null)
         {
             LogManager.LogError($"[CharacterLogic] attackController 未挂载!");
@@ -1348,7 +1320,7 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
     private void SetIsBlockState(bool state)
     {
         isBlocking = state;
-        playerAttributes.characterAtttibute.isBlocking = state;
+        PlayerAttributes.characterAtttibute.isBlocking = state;
     }
     /// <summary>
     /// 普攻按住相应处理
@@ -1443,15 +1415,102 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
     #endregion
 
     #region 条件检查方法
+
+    /// <summary>
+    /// 获取当前总的最大空中跳跃次数（基础 + 额外）
+    /// </summary>
+    private int GetTotalMaxAirJumps()
+    {
+        int baseJumps = actionManager != null && actionManager.jumpAction != null
+            ? actionManager.jumpAction.baseMaxAirJumps
+            : 0;
+        return baseJumps + extraJumpCount;
+    }
+
+    /// <summary>
+    /// 重置空中跳跃次数
+    /// 在落地时调用
+    /// </summary>
+    private void ResetAirJumps()
+    {
+        currentAirJumpsRemaining = GetTotalMaxAirJumps();
+        LogManager.Log($"[CharacterLogic] 重置空中跳跃次数: {currentAirJumpsRemaining}");
+    }
+
+    /// <summary>
+    /// 消耗一次空中跳跃机会
+    /// </summary>
+    private void ConsumeAirJump()
+    {
+        if (currentAirJumpsRemaining > 0)
+        {
+            currentAirJumpsRemaining--;
+            LogManager.Log($"[CharacterLogic] 消耗一次空中跳跃，剩余: {currentAirJumpsRemaining}");
+        }
+    }
+
+    /// <summary>
+    /// 增加额外跳跃次数（由Buff系统调用）
+    /// </summary>
+    public void AddExtraJumps(int count)
+    {
+        extraJumpCount += count;
+        currentAirJumpsRemaining += count;
+        LogManager.Log($"[CharacterLogic] 增加额外跳跃次数 +{count}，总额外跳跃: {extraJumpCount}，当前剩余: {currentAirJumpsRemaining}");
+    }
+
+    /// <summary>
+    /// 移除额外跳跃次数（由Buff系统调用）
+    /// </summary>
+    public void RemoveExtraJumps(int count)
+    {
+        extraJumpCount = Mathf.Max(0, extraJumpCount - count);
+        currentAirJumpsRemaining = Mathf.Max(0, currentAirJumpsRemaining - count);
+        LogManager.Log($"[CharacterLogic] 移除额外跳跃次数 -{count}，总额外跳跃: {extraJumpCount}，当前剩余: {currentAirJumpsRemaining}");
+    }
+
     private bool CanJump()
     {
         bool coyoteTimeValid = Time.time - lastGroundedTime <= actionManager.jumpAction.coyoteTime;
-        return (m_IsGrounded || coyoteTimeValid) && CanInterruptForJump() && inputHandler.MoveInput.y >= 0;//在地面并且cd足够,并且没有按下下键,状态还满足跳跃条件
+        bool isGroundedOrCoyote = m_IsGrounded || coyoteTimeValid;
+        bool isDownPressed = inputHandler.MoveInput.y < 0;
+
+        // 在地面或土狼时间内可以跳跃
+        if (isGroundedOrCoyote && !isDownPressed && CanInterruptForJump())
+        {
+            return true;
+        }
+
+        // 空中且有剩余跳跃次数可以跳跃
+        if (!m_IsGrounded && currentAirJumpsRemaining > 0 && !isDownPressed && CanInterruptForJump())
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private bool CanDash()
     {
-        return Time.time - lastDashTime >= actionManager.dashAction.dashCooldown && CanInterruptForDash();
+        if (Time.time - lastDashTime < actionManager.dashAction.dashCooldown)
+        {
+            return false;
+        }
+
+        if (!CanInterruptForDash())
+        {
+            return false;
+        }
+
+        if (PlayerAttributes != null && PlayerAttributes.characterAtttibute != null)
+        {
+            if (actionManager.dashAction.consumeDodgeCount)
+            {
+                return PlayerAttributes.characterAtttibute.currentDodgeCount > 0;
+            }
+        }
+
+        return true;
     }
 
     private bool CanAttack()
@@ -1598,6 +1657,17 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
     }
 
 
+    public bool IsAttacking()
+    {
+        return CurrentState == PlayerState.Attacking ||
+               CurrentState == PlayerState.HeavyAttacking ||
+               CurrentState == PlayerState.DashAttacking ||
+               CurrentState == PlayerState.JumpAttacking ||
+               CurrentState == PlayerState.Parrying ||//弹反也算攻击状态
+               CurrentState == PlayerState.SpecialAttacking ||
+               CurrentState == PlayerState.AssistAttacking;
+    }
+
     #endregion
 
     #region 攻击预输入系统
@@ -1626,7 +1696,8 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
     #region 动作执行
     private void HandleMovement(Vector2 input)
     {
-        float targetSpeed = input.x * actionManager.moveAction.moveSpeed;
+        float finalMoveSpeed = GetFinalMoveSpeed();
+        float targetSpeed = input.x * finalMoveSpeed;
         float speedDiff = targetSpeed - rb.linearVelocity.x;
         float accelRate = (Mathf.Abs(targetSpeed) > 0.01f) ? actionManager.moveAction.acceleration : actionManager.moveAction.deceleration;
         float movement = Mathf.Pow(Mathf.Abs(speedDiff) * accelRate, 0.9f) * Mathf.Sign(speedDiff);
@@ -1642,7 +1713,8 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
             moveInputX = inputHandler.MoveInput.x;
         }
 
-        float targetSpeed = moveInputX * actionManager.moveAction.moveSpeed * 0.8f;
+        float finalAirMoveSpeed = GetFinalAirMoveSpeed();
+        float targetSpeed = moveInputX * finalAirMoveSpeed;
         float speedDiff = targetSpeed - rb.linearVelocity.x;
         float movement = speedDiff * actionManager.moveAction.acceleration * 0.5f;
         rb.AddForce(movement * Vector2.right);
@@ -1662,14 +1734,31 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
 
     private void PerformJump()
     {
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, actionManager.jumpAction.jumpForce);
+        bool isAirJump = !m_IsGrounded;
+
+        // 计算跳跃力度
+        float jumpPower = actionManager.jumpAction.jumpForce;
+        if (isAirJump && actionManager.jumpAction.baseMaxAirJumps > 0)
+        {
+            // 空中跳跃使用力度系数
+            jumpPower *= actionManager.jumpAction.airJumpForceMultiplier;
+        }
+
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpPower);
         ChangeState(PlayerState.Jumping);
+
+        // 如果是空中跳跃，消耗一次跳跃次数
+        if (isAirJump)
+        {
+            ConsumeAirJump();
+        }
+
         OnJump?.Invoke();
 
         // 设置跳跃保护帧
         jumpProtectionFrames = JUMP_PROTECTION_FRAME_COUNT;
 
-        LogManager.Log($"[CharacterLogic] 执行跳跃，打断当前状态");
+        LogManager.Log($"[CharacterLogic] 执行{(isAirJump ? "空中" : "地面")}跳跃，打断当前状态");
     }
 
     private void PerformDash()
@@ -1677,15 +1766,71 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
         ChangeState(PlayerState.Dashing);
         lastDashTime = Time.time;
 
-        // 通知InputHandler冲刺开始
         if (inputHandler != null)
         {
             inputHandler.OnDashStarted();
         }
 
+        if (actionManager.dashAction.consumeDodgeCount)
+        {
+            if (PlayerAttributes.characterAtttibute.ConsumeDodge())
+            {
+                PlayerAttributes.characterAtttibute.isDodging = true;
+                LogManager.Log($"[CharacterLogic] 闪避消耗成功，剩余次数: {PlayerAttributes.characterAtttibute.currentDodgeCount}/{PlayerAttributes.characterAtttibute.maxDodgeCount}");
+            }
+        }
+
+        // 冲刺时忽略角色层和Enemy层之间的碰撞
+        Physics2D.IgnoreLayerCollision(PlayerLayer, EnemyLayer, true);
+
         StartCoroutine(EndDashAfterTime());
+        StartCoroutine(HandleDodgeInvincibility());
 
         LogManager.Log($"[CharacterLogic] 执行冲刺，打断当前状态");
+    }
+
+    /// <summary>
+    /// 获取最终移动速度（考虑属性加成）
+    /// </summary>
+    private float GetFinalMoveSpeed()
+    {
+        if (PlayerAttributes == null || PlayerAttributes.characterAtttibute == null)
+        {
+            return actionManager != null ? actionManager.moveAction.moveSpeed : 5f;
+        }
+
+        float baseSpeed = actionManager != null ? actionManager.moveAction.moveSpeed : 5f;
+        float attributeSpeed = PlayerAttributes.characterAtttibute.FinalMoveSpeed;
+        float multiplier = PlayerAttributes.characterAtttibute.FinalMoveSpeedMultiplier;
+
+        // 计算最终速度：基础速度 + 属性速度加成，再乘以系数
+        return (baseSpeed + attributeSpeed) * multiplier;
+    }
+
+    /// <summary>
+    /// 获取空中移动速度（考虑属性加成）
+    /// </summary>
+    private float GetFinalAirMoveSpeed()
+    {
+        return GetFinalMoveSpeed() * 0.8f; // 空中移动速度为地面的80%
+    }
+
+    /// <summary>
+    /// 获取冲刺速度（考虑属性加成）
+    /// </summary>
+    private float GetFinalDashSpeed()
+    {
+        if (PlayerAttributes == null || PlayerAttributes.characterAtttibute == null)
+        {
+            return actionManager != null ? actionManager.dashAction.dashSpeed : 10f;
+        }
+
+        float baseDashSpeed = actionManager != null ? actionManager.dashAction.dashSpeed : 10f;
+        float attributeSpeed = PlayerAttributes.characterAtttibute.FinalMoveSpeed;
+        float multiplier = PlayerAttributes.characterAtttibute.FinalMoveSpeedMultiplier;
+
+        // 冲刺速度也受移动属性影响
+        return (baseDashSpeed + attributeSpeed * 0.5f) * multiplier;//todo:这边是伤害计算公式,后面考虑优化
     }
 
 
@@ -1705,6 +1850,11 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
         {
             case PlayerState.Dashing:
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x * 0.5f, rb.linearVelocity.y);
+                if (PlayerAttributes != null && PlayerAttributes.characterAtttibute != null)
+                {
+                    PlayerAttributes.characterAtttibute.isDodging = false;
+                }
+                Physics2D.IgnoreLayerCollision(PlayerLayer, EnemyLayer, false);
                 break;
             case PlayerState.Attacking:
             case PlayerState.HeavyAttacking:
@@ -1733,7 +1883,6 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
             case PlayerState.DashAttacking:
             case PlayerState.JumpAttacking:
             case PlayerState.Parrying:
-                lastAttackTime = Time.time;
                 // 攻击类状态使用 currentAttackActionData
                 currentActionData = currentAttackActionData != null ? (ActionData)currentAttackActionData : null;
                 break;
@@ -1790,15 +1939,20 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
             case PlayerState.Down:
             case PlayerState.GettingUp:
             case PlayerState.Stunned:
-            case PlayerState.Falling:
-            case PlayerState.Jumping://跳跃的时候不能切换到格挡,否则下落攻击会变成格挡
                 return false;
+
+            case PlayerState.Falling:
+            case PlayerState.Jumping:
+                if (newState == PlayerState.Jumping)//跳跃或者下落的时候可以切换到跳跃
+                {
+                    return true;
+                }
+                return false;//跳跃的时候不能切换到格挡,否则下落攻击会变成格挡
 
             case PlayerState.Attacking:
             case PlayerState.HeavyAttacking:
             case PlayerState.DashAttacking:
             case PlayerState.JumpAttacking:
-                // 这里可以添加更精确的动画帧检查
                 return animHandler.CanInterruptCurrentAnimation();
 
             default:
@@ -1815,8 +1969,28 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
         yield return new WaitForSeconds(actionManager.dashAction.dashDuration);
         if (CurrentState == PlayerState.Dashing)
         {
-            // 使用统一的状态刷新函数
             RefreshState();
+        }
+    }
+
+    private IEnumerator HandleDodgeInvincibility()
+    {
+        if (PlayerAttributes == null || PlayerAttributes.characterAtttibute == null || actionManager == null)
+        {
+            yield break;
+        }
+
+        yield return new WaitForSeconds(actionManager.dashAction.invincibleStartTime);
+
+        if (PlayerAttributes.characterAtttibute.isDodging)
+        {
+            PlayerAttributes.characterAtttibute.AddInvincibility();
+            LogManager.Log($"[CharacterLogic] 闪避无敌开始 (计数: {PlayerAttributes.characterAtttibute.isInvincible})");
+
+            yield return new WaitForSeconds(actionManager.dashAction.invincibleDuration);
+
+            PlayerAttributes.characterAtttibute.RemoveInvincibility();
+            LogManager.Log($"[CharacterLogic] 闪避无敌结束 (计数: {PlayerAttributes.characterAtttibute.isInvincible})");
         }
     }
 
@@ -1856,8 +2030,7 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
         scale.x *= -1;
         transform.localScale = scale;
     }
-
-
+#if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
         // 设置Gizmos颜色
@@ -1903,13 +2076,14 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
 
         }
     }
-
+#endif
 
     #region 生命与死亡实现
 
-    public void TakeDamage(DamageInfo damageInfo, AttackActionData attackActionData, AttackFrameData frameData, GameObject attacker)
+    public override void TakeDamage(DamageInfo damageInfo, AttackActionData attackActionData, AttackFrameData frameData, CharacterBase attacker)
     {
-        if (IsDead || playerAttributes.characterAtttibute.isInvincible) return;
+        base.TakeDamage(damageInfo, attackActionData, frameData, attacker);
+        if (IsDead || PlayerAttributes.characterAtttibute.IsInvincible()) return;
 
 
         // 检查是否在格挡状态,并且在弹反窗口内
@@ -1923,71 +2097,34 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
             }
         }
 
-
-        CharacterLogic attackerLogic = attacker.GetComponent<CharacterLogic>();
-        if (attackerLogic == null)
-        {
-            ApplySimpleDamage(damageInfo, attackActionData, frameData, attacker);
-            return;
-        }
-
-        ApplyDamageWithCalculation(attackerLogic, damageInfo, attackActionData, frameData, attacker);
+        ApplyDamageWithCalculation(damageInfo, attackActionData, frameData, attacker);
     }
 
-    /// <summary>
-    /// 应用简单伤害（攻击者不是CharacterLogic时使用）
-    /// </summary>
-    private void ApplySimpleDamage(DamageInfo damageInfo, AttackActionData attackActionData, AttackFrameData frameData, GameObject attacker)
-    {
-        if (damageInfo == null || frameData == null) return;
 
-        int damage = Mathf.RoundToInt(damageInfo.baseDamage + frameData.damage);
-        bool died = CalcDamage(damage);
-
-        if (died)
-        {
-            HandleDeath(attacker);
-            return;
-        }
-
-        OnHurtHandler(attackActionData, frameData, attacker);
-    }
 
     /// <summary>
     /// 应用带属性计算的伤害（攻击者是CharacterLogic时使用）
     /// </summary>
-    private void ApplyDamageWithCalculation(CharacterLogic attackerLogic, DamageInfo damageInfo, AttackActionData attackActionData, AttackFrameData frameData, GameObject attacker)
+    private void ApplyDamageWithCalculation(DamageInfo damageInfo, AttackActionData attackActionData, AttackFrameData frameData, CharacterBase attacker)
     {
-        if (damageInfo.skillData == null)
-        {
-            LogManager.LogWarning($"[CharacterLogic] 攻击没有配置 SkillData");
-            return;
-        }
-
         if (PlayerAttributes == null)
         {
             LogManager.LogWarning($"[CharacterLogic] 目标没有PlayerAttributes组件");
             return;
         }
 
-        var attackerAttributes = attackerLogic.PlayerAttributes?.characterAtttibute;
+        var attackerAttributes = damageInfo.attacker.PlayerAttributes.characterAtttibute;
         var targetAttributes = PlayerAttributes.characterAtttibute;
-        var attackerBuffSystem = attackerLogic.buffSystem;
-        var targetBuffSystem = buffSystem;
+        var attackerBuffSystem = damageInfo.attacker.BuffSystem;
+        var targetBuffSystem = BuffSystem;
 
         if (attackerAttributes == null)
         {
             return;
         }
 
-        DamageResult result = DamageCalculator.CalculateDamage(
-            damageInfo,
-            attackerAttributes,
-            targetAttributes,
-            attackerBuffSystem,
-            targetBuffSystem
-        );
-
+        DamageResult result = DamageCalculator.CalculateDamage(damageInfo, attacker, this);
+        DamageDisplayHelper.ShowDamageOnCharacter(result, transform);
         if (result.isMiss)
         {
             LogManager.Log("[CharacterLogic] 攻击未命中（闪避/无敌）");
@@ -1996,13 +2133,13 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
 
         if (!result.isBlocked && result.healthDamage > 0)
         {
-            targetAttributes.ChangeHealth(-result.healthDamage);
+            targetAttributes.ChangeHealth(-result.healthDamage, damageInfo.attacker);
             LogManager.Log($"[CharacterLogic] 造成伤害: {result.healthDamage}{(result.isCritical ? " (暴击!)" : "")}");
 
             bool died = targetAttributes.currentHealth <= 0;
             if (died)
             {
-                HandleDeath(attacker);
+                //HandleDeath(attacker);//由ChangeHealth中调用死亡处理
                 return;
             }
         }
@@ -2011,44 +2148,10 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
     }
 
 
-
-    /// <summary>
-    /// 扣血，返回是否死亡
-    /// </summary>
-    public bool CalcDamage(int damage)
-    {
-        if (playerAttributes == null)
-        {
-            LogManager.LogError("[CharacterLogic] PlayerAttributes 未配置，无法执行伤害结算");
-            return false;
-        }
-
-        if (IsDead) return true;
-
-        bool died = playerAttributes.TakeDamage(damage);
-
-        return died;
-    }
-
-    /// <summary>
-    /// 回复生命
-    /// </summary>
-    public void Heal(int amount)
-    {
-        if (playerAttributes == null)
-        {
-            LogManager.LogError("[CharacterLogic] PlayerAttributes 未配置，无法执行回复");
-            return;
-        }
-
-        if (IsDead) return;
-        playerAttributes.Heal(amount);
-    }
-
     /// <summary>
     /// 处理死亡流程
     /// </summary>
-    private void HandleDeath(GameObject killer = null)
+    private void HandleDeath(CharacterBase killer = null)
     {
         if (IsDead && CurrentState == PlayerState.Death) return;
 
@@ -2065,9 +2168,8 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
         BreakAttack();
 
         // 设置为死亡状态，禁止后续状态切换
-        currentActionPriority = int.MaxValue / 2;
         ChangeState(PlayerState.Death);
-        attackController.EndAttack();
+        attackController.EndAttack(true);
 
         // 禁用输入并停止物理运动
         if (inputHandler != null)
@@ -2078,6 +2180,12 @@ public class CharacterLogic : MonoBehaviour, IDamageable, IStunnable
             rb.linearVelocity = Vector2.zero;
             rb.angularVelocity = 0f;
             rb.simulated = false;
+        }
+
+        //清除buff
+        if (BuffSystem != null)
+        {
+            BuffSystem.ClearAllBuffs();
         }
 
         // 广播死亡事件（动画会监听并播放死亡动画）

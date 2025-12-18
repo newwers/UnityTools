@@ -14,6 +14,8 @@ public class CharacterAnimation : MonoBehaviour
     public Color hitColor = Color.red;
     public float hitFlashDuration = 0.1f;
 
+    public Animator Animator => animator;
+
     private Animator animator;
     private CharacterLogic logic;
     private Rigidbody2D rb;
@@ -29,9 +31,7 @@ public class CharacterAnimation : MonoBehaviour
     private readonly int blockSuccess = Animator.StringToHash("BlockSuccess");
     private readonly int idleBlock = Animator.StringToHash("IdleBlock");
     private readonly int hurt = Animator.StringToHash("Hurt");
-    private readonly int death = Animator.StringToHash("Death");
     private readonly int stun = Animator.StringToHash("Stun");
-    private readonly int roll = Animator.StringToHash("Roll");
     private readonly int animRollSpeed = Animator.StringToHash("animRollSpeed");
 
     private void Awake()
@@ -166,7 +166,7 @@ public class CharacterAnimation : MonoBehaviour
                 return;//眩晕状态不处理后续动画参数设置,否则会覆盖眩晕动画,眩晕没有对应的ActionData,后面看看要不要统一
         }
 
-        SetActionAnimationParameter(logic.currentActionData);
+        SetActionAnimationParameter(animator, logic.currentActionData);
     }
 
     /// <summary>
@@ -244,7 +244,7 @@ public class CharacterAnimation : MonoBehaviour
     }
     #endregion
 
-    public void SetAttackAnimationSpeed(AttackActionData attackData, float time)
+    public static void SetAttackAnimationSpeed(Animator animator, PlayerAttributes playerAttributes, AttackActionData attackData, float time)
     {
         //根据给定时间设置动画速度
         if (attackData != null && attackData.animationClip != null)
@@ -254,9 +254,26 @@ public class CharacterAnimation : MonoBehaviour
             LogManager.Log($"[CharacterAnimation] 设置攻击动画速度: {speedMultiplier} for {attackData.acitonName}");
             animator.SetFloat("AttackSpeed", speedMultiplier);
         }
+
+        // 根据给定时间设置动画速度
+        if (attackData != null && attackData.animationClip != null)
+        {
+            float actualLength = attackData.animationClip.length;
+            float speedMultiplier = actualLength / time;
+
+            // 应用敏捷带来的攻击速度加成
+            if (playerAttributes != null)
+            {
+                float agilityMultiplier = playerAttributes.characterAtttibute.GetAttackSpeedMultiplier();
+                speedMultiplier *= agilityMultiplier;
+            }
+
+            LogManager.Log($"[CharacterAnimation] 设置攻击动画速度: {speedMultiplier} for {attackData.acitonName}");
+            animator.SetFloat("AttackSpeed", speedMultiplier);
+        }
     }
     // 添加攻击动画速度控制
-    public void SetAttackAnimationSpeed(AttackPhase phase, AttackActionData attackData)
+    public static void SetAttackAnimationSpeed(Animator animator, PlayerAttributes playerAttributes, AttackPhase phase, AttackActionData attackData)
     {
         if (attackData != null && attackData.animationClip != null)
         {
@@ -286,8 +303,15 @@ public class CharacterAnimation : MonoBehaviour
                     break;
             }
 
-            //float speedMultiplier = totalFrames / (desiredLength * attackData.frameRate);
-            float speedMultiplier = 1 / (desiredLength / (actualLength / attackData.frameRate)); //动画播放速度 = 期望播放时间 / 原始播放时间    原始播放时间 = 原始帧数 ÷ 原始帧率  最后还要取倒数因为Unity的Animator速度是乘法关系
+            float speedMultiplier = 1 / (desiredLength / (actualLength / attackData.frameRate));
+
+            // 应用敏捷带来的攻击速度加成
+            if (playerAttributes != null)
+            {
+                float agilityMultiplier = playerAttributes.characterAtttibute.GetAttackSpeedMultiplier();
+                speedMultiplier *= agilityMultiplier;
+            }
+
             LogManager.Log($"[CharacterAnimation] 设置攻击动画速度: {speedMultiplier} ,phase{phase} for {attackData.acitonName}");
             animator.SetFloat("AttackSpeed", speedMultiplier);
         }
@@ -298,7 +322,7 @@ public class CharacterAnimation : MonoBehaviour
     /// 目前只有切换状态的时候触发一次,对于持续性例如移动动作,在update中负责动画调用
     /// </summary>
     /// <param name="actionData"></param>
-    public void SetActionAnimationParameter(ActionData actionData)
+    public static void SetActionAnimationParameter(Animator animator, ActionData actionData)
     {
         if (actionData == null || actionData.animationParameters == null)
             return;

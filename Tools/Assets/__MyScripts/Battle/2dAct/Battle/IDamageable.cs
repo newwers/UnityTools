@@ -2,7 +2,7 @@
 
 public interface IDamageable
 {
-    void TakeDamage(DamageInfo damageInfo, AttackActionData actionData, AttackFrameData frameData, GameObject attacker);
+    void TakeDamage(DamageInfo damageInfo, AttackActionData actionData, AttackFrameData frameData, CharacterBase attacker);
 
     bool IsDead { get; }
 

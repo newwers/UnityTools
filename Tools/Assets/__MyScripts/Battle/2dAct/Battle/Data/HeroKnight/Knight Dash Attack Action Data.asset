@@ -73,7 +73,7 @@ MonoBehaviour:
     isAttackFrame: 1
     hitLayers:
       serializedVersion: 2
-      m_Bits: 256
+      m_Bits: 384
     allowIndependentHit: 0
     hitboxType: 0
     hitboxOffset: {x: 0.5, y: 0.93}

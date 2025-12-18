@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7064df54bed77149ae61790ac5706e3, type: 3}
+  m_Name: AgilityEffect
+  m_EditorClassIdentifier: 
+  effectName: "\u589E\u52A0\u654F\u6377_10"
+  category: 31
+  icon: {fileID: 0}
+  effectTarget: 1
+  requireHit: 0
+  duration: 10
+  isPermanent: 0
+  parameters:
+  - name: value
+    value: 10
+    description: "\u589E\u52A0\u654F\u6377_10"
+  vfxPrefab: {fileID: 0}
+  sfxClip: {fileID: 0}
+  uiTintColor: {r: 1, g: 1, b: 1, a: 1}
+  canStack: 1
+  maxStacks: 99
+  stackBehavior: 2

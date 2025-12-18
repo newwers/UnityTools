@@ -13,6 +13,7 @@ public class BuffSystemEditor : Editor
     private bool showBuffDetails = true;
     private bool showPeriodicEffects = true;
     private bool showImmunities = true;
+    private EffectData selectEffectData;
 
     public override void OnInspectorGUI()
     {
@@ -29,6 +30,54 @@ public class BuffSystemEditor : Editor
             EditorGUILayout.HelpBox("请在运行模式下查看Buff信息", MessageType.Info);
             return;
         }
+
+        // EffectData选择字段
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("EffectData:", GUILayout.Width(80));
+        selectEffectData = (EffectData)EditorGUILayout.ObjectField(
+            selectEffectData,
+            typeof(EffectData),
+            false
+        );
+
+        if (GUILayout.Button("应用Buff", GUILayout.Height(30)))
+        {
+            ApplyTestBuff();
+        }
+
+        EditorGUILayout.EndHorizontal();
+
+        // 显示当前选择的EffectData信息
+        if (selectEffectData != null)
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("当前选择的EffectData信息:", EditorStyles.miniBoldLabel);
+
+            EditorGUILayout.BeginVertical(GUI.skin.box);
+            EditorGUILayout.LabelField($"名称: {selectEffectData.effectName}");
+            EditorGUILayout.LabelField($"分类: {selectEffectData.category}");
+            EditorGUILayout.LabelField($"持续时间: {(selectEffectData.isPermanent ? "永久" : selectEffectData.duration + "秒")}");
+            EditorGUILayout.LabelField($"可堆叠: {selectEffectData.canStack}");
+
+            if (selectEffectData.canStack)
+            {
+                EditorGUILayout.LabelField($"最大层数: {selectEffectData.maxStacks}");
+                EditorGUILayout.LabelField($"每次应用层数: {selectEffectData.stacksPerApplication}");
+                EditorGUILayout.LabelField($"堆叠行为: {selectEffectData.stackBehavior}");
+            }
+
+            // 显示参数
+            if (selectEffectData.parameters != null && selectEffectData.parameters.Count > 0)
+            {
+                EditorGUILayout.LabelField("参数:", EditorStyles.miniBoldLabel);
+                foreach (var param in selectEffectData.parameters)
+                {
+                    EditorGUILayout.LabelField($"  {param.name}: {param.value}");
+                }
+            }
+            EditorGUILayout.EndVertical();
+        }
+
 
         // 获取激活的Buff列表
         var activeBuffs = buffSystem.GetActiveBuffs();
@@ -146,8 +195,8 @@ public class BuffSystemEditor : Editor
     private void DisplayPeriodicEffects(List<ActiveBuff> activeBuffs)
     {
         var periodicBuffs = activeBuffs.FindAll(b =>
-            b.data.category == EffectCategory.Burn ||
-            b.data.category == EffectCategory.Poison ||
+            //b.data.category == EffectCategory.Burn ||
+            //b.data.category == EffectCategory.Poison ||
             b.data.category == EffectCategory.Bleed ||
             b.data.category == EffectCategory.ConditionalHeal ||
             b.data.category == EffectCategory.EnergyDrain ||
@@ -171,25 +220,25 @@ public class BuffSystemEditor : Editor
             // 显示周期性效果的具体参数
             switch (buff.data.category)
             {
-                case EffectCategory.Burn:
-                case EffectCategory.Poison:
+                //case EffectCategory.Burn:
+                //case EffectCategory.Poison:
                 case EffectCategory.Bleed:
-                    float dps = buff.data.GetParameterValue("damagePerSecond") * buff.currentStacks;
+                    float dps = buff.data.GetParameterValue("value") * buff.currentStacks;
                     EditorGUILayout.LabelField($"每秒伤害: {dps}");
                     break;
 
                 case EffectCategory.ConditionalHeal:
-                    float hps = buff.data.GetParameterValue("healPerSecond");
+                    float hps = buff.data.GetParameterValue("value");
                     EditorGUILayout.LabelField($"每秒治疗: {hps}");
                     break;
 
                 case EffectCategory.EnergyDrain:
-                    float drain = buff.data.GetParameterValue("drainPerSecond");
+                    float drain = buff.data.GetParameterValue("value");
                     EditorGUILayout.LabelField($"每秒能量消耗: {drain}");
                     break;
 
                 case EffectCategory.EnergyRegeneration:
-                    float regen = buff.data.GetParameterValue("energyPerSecond");
+                    float regen = buff.data.GetParameterValue("value");
                     EditorGUILayout.LabelField($"每秒能量回复: {regen}");
                     break;
             }
@@ -236,6 +285,38 @@ public class BuffSystemEditor : Editor
         }
 
         EditorGUILayout.EndHorizontal();
+    }
+
+    /// <summary>
+    /// 应用测试Buff
+    /// </summary>
+    private void ApplyTestBuff()
+    {
+        if (selectEffectData == null)
+        {
+            EditorUtility.DisplayDialog("错误", "请先选择一个EffectData", "确定");
+            return;
+        }
+
+        if (buffSystem == null)
+        {
+            EditorUtility.DisplayDialog("错误", "BuffSystem未找到", "确定");
+            return;
+        }
+
+        try
+        {
+            buffSystem.ApplyBuff(selectEffectData, buffSystem.CharacterBase);
+            LogManager.Log($"已应用Buff: {selectEffectData.effectName}");
+
+            // 刷新显示
+            Repaint();
+        }
+        catch (System.Exception e)
+        {
+            EditorUtility.DisplayDialog("错误", $"应用Buff时发生错误: {e.Message}", "确定");
+            Debug.LogError($"应用Buff错误: {e}");
+        }
     }
 }
 

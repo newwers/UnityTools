@@ -55,6 +55,9 @@ public class AttackFrameData
     [Tooltip("启用后此帧会在同一次攻击中独立结算伤害，不受已有命中记录限制")]
     public bool allowIndependentHit = false;
 
+    [Tooltip("此攻击帧最多命中的目标数量，0表示无限制")]
+    public int maxHitTargets = 0;
+
     [Header("攻击框设置")]
     public HitboxType hitboxType = HitboxType.Rectangle;
     public Vector2 hitboxOffset = new Vector2(0.5f, 0f);
@@ -68,7 +71,7 @@ public class AttackFrameData
     [Header("伤害设置")]
     [Tooltip("附加伤害值，最终伤害 = 技能基础伤害(baseDamage) + 此附加伤害")]
     public int damage = 0;
-    
+
     [Header("击退力")]
     [Tooltip("附加击退力，最终击退力 = 技能基础击退力 + 此附加击退力")]
     public Vector2 knockbackForce = new Vector2(0, 0);
@@ -87,7 +90,7 @@ public class AttackFrameData
 /// <summary>
 /// 攻击行为数据（继承自基础行为数据）
 /// </summary>
-[CreateAssetMenu(fileName = "New Attack Action Data", menuName = "Character System/Attack Action Data")]
+[CreateAssetMenu(fileName = "New Attack Action Data", menuName = "Character System/Character Action/Attack Action Data")]
 public class AttackActionData : ActionData
 {
     [Header("技能数据")]
@@ -224,5 +227,26 @@ public class AttackActionData : ActionData
         if (windUpTime <= 0) Debug.LogWarning($"{acitonName}: 前摇时长必须大于0");
         if (activeTime <= 0) Debug.LogWarning($"{acitonName}: 攻击中时长必须大于0");
         if (recoveryTime <= 0) Debug.LogWarning($"{acitonName}: 后摇时长必须大于0");
+    }
+
+    public float GetCooldown()
+    {
+        if (skillData == null)
+            return 0f;
+
+        return skillData.Cooldown;
+    }
+
+    public float GetEnergyCost()
+    {
+        if (skillData == null)
+            return 0f;
+
+        return skillData.EnergyCost;
+    }
+
+    public bool HasSkillData()
+    {
+        return skillData != null;
     }
 }

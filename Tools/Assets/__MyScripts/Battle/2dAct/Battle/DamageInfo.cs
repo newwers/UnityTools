@@ -1,5 +1,3 @@
-using UnityEngine;
-
 public class DamageInfo
 {
     public float baseDamage;
@@ -7,23 +5,21 @@ public class DamageInfo
     public float staggerDamage;
     public bool isGuaranteedCrit;
     public float lifeStealPercent;
-    
+
     // 攻击方信息
-    public GameObject attacker;
-    
+    public CharacterBase attacker;
+
+    // 索敌目标（技能释放前获取的目标）
+    public CharacterBase targetedEnemy;
+
     // 受击方信息（在命中检测时填充）
-    public GameObject target;
-    
+    public CharacterBase target;
+
     public SkillData skillData;
     public bool isMiss;
     public bool isBlocked;
     public bool isCritical;
     public float healthDamage;
-    
-    // 为了保持向后兼容性，source指向attacker
-    public GameObject source
-    {
-        get => attacker;
-        set => attacker = value;
-    }
+
+
 }

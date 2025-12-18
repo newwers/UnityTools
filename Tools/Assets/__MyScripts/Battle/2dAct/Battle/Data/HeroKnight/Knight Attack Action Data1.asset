@@ -29,19 +29,19 @@ MonoBehaviour:
     animationFloatValue: 1
     animationBoolValue: 0
   canCancel: 1
-  skillData: {fileID: 11400000, guid: ad4c506f768b74942bfbd8b5503d218b, type: 2}
+  skillData: {fileID: 11400000, guid: 5cd5261c69f8fad40ac69f1dfd625d23, type: 2}
   triggerType: 0
   longPressTimeThreshold: 0.3
   holdTickInterval: 0.1
   maxHoldTicks: 10
-  windUpTime: 0.14285713
+  windUpTime: 0.21
   activeTime: 0.071428575
   recoveryTime: 0.21428573
   comboWindow: 0.21
   ActualWindUpFrames: 2
   ActualActiveFrames: 1
   ActualRecoveryFrames: 3
-  windUpFrames: 2
+  windUpFrames: 3
   activeFrames: 1
   recoveryFrames: 3
   enableMovement: 1
@@ -78,8 +78,9 @@ MonoBehaviour:
     isAttackFrame: 1
     hitLayers:
       serializedVersion: 2
-      m_Bits: 256
+      m_Bits: 384
     allowIndependentHit: 0
+    maxHitTargets: 0
     hitboxType: 0
     hitboxOffset: {x: 0.5, y: 0.93}
     hitboxSize: {x: 1.96, y: 1.04}
@@ -87,9 +88,9 @@ MonoBehaviour:
     hitboxAngle: 90
     hitboxEndPoint: {x: 1, y: 0}
     damage: 1
-    knockbackForce: {x: 1, y: 0}
+    knockbackForce: {x: 0, y: 0}
     effects:
-    - {fileID: 11400000, guid: ca24871e297a4f946a9d884cbfad689d, type: 2}
+    - {fileID: 11400000, guid: 941b4ba324bcd8143aaad9852b16b960, type: 2}
     hitEffect: {fileID: 0}
     hitSound: {fileID: 0}
   hitEffect: {fileID: 0}

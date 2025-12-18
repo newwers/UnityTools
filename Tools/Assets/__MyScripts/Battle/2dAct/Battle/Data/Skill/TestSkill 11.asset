@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e494c7d831007e46a359804a249a0ae, type: 3}
+  m_Name: TestSkill 11
+  m_EditorClassIdentifier: 
+  SkillName: "\u6280\u80FD\u6D4B\u8BD5_\u653B\u51FB\u524D_\u77AC\u79FB"
+  icon: {fileID: 0}
+  EnergyCost: 0
+  Cooldown: 0
+  baseDamage: 10
+  knockbackForce: {x: 1, y: 0}
+  breakPower: 0
+  staggerDuration: 1
+  isGuaranteedCrit: 0
+  guaranteedCritOnHitCount: 0
+  lifeStealPercent: 0
+  lifeStealChance: 0
+  lifeStealAmount: 0
+  effectsOnCast:
+  - {fileID: 11400000, guid: 7fd8361937431fd4bba6d41a2a81781e, type: 2}
+  effectsOnComplete: []
+  vfxPrefab: {fileID: 0}
+  sfxClip: {fileID: 0}

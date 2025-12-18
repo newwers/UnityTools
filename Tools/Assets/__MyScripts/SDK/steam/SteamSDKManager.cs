@@ -1027,6 +1027,65 @@ public class SteamSDKManager : BaseMonoSingleClass<SteamSDKManager>
 
     #endregion
 
+#region 添加到愿望单
+
+/// <summary>
+/// 添加到愿望单按钮点击事件
+/// </summary>
+public void AddGameToWishlist()
+{
+    if (!SteamManager.Initialized)
+    {
+        LogManager.LogError("Steam未初始化，请确保Steam客户端正在运行");
+        return;
+    }
+
+    if (!SteamUser.BLoggedOn())
+    {
+        LogManager.LogError("请先登录Steam账户");
+        return;
+    }
+
+    // 调用Steamworks API添加到愿望单
+    Application.OpenURL($"https://store.steampowered.com/app/{SteamUtils.GetAppID()}/");//https://store.steampowered.com/app/4211860/
+}
+
+
+/// <summary>
+/// 打开商店页面
+/// </summary>
+public void OnOpenStorePageClicked()
+{
+    if (!SteamManager.Initialized)
+    {
+        return;
+    }
+
+    SteamFriends.ActivateGameOverlayToStore(SteamUtils.GetAppID(), EOverlayToStoreFlag.k_EOverlayToStoreFlag_None);
+
+}
+
+/// <summary>
+/// 检查游戏是否已在愿望单中
+/// </summary>
+public bool CheckWishlistStatus()
+{
+    if (!SteamManager.Initialized) return false;
+
+    bool isFreeWeekend = SteamApps.BIsSubscribedFromFreeWeekend();
+    bool isFamilySharing = SteamApps.BIsSubscribedFromFamilySharing();
+
+    // 检查是否已拥有游戏
+    bool isOwned = SteamApps.BIsSubscribedApp(SteamUtils.GetAppID());
+
+    // 检查是否已在愿望单中
+    // 注意：Steam API没有直接检查愿望单状态的函数
+    // 通常需要通过回调结果来判断
+    return isOwned;
+}
+
+#endregion
+
 
     //-----------------------------------------------------------------------------
     // Purpose: Display the user's stats and achievements

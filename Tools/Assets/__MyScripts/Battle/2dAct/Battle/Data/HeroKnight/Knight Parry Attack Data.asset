@@ -78,8 +78,9 @@ MonoBehaviour:
     isAttackFrame: 1
     hitLayers:
       serializedVersion: 2
-      m_Bits: 256
+      m_Bits: 384
     allowIndependentHit: 0
+    maxHitTargets: 0
     hitboxType: 0
     hitboxOffset: {x: 0.5, y: 0.93}
     hitboxSize: {x: 1.96, y: 1.04}
@@ -88,7 +89,8 @@ MonoBehaviour:
     hitboxEndPoint: {x: 1, y: 0}
     damage: 1
     knockbackForce: {x: 0, y: 0}
-    effects: []
+    effects:
+    - {fileID: 11400000, guid: ca24871e297a4f946a9d884cbfad689d, type: 2}
     hitEffect: {fileID: 0}
     hitSound: {fileID: 0}
   hitEffect: {fileID: 0}

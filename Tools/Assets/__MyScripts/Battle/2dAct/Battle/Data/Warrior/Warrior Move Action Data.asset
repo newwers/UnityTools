@@ -19,6 +19,6 @@ MonoBehaviour:
   frameRate: 10
   animationParameters: []
   canCancel: 1
-  moveSpeed: 3
+  moveSpeed: 1
   acceleration: 15
   deceleration: 20

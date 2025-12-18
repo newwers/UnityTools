@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -7,14 +6,35 @@ using UnityEngine;
 /// 用于测试攻击系统、Buff系统和伤害计算
 /// 提供了完整的受击反馈、状态管理和自动攻击功能
 /// </summary>
-public class TestDummy : MonoBehaviour, IDamageable, IStunnable
+public class TestDummy : CharacterBase
 {
-    [Header("假人设置")]
-    [Tooltip("假人的角色属性")]
-    public CharacterAttributes CharacterAttributes;
 
-    [Tooltip("Buff系统组件，用于管理假人身上的Buff效果")]
-    public BuffSystem BuffSystem;
+    /// <summary>
+    /// 硬直开始事件
+    /// </summary>
+    public System.Action OnStunStart;
+
+    /// <summary>
+    /// 硬直结束事件
+    /// </summary>
+    public System.Action OnStunEnd;
+
+    /// <summary>
+    /// 生命值改变事件 (当前血量, 最大血量)
+    /// </summary>
+    public System.Action<float, float> OnHealthChanged;
+
+    /// <summary>
+    /// 死亡事件
+    /// </summary>
+    public System.Action OnDeath;
+
+    /// <summary>
+    /// 受击事件 (击退方向, 击退力)
+    /// </summary>
+    public System.Action<Vector2, Vector2> OnHit;
+
+
 
     [Tooltip("无敌模式，启用后不会死亡（用于测试）")]
     public bool isInvincible = false;
@@ -54,15 +74,6 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
     /// </summary>
     private float stunTimer = 0f;
 
-    /// <summary>
-    /// 硬直开始事件
-    /// </summary>
-    public System.Action OnStunStart;
-
-    /// <summary>
-    /// 硬直结束事件
-    /// </summary>
-    public System.Action OnStunEnd;
 
     [Header("动画设置")]
     [Tooltip("受伤动画触发器名称")]
@@ -82,12 +93,9 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
     [Tooltip("是否已死亡")]
     private bool isDead = false;
 
-    public bool IsDead => isDead;
-
-    public Transform Transform => transform;
+    public override bool IsDead => isDead;
 
     // 组件引用
-    private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
     private Animator animator;
     private Color originalColor;
@@ -99,34 +107,16 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
 
     // 自动攻击相关变量
     private float attackTimer = 0f;
-    private List<GameObject> potentialTargets = new List<GameObject>();
 
-    /// <summary>
-    /// 生命值改变事件 (当前血量, 最大血量)
-    /// </summary>
-    public System.Action<float, float> OnHealthChanged;
 
-    /// <summary>
-    /// 死亡事件
-    /// </summary>
-    public System.Action OnDeath;
-
-    /// <summary>
-    /// 受击事件 (击退方向, 击退力)
-    /// </summary>
-    public System.Action<Vector2, Vector2> OnHit;
-
-    [Header("动作优先级")]
-    [SerializeField]
-    [Tooltip("当前执行动作的优先级，用于判断是否可以被打断")]
-    private int currentActionPriority = 0;
 
     /// <summary>
     /// 初始化组件引用和默认状态
     /// </summary>
-    private void Awake()
+    protected override void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
+        base.Awake();
+
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
 
@@ -139,6 +129,13 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
 
         // 初始化自动攻击计时器
         attackTimer = attackInterval;
+
+        PlayerAttributes.characterAtttibute.OnDeath += CharacterAtttibute_OnDeath;
+    }
+
+    private void CharacterAtttibute_OnDeath(CharacterBase obj)
+    {
+        Die();
     }
 
     /// <summary>
@@ -147,13 +144,13 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
     private void Start()
     {
         // 初始化BuffSystem，假人没有CharacterLogic，传入null
-        if (BuffSystem != null && CharacterAttributes != null)
+        if (BuffSystem != null && PlayerAttributes != null)
         {
-            BuffSystem.Init(CharacterAttributes, null, this);
+            BuffSystem.Init(this, PlayerAttributes.characterAtttibute, rb, this);
             LogManager.Log($"[TestDummy] BuffSystem初始化完成");
         }
 
-        LogManager.Log($"[TestDummy] 假人初始化完成，血量: {CharacterAttributes.maxHealth}");
+        LogManager.Log($"[TestDummy] 假人初始化完成，血量: {PlayerAttributes.characterAtttibute.maxHealth}");
     }
 
     /// <summary>
@@ -194,29 +191,6 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
         }
     }
 
-    /// <summary>
-    /// 在屏幕上显示调试信息
-    /// 显示假人的血量和状态
-    /// </summary>
-    private void OnGUI()
-    {
-        if (showDebugInfo)
-        {
-            // 在假人上方显示血量和状态
-            Vector3 screenPos = Camera.main.WorldToScreenPoint(transform.position + Vector3.up * 2f);
-
-            GUIStyle style = new GUIStyle();
-            style.normal.textColor = Color.white;
-            style.alignment = TextAnchor.MiddleCenter;
-            style.fontSize = 12;
-
-            string statusText = $"HP: {CharacterAttributes.currentHealth}/{CharacterAttributes.maxHealth}\n";
-            statusText += isDead ? "状态: 死亡" : "状态: 存活";
-
-            GUI.Label(new Rect(screenPos.x - 50, Screen.height - screenPos.y, 100, 50), statusText, style);
-        }
-    }
-
     #region Attack
 
     /// <summary>
@@ -227,7 +201,6 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
     {
         if (attackData == null) return;
 
-        currentActionPriority = CharacterLogic.DashPriority;
         //LogManager.Log($"[TestDummy] 执行自动攻击: {attackData.attackName}");
 
         // 使用统一的攻击流程
@@ -245,14 +218,14 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
         if (attackData == null) yield break;
 
         // 技能释放前效果
-        CharacterAttackController.ApplySkillEffectsOnCast(attackData, gameObject);
+        CharacterAttackController.ApplySkillEffectsOnCast(attackData, this);
 
         // 开始攻击检测，获取attackId
         string attackId = AttackHitDetector.Instance.StartAttackDetection(
             attackData,
             transform.position,
             IsFacingRight(),
-            gameObject
+            this
         );
 
         //LogManager.Log($"[TestDummy] 开始攻击检测，攻击ID: {attackId}");
@@ -291,7 +264,7 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
                 transform.position,
                 IsFacingRight(),
                 attackTimer,
-                gameObject
+                this
             );
 
 #if UNITY_EDITOR
@@ -311,7 +284,7 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
         }
 
         // 技能释放后的效果，传递attackId以获取受击方信息
-        CharacterAttackController.ApplySkillEffectsOnComplete(attackData, gameObject, attackId);
+        CharacterAttackController.ApplySkillEffectsOnComplete(attackData, this, attackId);
 
         // 结束攻击检测
         AttackHitDetector.Instance.EndAttackDetection(attackId);
@@ -320,8 +293,6 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
         ClearAttackPreview();
 #endif
 
-
-        currentActionPriority = CharacterLogic.IdlePriority;
 
         //LogManager.Log($"[TestDummy] 攻击完成");
     }
@@ -413,48 +384,9 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
     /// </summary>
     public void SetActionAnimationParameter(ActionData actionData)
     {
-        if (actionData == null || actionData.animationParameters == null)
-            return;
-
-        foreach (var param in actionData.animationParameters)
-        {
-            switch (param.type)
-            {
-                case ActionData.AnimationParameterType.Trigger:
-                    animator.SetTrigger(param.parameterName);
-                    break;
-                case ActionData.AnimationParameterType.Bool:
-                    animator.SetBool(param.parameterName, param.animationBoolValue);
-                    break;
-                case ActionData.AnimationParameterType.Int:
-                    animator.SetInteger(param.parameterName, param.animationIntValue);
-                    break;
-                case ActionData.AnimationParameterType.Float:
-                    animator.SetFloat(param.parameterName, param.animationFloatValue);
-                    break;
-            }
-        }
-
-        //LogManager.Log($"[CharacterAnimation] 设置动画参数: {actionData.animationParameterName}, 类型: {attackData.animationParameterType}");
+        CharacterAnimation.SetActionAnimationParameter(animator, actionData);
     }
 
-    /// <summary>
-    /// 清理攻击动画参数
-    /// </summary>
-    //private void ClearAttackAnimationParameter(ActionData attackData)
-    //{
-    //    if (animator == null || string.IsNullOrEmpty(attackData.animationParameterName)) return;
-
-    //    switch (attackData.animationParameterType)
-    //    {
-    //        case ActionData.AnimationParameterType.Bool:
-    //            animator.SetBool(attackData.animationParameterName, false);
-    //            break;
-    //        case ActionData.AnimationParameterType.Trigger:
-    //            // Trigger不需要清理，它会自动重置
-    //            break;
-    //    }
-    //}
 
     /// <summary>
     /// 设置自动攻击配置
@@ -487,7 +419,7 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
     /// 支持刷新眩晕时间：如果假人已经处于眩晕状态，会更新眩晕时间为新的持续时间
     /// </summary>
     /// <param name="duration">硬直持续时间（秒）</param>
-    public void ApplyStun(float duration)
+    public override void ApplyStun(float duration)
     {
         if (isDead) return;
 
@@ -498,7 +430,6 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
             return;
         }
 
-        currentActionPriority = CharacterLogic.StunPriority;
         isStunned = true;
         stunTimer = duration;
 
@@ -523,7 +454,6 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
     private void RecoverFromStun()
     {
         isStunned = false;
-        currentActionPriority = CharacterLogic.IdlePriority; // 恢复默认优先级
 
         LogManager.Log($"[TestDummy] 硬直结束");
 
@@ -552,13 +482,14 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
     /// 实现IDamageable接口的TakeDamage方法
     /// 用于接收来自新攻击系统的伤害
     /// </summary>
-    public void TakeDamage(DamageInfo damageInfo, AttackActionData attackActionData, AttackFrameData frameData, GameObject attacker)
+    public override void TakeDamage(DamageInfo damageInfo, AttackActionData attackActionData, AttackFrameData frameData, CharacterBase attacker)
     {
+        base.TakeDamage(damageInfo, attackActionData, frameData, attacker);
         if (isDead || isInvincible) return;
 
-        if (BuffSystem != null && CharacterAttributes.isInvincible)
+        if (BuffSystem != null && PlayerAttributes.characterAtttibute.IsInvincible())
         {
-            LogManager.Log($"[TestDummy] 处于无敌状态（Buff效果），免疫伤害");
+            LogManager.Log($"[TestDummy] 处于无敌状态（Buff效果，计数: {PlayerAttributes.characterAtttibute.isInvincible}），免疫伤害");
             return;
         }
         Vector2 knockbackDirection = (transform.position - attacker.transform.position).normalized;
@@ -570,7 +501,7 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
             finalKnockbackForce += damageInfo.skillData.knockbackForce;
         }
 
-        TakeDamage(attacker, attackActionData, frameData, knockbackDirection, finalKnockbackForce, transform.position);
+        TakeDamage(damageInfo, attackActionData, frameData, knockbackDirection, finalKnockbackForce, transform.position);
     }
 
     /// <summary>
@@ -584,22 +515,21 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
     /// <param name="knockbackDirection">击退方向</param>
     /// <param name="knockbackForce">击退力</param>
     /// <param name="hitPosition">命中位置，用于播放特效</param>
-    public void TakeDamage(GameObject attacker, AttackActionData attackActionData, AttackFrameData frameData, Vector2 knockbackDirection, Vector2 knockbackForce, Vector2 hitPosition)
+    public void TakeDamage(DamageInfo damageInfo, AttackActionData attackActionData, AttackFrameData frameData, Vector2 knockbackDirection, Vector2 knockbackForce, Vector2 hitPosition)
     {
+        var attacker = damageInfo.attacker;
         // 检查无敌和死亡状态
         if (isDead || isInvincible) return;
 
         // 检查BuffSystem的无敌状态（由Buff效果产生的无敌）
-        if (BuffSystem != null && CharacterAttributes.isInvincible)
+        if (BuffSystem != null && PlayerAttributes.characterAtttibute.IsInvincible())
         {
-            LogManager.Log($"[TestDummy] 处于无敌状态（Buff效果），免疫伤害");
+            LogManager.Log($"[TestDummy] 处于无敌状态（Buff效果，计数: {PlayerAttributes.characterAtttibute.isInvincible}），免疫伤害");
             return;
         }
 
         // 应用伤害到生命值
-        CharacterLogic attackerLogic = attacker.GetComponent<CharacterLogic>();
-        var damageInfo = AttackHitDetector.CreateDamageInfo(attackActionData, frameData, attacker);
-        ApplyDamageWithCalculation(attackerLogic, damageInfo, attackActionData, frameData, attacker);
+        ApplyDamageWithCalculation(attacker, damageInfo, attackActionData, frameData);
 
 
         // 检查是否造成眩晕
@@ -620,7 +550,7 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
                 {
                     animator.SetTrigger(hurtTriggerName);
                 }
-                LogManager.Log($"[TestDummy] 播放受击动画，当前动作优先级: {currentActionPriority}");
+                LogManager.Log($"[TestDummy] 播放受击动画");
             }
             else
             {
@@ -630,7 +560,7 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
         }
 
         // 触发事件
-        OnHealthChanged?.Invoke(CharacterAttributes.currentHealth, CharacterAttributes.maxHealth);
+        OnHealthChanged?.Invoke(PlayerAttributes.characterAtttibute.currentHealth, PlayerAttributes.characterAtttibute.maxHealth);
         OnHit?.Invoke(knockbackDirection, knockbackForce);
 
         // 视觉反馈（闪白效果总是播放）
@@ -643,7 +573,7 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
         }
 
         // 检查死亡
-        if (CharacterAttributes.currentHealth <= 0)
+        if (PlayerAttributes.characterAtttibute.currentHealth <= 0)
         {
             Die();
         }
@@ -653,17 +583,11 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
     /// <summary>
     /// 应用带属性计算的伤害（攻击者是CharacterLogic时使用）
     /// </summary>
-    private void ApplyDamageWithCalculation(CharacterLogic attackerLogic, DamageInfo damageInfo, AttackActionData attackActionData, AttackFrameData frameData, GameObject attacker)
+    private void ApplyDamageWithCalculation(CharacterBase attacker, DamageInfo damageInfo, AttackActionData attackActionData, AttackFrameData frameData)
     {
-        if (damageInfo.skillData == null)
-        {
-            LogManager.LogWarning($"[TestDummy] 攻击没有配置 SkillData");
-            return;
-        }
-
-        var attackerAttributes = attackerLogic.PlayerAttributes?.characterAtttibute;
-        var targetAttributes = CharacterAttributes;
-        var attackerBuffSystem = attackerLogic.buffSystem;
+        var attackerAttributes = attacker.PlayerAttributes.characterAtttibute;
+        var targetAttributes = PlayerAttributes.characterAtttibute;
+        var attackerBuffSystem = attacker.BuffSystem;
         var targetBuffSystem = BuffSystem;
 
         if (attackerAttributes == null)
@@ -671,13 +595,8 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
             return;
         }
 
-        DamageResult result = DamageCalculator.CalculateDamage(
-            damageInfo,
-            attackerAttributes,
-            targetAttributes,
-            attackerBuffSystem,
-            targetBuffSystem
-        );
+        DamageResult result = DamageCalculator.CalculateDamage(damageInfo, attacker, this);
+        DamageDisplayHelper.ShowDamageOnCharacter(result, transform);
 
         if (result.isMiss)
         {
@@ -687,10 +606,10 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
 
         if (!result.isBlocked && result.healthDamage > 0)
         {
-            CharacterAttributes.ChangeHealth(-Mathf.RoundToInt(result.healthDamage));
-            LogManager.Log($"[TestDummy] 造成伤害: {result.healthDamage}{(result.isCritical ? " (暴击" : "")},剩余血量: {CharacterAttributes.currentHealth}/{CharacterAttributes.maxHealth}");
+            PlayerAttributes.characterAtttibute.ChangeHealth(-Mathf.RoundToInt(result.healthDamage), damageInfo.attacker);
+            LogManager.Log($"[TestDummy] 造成伤害: {result.healthDamage}{(result.isCritical ? " (暴击" : "")},剩余血量: {PlayerAttributes.characterAtttibute.currentHealth}/{PlayerAttributes.characterAtttibute.maxHealth}");
 
-            bool died = CharacterAttributes.currentHealth <= 0;
+            bool died = PlayerAttributes.characterAtttibute.currentHealth <= 0;
             if (died)
             {
                 Die();
@@ -707,14 +626,12 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
 
     /// <summary>
     /// 判断是否应该播放受击动画
-    /// 根据攻击优先级和当前动作优先级判断是否应该被打断
     /// </summary>
     /// <param name="priority">攻击的优先级</param>
     /// <returns>如果应该播放受击动画返回true</returns>
     private bool ShouldPlayHitAnimation(int priority)
     {
-        // 攻击优先级必须高于受击优先级，且高于当前动作优先级
-        return priority > CharacterLogic.HurtPriority && currentActionPriority < priority;
+        return DamageCalculator.ShouldPlayHitAnimation(priority, PlayerAttributes.characterAtttibute);
     }
 
 
@@ -752,6 +669,7 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
     /// </summary>
     private void Die()
     {
+        if (isDead) return;
         isDead = true;
 
         LogManager.Log($"[TestDummy] 假人死亡");
@@ -772,10 +690,9 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
         }
 
         // 禁用碰撞器
-        Collider2D collider = GetComponent<Collider2D>();
-        if (collider != null)
+        if (boxCollider2D != null)
         {
-            collider.enabled = false;
+            boxCollider2D.enabled = false;
         }
 
         // 禁用物理
@@ -783,6 +700,12 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
         {
             rb.linearVelocity = Vector2.zero;
             rb.bodyType = RigidbodyType2D.Kinematic;
+        }
+
+        //清除buff
+        if (BuffSystem != null)
+        {
+            BuffSystem.ClearAllBuffs();
         }
     }
 
@@ -792,7 +715,7 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
     /// </summary>
     public void ResetDummy()
     {
-        CharacterAttributes.currentHealth = CharacterAttributes.maxHealth;
+        PlayerAttributes.characterAtttibute.currentHealth = PlayerAttributes.characterAtttibute.maxHealth;
         isDead = false;
 
         // 清除硬直状态
@@ -833,7 +756,7 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
             spriteRenderer.color = originalColor;
         }
 
-        LogManager.Log($"[TestDummy] 假人已重置，血量: {CharacterAttributes.currentHealth}/{CharacterAttributes.maxHealth}");
+        LogManager.Log($"[TestDummy] 假人已重置，血量: {PlayerAttributes.characterAtttibute.currentHealth}/{PlayerAttributes.characterAtttibute.maxHealth}");
     }
 
     /// <summary>
@@ -853,34 +776,12 @@ public class TestDummy : MonoBehaviour, IDamageable, IStunnable
     /// <param name="health">目标血量值</param>
     public void SetHealth(int health)
     {
-        CharacterAttributes.currentHealth = Mathf.Clamp(health, 0, CharacterAttributes.maxHealth);
-        OnHealthChanged?.Invoke(CharacterAttributes.currentHealth, CharacterAttributes.maxHealth);
+        PlayerAttributes.characterAtttibute.currentHealth = Mathf.Clamp(health, 0, PlayerAttributes.characterAtttibute.maxHealth);
+        OnHealthChanged?.Invoke(PlayerAttributes.characterAtttibute.currentHealth, PlayerAttributes.characterAtttibute.maxHealth);
 
-        if (CharacterAttributes.currentHealth <= 0 && !isDead)
+        if (PlayerAttributes.characterAtttibute.currentHealth <= 0 && !isDead)
         {
             Die();
         }
-    }
-
-    // 在编辑器中可视化击退方向
-    private void OnDrawGizmosSelected()
-    {
-        // 绘制生命值条
-        Vector3 barPos = transform.position + Vector3.up * 1.5f;
-        float healthPercent = (float)CharacterAttributes.currentHealth / CharacterAttributes.maxHealth;
-
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireCube(barPos, new Vector3(1f, 0.2f, 0f));
-
-        Gizmos.color = Color.green;
-        Gizmos.DrawCube(barPos - new Vector3(0.5f * (1 - healthPercent), 0, 0),
-                        new Vector3(healthPercent, 0.15f, 0f));
-
-        // 绘制自动攻击范围
-        //if (enableAutoAttack)
-        //{
-        //    Gizmos.color = Color.yellow;
-        //    Gizmos.DrawWireSphere(transform.position, 5f); // 检测范围
-        //}
     }
 }

@@ -11,6 +11,8 @@ using UnityEngine;
 /// - 应用各种效果（眩晕、护盾、减速等）到CharacterAttributes和CharacterLogic
 /// - 处理周期性效果（燃烧、中毒、流血、回复等）
 /// </summary>
+[DisallowMultipleComponent]
+[RequireComponent(typeof(PlayerAttributes))]
 public class BuffSystem : MonoBehaviour
 {
     /// <summary>
@@ -22,13 +24,21 @@ public class BuffSystem : MonoBehaviour
     /// 角色属性引用，用于应用效果修改
     /// </summary>
     private CharacterAttributes attributes;
+    private CharacterBase characterBase;
+    public CharacterBase CharacterBase => characterBase;
 
     /// <summary>
     /// 角色逻辑引用，用于控制角色状态（如眩晕、定身等）
     /// 对于TestDummy可以为null
     /// </summary>
-    private CharacterLogic characterLogic;
+    private Rigidbody2D rd;
     private IStunnable Stunnable;
+
+    /// <summary>
+    /// 顿帧效果的原始时间缩放值
+    /// 用于在移除顿帧效果时恢复到之前的时间缩放
+    /// </summary>
+    private float originalTimeScale = 1f;
 
     /// <summary>
     /// Buff添加事件，在新Buff被添加时触发
@@ -51,20 +61,13 @@ public class BuffSystem : MonoBehaviour
     /// </summary>
     /// <param name="characterAttributes">角色属性引用</param>
     /// <param name="logic">角色逻辑引用（可选）。对CharacterLogic必须传入，对TestDummy可以传null</param>
-    public void Init(CharacterAttributes characterAttributes, CharacterLogic logic = null, IStunnable stunnable = null)
+    public void Init(CharacterBase characterBase, CharacterAttributes characterAttributes, Rigidbody2D rigidbody2D, IStunnable stunnable = null)
     {
+        this.characterBase = characterBase;
         attributes = characterAttributes;
-        characterLogic = logic;
+        rd = rigidbody2D;
         Stunnable = stunnable;
 
-        if (logic != null)
-        {
-            LogManager.Log($"[BuffSystem] 初始化完成（关联CharacterLogic）");
-        }
-        else
-        {
-            LogManager.Log($"[BuffSystem] 初始化完成（无CharacterLogic，可能是TestDummy）");
-        }
     }
 
     /// <summary>
@@ -73,7 +76,9 @@ public class BuffSystem : MonoBehaviour
     /// </summary>
     private void Update()
     {
-        UpdateBuffs(Time.deltaTime);
+        // 对于顿帧效果，使用真实时间（不受Time.timeScale影响）
+        // 对于其他效果，使用缩放时间
+        UpdateBuffs(Time.deltaTime, Time.unscaledDeltaTime);
         ApplyPeriodicEffects(Time.deltaTime);
     }
 
@@ -83,7 +88,8 @@ public class BuffSystem : MonoBehaviour
     /// </summary>
     /// <param name="effectData">要应用的效果数据</param>
     /// <param name="source">Buff来源对象（通常是攻击者）</param>
-    public void ApplyBuff(EffectData effectData, GameObject source = null)
+    /// <param name="target">Buff目标对象（通常是受击者或技能释放时的索敌目标）</param>
+    public void ApplyBuff(EffectData effectData, CharacterBase source = null, CharacterBase target = null)
     {
         if (effectData == null)
         {
@@ -114,7 +120,7 @@ public class BuffSystem : MonoBehaviour
         // 添加新Buff
         else
         {
-            AddNewBuff(effectData, source);
+            AddNewBuff(effectData, source, target);
         }
     }
 
@@ -124,22 +130,27 @@ public class BuffSystem : MonoBehaviour
     /// </summary>
     /// <param name="effectData">效果数据</param>
     /// <param name="source">Buff来源对象</param>
-    private void AddNewBuff(EffectData effectData, GameObject source)
+    /// <param name="target">Buff目标对象</param>
+    private void AddNewBuff(EffectData effectData, CharacterBase source, CharacterBase target = null)
     {
         var newBuff = new ActiveBuff
         {
             data = effectData,
             remainingDuration = effectData.isPermanent ? -1f : effectData.duration,
-            currentStacks = 1,
+            currentStacks = effectData.initialStacks, // 使用初始层数
             source = source,
-            accumulatedTime = 0f
+            source_CharacterAttributes = source.PlayerAttributes.characterAtttibute,
+            source_BuffSystem = source.BuffSystem,
+            target = target,
+            accumulatedTime = 0f,
+            isPermanent = effectData.isPermanent
         };
 
         activeBuffs.Add(newBuff);
         ApplyBuffEffect(newBuff);
         OnBuffAdded?.Invoke(newBuff);
 
-        LogManager.Log($"[BuffSystem] {gameObject.name} 获得 {effectData.effectName} (持续: {effectData.duration}秒)");
+        LogManager.Log($"[BuffSystem] {gameObject.name} 获得 {effectData.effectName} (持续: {effectData.duration}秒, 层数: {newBuff.currentStacks})");
     }
 
     /// <summary>
@@ -160,24 +171,44 @@ public class BuffSystem : MonoBehaviour
     }
 
     /// <summary>
-    /// 处理Buff堆叠行为
+    /// 处理Buff的堆叠行为
+    /// 根据配置的堆叠行为类型，执行不同的堆叠逻辑
     /// </summary>
     private void HandleStackBehavior(ActiveBuff buff, EffectData effectData)
     {
         if (buff.currentStacks < effectData.maxStacks)
         {
-            buff.currentStacks++;
+            int oldStacks = buff.currentStacks;
+            int actualAddedStacks = Mathf.Min(effectData.stacksPerApplication, effectData.maxStacks - oldStacks);
+            int newStacks = oldStacks + actualAddedStacks;
 
             switch (effectData.stackBehavior)
             {
                 case StackBehavior.RefreshDuration:
                     buff.remainingDuration = effectData.duration;
+                    buff.currentStacks = newStacks;
                     RefreshBuffEffect(buff);
                     break;
+
                 case StackBehavior.AddDuration:
-                    buff.remainingDuration += effectData.duration;
+                    buff.remainingDuration += effectData.duration * actualAddedStacks;
+                    buff.currentStacks = newStacks;
                     break;
+
                 case StackBehavior.IncreaseValue:
+                    buff.remainingDuration = effectData.duration;
+
+                    if (ShouldUpdateModifierDirectly(effectData.category))
+                    {
+                        buff.currentStacks = newStacks;
+                        attributes.UpdateModifierStacksBySource(GetBuffSourceId(buff), newStacks);
+                    }
+                    else
+                    {
+                        RemoveBuffEffect(buff);
+                        buff.currentStacks = newStacks;
+                        ApplyBuffEffect(buff);
+                    }
                     break;
             }
 
@@ -192,7 +223,9 @@ public class BuffSystem : MonoBehaviour
     /// 处理Buff持续时间倒计时，并移除过期的Buff
     /// 对于持续时间为0的立即生效Buff，会在应用后立即移除
     /// </summary>
-    private void UpdateBuffs(float deltaTime)
+    /// <param name="deltaTime">缩放后的时间增量，用于大多数效果</param>
+    /// <param name="unscaledDeltaTime">未缩放的时间增量，用于顿帧等特殊效果</param>
+    private void UpdateBuffs(float deltaTime, float unscaledDeltaTime)
     {
         for (int i = activeBuffs.Count - 1; i >= 0; i--)
         {
@@ -201,12 +234,18 @@ public class BuffSystem : MonoBehaviour
             // 永久Buff（remainingDuration为-1）不需要倒计时
             if (buff.remainingDuration > 0)
             {
-                buff.remainingDuration -= deltaTime;
+                // 顿帧效果使用真实时间（不受Time.timeScale影响）
+                // 其他效果使用缩放时间
+                float timeToSubtract = (buff.data.category == EffectCategory.HitStop)
+                    ? unscaledDeltaTime
+                    : deltaTime;
+
+                buff.remainingDuration -= timeToSubtract;
 
                 // 持续时间耗尽时移除Buff
                 if (buff.remainingDuration <= 0)
                 {
-                    RemoveBuff(buff);
+                    HandleExpiredBuff(buff);
                 }
             }
             // 对于持续时间为0的Buff（立即生效类型），直接移除
@@ -218,11 +257,61 @@ public class BuffSystem : MonoBehaviour
     }
 
     /// <summary>
+    /// 处理过期的Buff
+    /// 如果层数大于1，则减少层数并重置持续时间；否则移除整个Buff
+    /// </summary>
+    private void HandleExpiredBuff(ActiveBuff buff)
+    {
+        if (buff.currentStacks > 1)
+        {
+            int oldStacks = buff.currentStacks;
+            int newStacks = oldStacks - 1;
+            buff.currentStacks = newStacks;
+            buff.remainingDuration = buff.data.duration;
+
+            if (ShouldUpdateModifierDirectly(buff.data.category))
+            {
+                attributes.UpdateModifierStacksBySource(GetBuffSourceId(buff), newStacks);
+            }
+            else
+            {
+                RemoveBuffEffect(buff);
+                ApplyBuffEffect(buff);
+            }
+
+            LogManager.Log($"[BuffSystem] {buff.data.effectName} 时间到期，减少一层 (剩余层数: {buff.currentStacks})");
+        }
+        else
+        {
+            RemoveBuff(buff);
+        }
+    }
+
+    private bool ShouldUpdateModifierDirectly(EffectCategory category)
+    {
+        return category == EffectCategory.MaxHealthBoost ||
+               category == EffectCategory.MaxEnergyBoost ||
+               category == EffectCategory.StrengthBoost ||
+               category == EffectCategory.AgilityBoost ||
+               category == EffectCategory.SpeedBoost ||
+               category == EffectCategory.AttackBoost ||
+               category == EffectCategory.DefenseBoost ||
+               category == EffectCategory.CritRateBoost ||
+               category == EffectCategory.CritDamageBoost;
+    }
+
+    /// <summary>
     /// 移除指定的Buff
     /// </summary>
     /// <param name="buff">要移除的Buff</param>
     public void RemoveBuff(ActiveBuff buff)
     {
+        if (buff.isPermanent)
+        {
+            //LogManager.LogWarning($"[BuffSystem] {gameObject.name} 尝试移除永久Buff {buff.data.effectName}，操作被阻止");
+            return;
+        }
+
         RemoveBuffEffect(buff);
         activeBuffs.Remove(buff);
         OnBuffRemoved?.Invoke(buff);
@@ -236,7 +325,7 @@ public class BuffSystem : MonoBehaviour
     /// <param name="category">效果分类</param>
     public void RemoveBuffsByCategory(EffectCategory category)
     {
-        var buffsToRemove = activeBuffs.FindAll(b => b.data.category == category);
+        var buffsToRemove = activeBuffs.FindAll(b => b.data.category == category && !b.isPermanent);
         foreach (var buff in buffsToRemove)
         {
             RemoveBuff(buff);
@@ -293,17 +382,17 @@ public class BuffSystem : MonoBehaviour
                 ApplyStunEffect(buff);
                 break;
 
-            case EffectCategory.Freeze:
-                RefreshFreezeEffect(buff);
-                break;
+            //case EffectCategory.Freeze:
+            //    RefreshFreezeEffect(buff);
+            //    break;
 
             case EffectCategory.Root:
                 ApplyRootEffect(buff);
                 break;
 
-            case EffectCategory.Silence:
-                ApplySilenceEffect(buff);
-                break;
+            //case EffectCategory.Silence:
+            //    ApplySilenceEffect(buff);
+            //    break;
 
             // 属性加成类效果 - 刷新时重新计算数值
             case EffectCategory.Shield:
@@ -328,6 +417,7 @@ public class BuffSystem : MonoBehaviour
 
             // 属性提升类效果 - 刷新时不需要重新应用
             case EffectCategory.StrengthBoost:
+            case EffectCategory.AgilityBoost:
             case EffectCategory.SpeedBoost:
             case EffectCategory.AttackBoost:
             case EffectCategory.DefenseBoost:
@@ -344,13 +434,13 @@ public class BuffSystem : MonoBehaviour
             case EffectCategory.DamageReflect:
             case EffectCategory.LifeSteal:
             case EffectCategory.GuaranteedCrit:
-            case EffectCategory.Blind:
+                //case EffectCategory.Blind:
                 // 这些效果在伤害计算时查询，不需要刷新操作
                 break;
 
             // 周期性效果 - 在Update中持续处理
-            case EffectCategory.Burn:
-            case EffectCategory.Poison:
+            //case EffectCategory.Burn:
+            //case EffectCategory.Poison:
             case EffectCategory.Bleed:
             case EffectCategory.ConditionalHeal:
             case EffectCategory.EnergyDrain:
@@ -362,7 +452,6 @@ public class BuffSystem : MonoBehaviour
             case EffectCategory.InstantHeal:
             case EffectCategory.InstantEnergyRestore:
             case EffectCategory.Knockback:
-            case EffectCategory.StaggerDamage:
                 // 立即生效的效果在应用时已完成，刷新时不需要额外操作
                 break;
 
@@ -371,6 +460,28 @@ public class BuffSystem : MonoBehaviour
             case EffectCategory.InvincibleImmunity:
             case EffectCategory.SuperArmorImmunity:
                 // 免疫效果通过HasBuff查询，不需要刷新操作
+                break;
+
+            // 顿帧效果 - 立即生效类型，不需要刷新
+            case EffectCategory.HitStop:
+                // 顿帧是立即生效且持续时间很短的效果，通常不会被刷新
+                // 如果需要刷新，重新应用即可
+                ApplyHitStopEffect(buff);
+                break;
+
+            // 镜头抖动效果 - 立即生效类型
+            case EffectCategory.CameraShake:
+                // 镜头抖动每次刷新都重新触发，根据优先级决定是否执行
+                ApplyCameraShakeEffect(buff);
+                break;
+
+            case EffectCategory.ExtraJump:
+                // 额外跳跃次数效果不需要刷新
+                break;
+
+            case EffectCategory.Teleport:
+                // 瞬移效果是立即生效类型，刷新时重新触发
+                ApplyTeleportEffect(buff);
                 break;
 
             default:
@@ -393,7 +504,7 @@ public class BuffSystem : MonoBehaviour
         switch (buff.data.category)
         {
             case EffectCategory.Stun:
-                // 眩晕效果 - 同步到CharacterLogic
+                // 眩晕效果 -
                 ApplyStunEffect(buff);
                 break;
 
@@ -424,26 +535,29 @@ public class BuffSystem : MonoBehaviour
                 // 霸体效果 - 标记为霸体状态
                 ApplySuperArmorEffect(buff);
                 break;
-
+            case EffectCategory.Knockback:
+                // 击退效果 - 立即应用击退
+                ApplyKnockbackEffect(buff);
+                break;
             case EffectCategory.Invincible:
                 // 无敌效果 - 标记为无敌状态
                 ApplyInvincibleEffect(buff);
                 break;
 
             case EffectCategory.Root:
-                // 定身效果 - 同步到CharacterLogic
+                // 定身效果 -
                 ApplyRootEffect(buff);
                 break;
 
-            case EffectCategory.Freeze:
-                // 冰冻效果 - 同步到CharacterLogic
-                ApplyFreezeEffect(buff);
-                break;
+            //case EffectCategory.Freeze:
+            //    // 冰冻效果 -
+            //    ApplyFreezeEffect(buff);
+            //    break;
 
-            case EffectCategory.Silence:
-                // 沉默效果 - 禁止使用技能
-                ApplySilenceEffect(buff);
-                break;
+            //case EffectCategory.Silence:
+            //    // 沉默效果 - 禁止使用技能
+            //    ApplySilenceEffect(buff);
+            //    break;
 
             case EffectCategory.InstantHeal:
                 // 立即回血
@@ -458,6 +572,10 @@ public class BuffSystem : MonoBehaviour
             case EffectCategory.StrengthBoost:
                 // 增加力量
                 ApplyStrengthBoostEffect(buff);
+                break;
+            case EffectCategory.AgilityBoost:
+                // 增加敏捷
+                ApplyAgilityBoostEffect(buff);
                 break;
 
             case EffectCategory.SpeedBoost:
@@ -495,11 +613,34 @@ public class BuffSystem : MonoBehaviour
                 ApplyMaxEnergyBoostEffect(buff);
                 break;
 
+            case EffectCategory.HitStop:
+                // 顿帧效果 - 短暂降低时间流速
+                ApplyHitStopEffect(buff);
+                break;
+
+            case EffectCategory.CameraShake:
+                // 镜头抖动效果 - 使镜头产生震动
+                ApplyCameraShakeEffect(buff);
+                break;
+
+            case EffectCategory.ExtraJump:
+                // 额外跳跃次数效果 - 通过CharacterLogic处理
+                ApplyExtraJumpEffect(buff);
+                break;
+
+            case EffectCategory.Teleport:
+                // 瞬移效果 - 立即移动到目标附近
+                ApplyTeleportEffect(buff);
+                break;
+
             default:
                 // 其他效果类型的通用处理
                 break;
         }
     }
+
+
+
 
     /// <summary>
     /// 移除Buff效果
@@ -550,19 +691,23 @@ public class BuffSystem : MonoBehaviour
                 RemoveRootEffect(buff);
                 break;
 
-            case EffectCategory.Freeze:
-                // 移除冰冻效果
-                RemoveFreezeEffect(buff);
-                break;
+            //case EffectCategory.Freeze:
+            //    // 移除冰冻效果
+            //    RemoveFreezeEffect(buff);
+            //    break;
 
-            case EffectCategory.Silence:
-                // 移除沉默效果
-                RemoveSilenceEffect(buff);
-                break;
+            //case EffectCategory.Silence:
+            //    // 移除沉默效果
+            //    RemoveSilenceEffect(buff);
+            //    break;
 
             case EffectCategory.StrengthBoost:
                 // 移除力量增加
                 RemoveStrengthBoostEffect(buff);
+                break;
+            case EffectCategory.AgilityBoost:
+                // 移除敏捷增加
+                RemoveAgilityBoostEffect(buff);
                 break;
 
             case EffectCategory.SpeedBoost:
@@ -600,16 +745,30 @@ public class BuffSystem : MonoBehaviour
                 RemoveMaxEnergyBoostEffect(buff);
                 break;
 
+            case EffectCategory.HitStop:
+                // 移除顿帧效果
+                RemoveHitStopEffect(buff);
+                break;
+
+            case EffectCategory.ExtraJump:
+                // 移除额外跳跃次数效果
+                RemoveExtraJumpEffect(buff);
+                break;
+
+            case EffectCategory.Teleport:
+                // 瞬移是立即生效类型，不需要移除操作
+                break;
+
             default:
                 break;
         }
     }
 
+
     #region 具体效果实现
 
     /// <summary>
     /// 应用眩晕效果
-    /// 通过CharacterLogic使角色进入眩晕状态，完全无法行动
     /// </summary>
     private void ApplyStunEffect(ActiveBuff buff)
     {
@@ -628,11 +787,9 @@ public class BuffSystem : MonoBehaviour
 
     /// <summary>
     /// 移除眩晕效果
-    /// 眩晕效果由CharacterLogic的计时器自动恢复，这里不需要额外操作
     /// </summary>
     private void RemoveStunEffect(ActiveBuff buff)
     {
-        // 眩晕效果由CharacterLogic的计时器自动恢复
         // 这里不需要额外操作
     }
 
@@ -642,9 +799,9 @@ public class BuffSystem : MonoBehaviour
     /// </summary>
     private void ApplyShieldEffect(ActiveBuff buff)
     {
-        float shieldAmount = buff.data.GetParameterValue("shieldAmount") * buff.currentStacks;
+        float shieldAmount = buff.data.GetParameterValue("value") * buff.currentStacks;
         attributes.maxShield += shieldAmount;
-        attributes.currentShield += shieldAmount;
+        attributes.ChangeShield(shieldAmount);
         LogManager.Log($"[BuffSystem] 获得护盾: {shieldAmount}，当前护盾: {attributes.currentShield}/{attributes.maxShield}");
     }
 
@@ -654,55 +811,74 @@ public class BuffSystem : MonoBehaviour
     /// </summary>
     private void RemoveShieldEffect(ActiveBuff buff)
     {
-        float shieldAmount = buff.data.GetParameterValue("shieldAmount") * buff.currentStacks;
+        float shieldAmount = buff.data.GetParameterValue("value") * buff.currentStacks;
         attributes.maxShield -= shieldAmount;
-        attributes.currentShield = Mathf.Min(attributes.currentShield, attributes.maxShield);
+        attributes.ChangeShield(0);
         LogManager.Log($"[BuffSystem] 移除护盾: {shieldAmount}，当前护盾: {attributes.currentShield}/{attributes.maxShield}");
     }
 
     /// <summary>
     /// 应用减速效果
-    /// 通过降低移动速度修正系数来实现减速
+    /// 通过activeModifiers系统降低移动速度系数
     /// </summary>
     private void ApplySlowEffect(ActiveBuff buff)
     {
-        float slowPercent = buff.data.GetParameterValue("slowPercent");
-        // 减速通过速度修正系数实现，降低移动速度
-        attributes.moveSpeedMultiplier *= (1f - slowPercent / 100f);
-        LogManager.Log($"[BuffSystem] 施加减速: {slowPercent}%，当前速度倍率: {attributes.moveSpeedMultiplier:F2}");
+        float slowPercent = buff.data.GetParameterValue("percent") * buff.currentStacks;
+
+        AttributeModifierInstance modifier = new AttributeModifierInstance
+        {
+            attributeType = AttributeType.MoveSpeedMultiplier,
+            modifierType = ModifierType.Percent,
+            value = -slowPercent,
+            remainingDuration = -1,
+            sourceId = GetBuffSourceId(buff),
+            stacks = buff.currentStacks
+        };
+
+        attributes.AddModifier(modifier);
+        LogManager.Log($"[BuffSystem] 施加减速: {slowPercent}%，当前速度倍率: {attributes.FinalMoveSpeedMultiplier:F2}");
     }
 
     /// <summary>
     /// 移除减速效果
-    /// 恢复移动速度修正系数
+    /// 通过移除对应的modifier恢复移动速度系数
     /// </summary>
     private void RemoveSlowEffect(ActiveBuff buff)
     {
-        float slowPercent = buff.data.GetParameterValue("slowPercent");
-        attributes.moveSpeedMultiplier /= (1f - slowPercent / 100f);
-        LogManager.Log($"[BuffSystem] 移除减速，当前速度倍率: {attributes.moveSpeedMultiplier:F2}");
+        attributes.RemoveModifiersBySource(GetBuffSourceId(buff));
+        LogManager.Log($"[BuffSystem] 移除减速，当前速度倍率: {attributes.FinalMoveSpeedMultiplier:F2}");
     }
 
     /// <summary>
     /// 应用加速效果
-    /// 通过提升移动速度修正系数来实现加速
+    /// 通过activeModifiers系统提升移动速度系数
     /// </summary>
     private void ApplyHasteEffect(ActiveBuff buff)
     {
-        float hastePercent = buff.data.GetParameterValue("hastePercent");
-        attributes.moveSpeedMultiplier *= (1f + hastePercent / 100f);
-        LogManager.Log($"[BuffSystem] 施加加速: {hastePercent}%，当前速度倍率: {attributes.moveSpeedMultiplier:F2}");
+        float hastePercent = buff.data.GetParameterValue("percent") * buff.currentStacks;
+
+        AttributeModifierInstance modifier = new AttributeModifierInstance
+        {
+            attributeType = AttributeType.MoveSpeedMultiplier,
+            modifierType = ModifierType.Percent,
+            value = hastePercent,
+            remainingDuration = -1,
+            sourceId = GetBuffSourceId(buff),
+            stacks = buff.currentStacks
+        };
+
+        attributes.AddModifier(modifier);
+        LogManager.Log($"[BuffSystem] 施加加速: {hastePercent}%，当前速度倍率: {attributes.FinalMoveSpeedMultiplier:F2}");
     }
 
     /// <summary>
     /// 移除加速效果
-    /// 恢复移动速度修正系数
+    /// 通过移除对应的modifier恢复移动速度系数
     /// </summary>
     private void RemoveHasteEffect(ActiveBuff buff)
     {
-        float hastePercent = buff.data.GetParameterValue("hastePercent");
-        attributes.moveSpeedMultiplier /= (1f + hastePercent / 100f);
-        LogManager.Log($"[BuffSystem] 移除加速，当前速度倍率: {attributes.moveSpeedMultiplier:F2}");
+        attributes.RemoveModifiersBySource(GetBuffSourceId(buff));
+        LogManager.Log($"[BuffSystem] 移除加速，当前速度倍率: {attributes.FinalMoveSpeedMultiplier:F2}");
     }
 
     /// <summary>
@@ -721,11 +897,33 @@ public class BuffSystem : MonoBehaviour
     /// </summary>
     private void RemoveSuperArmorEffect(ActiveBuff buff)
     {
-        // 检查是否还有其他霸体Buff
-        if (!HasBuff(EffectCategory.SuperArmor))
+        attributes.hasSuperArmor = false;
+        LogManager.Log($"[BuffSystem] 移除霸体");
+    }
+
+    /// <summary>
+    /// 应用击退效果
+    /// </summary>
+    /// <param name="buff"></param>
+    private void ApplyKnockbackEffect(ActiveBuff buff)
+    {
+        if (buff.data.parameters.Count > 0)
         {
-            attributes.hasSuperArmor = false;
-            LogManager.Log($"[BuffSystem] 移除霸体");
+            float knockbackDistance = buff.data.GetParameterValue("distance");
+            float forceX = buff.data.GetParameterValue("forceX");
+            float forceY = buff.data.GetParameterValue("forceY");
+            Vector3 knockbackDirection = (transform.position - buff.source.transform.position).normalized;
+            if (forceX != 0 || forceY != 0)
+            {
+                Vector2 force = new Vector2(forceX, forceY);
+                rd.AddForce(force * knockbackDirection, ForceMode2D.Impulse);
+                LogManager.Log($"[BuffSystem] 施加击退效果: 力量 ({forceX}, {forceY})，方向 {knockbackDirection}");
+            }
+            if (knockbackDistance != 0)
+            {
+                transform.position += knockbackDirection * knockbackDistance;
+                LogManager.Log($"[BuffSystem] 施加击退效果: 距离 {knockbackDistance}，方向 {knockbackDirection}");
+            }
         }
     }
 
@@ -735,8 +933,8 @@ public class BuffSystem : MonoBehaviour
     /// </summary>
     private void ApplyInvincibleEffect(ActiveBuff buff)
     {
-        attributes.isInvincible = true;
-        LogManager.Log($"[BuffSystem] 获得无敌，免疫所有伤害");
+        attributes.AddInvincibility();
+        LogManager.Log($"[BuffSystem] 获得无敌，免疫所有伤害 (计数: {attributes.isInvincible})");
     }
 
     /// <summary>
@@ -744,67 +942,68 @@ public class BuffSystem : MonoBehaviour
     /// </summary>
     private void RemoveInvincibleEffect(ActiveBuff buff)
     {
-        attributes.isInvincible = false;
-        LogManager.Log($"[BuffSystem] 移除无敌");
+        attributes.RemoveInvincibility();
+        LogManager.Log($"[BuffSystem] 移除无敌 (计数: {attributes.isInvincible})");
     }
 
     /// <summary>
     /// 应用定身效果
-    /// 限制角色移动但允许攻击，通过将移动速度设为0实现
+    /// 限制角色移动但允许攻击，通过activeModifiers将移动速度系数设为-100%
     /// </summary>
     private void ApplyRootEffect(ActiveBuff buff)
     {
-        if (characterLogic != null)
+        AttributeModifierInstance modifier = new AttributeModifierInstance
         {
-            // 定身效果会限制移动但允许攻击
-            // 保存原始速度用于恢复
-            float originalSpeed = attributes.moveSpeedMultiplier;
-            buff.data.parameters.Add(new EffectParameter
-            {
-                name = "originalSpeed",
-                value = originalSpeed
-            });
-            attributes.moveSpeedMultiplier = 0f;
-            LogManager.Log($"[BuffSystem] 施加定身效果，无法移动但可以攻击");
-        }
-        else
-        {
-            LogManager.LogWarning($"[BuffSystem] 无法施加定身效果: CharacterLogic未配置");
-        }
+            attributeType = AttributeType.MoveSpeedMultiplier,
+            modifierType = ModifierType.Percent,
+            value = -100f,
+            remainingDuration = -1,
+            sourceId = GetBuffSourceId(buff),
+            stacks = 1
+        };
+
+        attributes.AddModifier(modifier);
+        LogManager.Log($"[BuffSystem] 施加定身效果，无法移动但可以攻击");
     }
 
     /// <summary>
     /// 移除定身效果
-    /// 恢复原始移动速度
+    /// 通过移除对应的modifier恢复移动速度
     /// </summary>
     private void RemoveRootEffect(ActiveBuff buff)
     {
-        float originalSpeed = buff.data.GetParameterValue("originalSpeed");
-        if (originalSpeed > 0)
-        {
-            attributes.moveSpeedMultiplier = originalSpeed;
-        }
-        else
-        {
-            attributes.moveSpeedMultiplier = 1f;
-        }
-        LogManager.Log($"[BuffSystem] 移除定身效果，恢复速度倍率: {attributes.moveSpeedMultiplier:F2}");
+        attributes.RemoveModifiersBySource(GetBuffSourceId(buff));
+        LogManager.Log($"[BuffSystem] 移除定身效果，恢复速度倍率: {attributes.FinalMoveSpeedMultiplier:F2}");
     }
 
     /// <summary>
     /// 应用冰冻效果
-    /// 类似眩晕，但还会降低防御力
+    /// 类似眩晕，但还会通过activeModifiers降低防御力
     /// </summary>
     private void ApplyFreezeEffect(ActiveBuff buff)
     {
         if (Stunnable != null)
         {
-            // 冰冻效果类似眩晕，但还会降低防御
+            // 冰冻效果类似眩晕
             float duration = buff.data.duration;
             Stunnable.ApplyStun(duration);
 
-            float defenseReduction = buff.data.GetParameterValue("defenseReduction");
-            attributes.defense -= (int)defenseReduction;
+            // 通过activeModifiers降低防御
+            float defenseReduction = buff.data.GetParameterValue("value");
+            if (defenseReduction != 0)
+            {
+                var modifier = new AttributeModifierInstance
+                {
+                    attributeType = AttributeType.Defense,
+                    modifierType = ModifierType.Flat,
+                    value = -defenseReduction, // 负值表示降低
+                    remainingDuration = buff.remainingDuration,
+                    sourceId = GetBuffSourceId(buff),
+                    stacks = buff.currentStacks
+                };
+                attributes.AddModifier(modifier);
+            }
+
             LogManager.Log($"[BuffSystem] 施加冰冻效果: {duration}秒, 防御降低: {defenseReduction}");
         }
         else
@@ -815,13 +1014,14 @@ public class BuffSystem : MonoBehaviour
 
     /// <summary>
     /// 移除冰冻效果
-    /// 恢复防御力
+    /// 通过activeModifiers恢复防御力
     /// </summary>
     private void RemoveFreezeEffect(ActiveBuff buff)
     {
-        float defenseReduction = buff.data.GetParameterValue("defenseReduction");
-        attributes.defense += (int)defenseReduction;
-        LogManager.Log($"[BuffSystem] 移除冰冻效果，恢复防御: {defenseReduction}");
+        // 通过sourceId移除所有相关的修改器（包括防御降低）
+        attributes.RemoveModifiersBySource(GetBuffSourceId(buff));
+
+        LogManager.Log($"[BuffSystem] 移除冰冻效果，最终防御: {attributes.FinalDefense}");
     }
 
     /// <summary>
@@ -856,224 +1056,661 @@ public class BuffSystem : MonoBehaviour
     {
         LogManager.Log($"[BuffSystem] 移除沉默效果");
     }
-
+    /// <summary>
+    /// 应用立即回复生命效果
+    /// </summary>
+    /// <param name="buff"></param>
     private void ApplyInstantHealEffect(ActiveBuff buff)
     {
-        float healAmount = buff.data.GetParameterValue("healAmount");
-        attributes.currentHealth = Mathf.Min(attributes.maxHealth, attributes.currentHealth + healAmount);
+        float healAmount = buff.data.GetParameterValue("value") * buff.currentStacks;
+        attributes.ChangeHealth(healAmount, buff.source);
+        DamageDisplayHelper.ShowHealOnCharacter(healAmount, transform);
         LogManager.Log($"[BuffSystem] 立即回复生命: {healAmount}，当前生命: {attributes.currentHealth}/{attributes.maxHealth}");
     }
 
     private void ApplyInstantEnergyRestoreEffect(ActiveBuff buff)
     {
-        float energyAmount = buff.data.GetParameterValue("energyAmount");
-        attributes.currentEnergy = Mathf.Min(attributes.maxEnergy, attributes.currentEnergy + energyAmount);
+        float energyAmount = buff.data.GetParameterValue("value") * buff.currentStacks;
+        attributes.ChangeEnergy(energyAmount);
         LogManager.Log($"[BuffSystem] 立即回复能量: {energyAmount}，当前能量: {attributes.currentEnergy}/{attributes.maxEnergy}");
     }
 
+    /// <summary>
+    /// 应用力量增加效果（通过activeModifiers实现）
+    /// </summary>
     private void ApplyStrengthBoostEffect(ActiveBuff buff)
     {
-        float strengthAmount = buff.data.GetParameterValue("strengthAmount");
-        float strengthPercent = buff.data.GetParameterValue("strengthPercent");
+        float strengthAmount = buff.data.GetParameterValue("value");
+        float strengthPercent = buff.data.GetParameterValue("percent");
 
-        if (strengthPercent > 0)
+        // 通过activeModifiers添加固定值加成
+        if (strengthAmount != 0)
         {
-            attributes.strength *= (1f + strengthPercent / 100f);
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.Strength,
+                modifierType = ModifierType.Flat,
+                value = strengthAmount * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
         }
-        else
+
+        // 通过activeModifiers添加百分比加成
+        if (strengthPercent != 0)
         {
-            attributes.strength += strengthAmount;
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.Strength,
+                modifierType = ModifierType.Percent,
+                value = strengthPercent * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
         }
-        LogManager.Log($"[BuffSystem] 增加力量，当前力量: {attributes.strength}");
+
+        LogManager.Log($"[BuffSystem] 增加力量，最终力量: {attributes.FinalStrength}");
     }
 
+    /// <summary>
+    /// 移除力量增加效果（通过activeModifiers实现）
+    /// </summary>
     private void RemoveStrengthBoostEffect(ActiveBuff buff)
     {
-        float strengthAmount = buff.data.GetParameterValue("strengthAmount");
-        float strengthPercent = buff.data.GetParameterValue("strengthPercent");
+        // 通过sourceId移除所有相关的修改器
+        attributes.RemoveModifiersBySource(GetBuffSourceId(buff));
 
-        if (strengthPercent > 0)
+        LogManager.Log($"[BuffSystem] 移除力量增加，最终力量: {attributes.FinalStrength}");
+    }
+    /// <summary>
+    /// 应用敏捷增加效果（通过activeModifiers实现）
+    /// </summary>
+    private void ApplyAgilityBoostEffect(ActiveBuff buff)
+    {
+        float agilityAmount = buff.data.GetParameterValue("value");
+        float agilityPercent = buff.data.GetParameterValue("percent");
+
+        // 通过activeModifiers添加固定值加成
+        if (agilityAmount != 0)
         {
-            attributes.strength /= (1f + strengthPercent / 100f);
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.Agility,
+                modifierType = ModifierType.Flat,
+                value = agilityAmount * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
         }
-        else
+
+        // 通过activeModifiers添加百分比加成
+        if (agilityPercent != 0)
         {
-            attributes.strength -= strengthAmount;
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.Agility,
+                modifierType = ModifierType.Percent,
+                value = agilityPercent * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
         }
-        LogManager.Log($"[BuffSystem] 移除力量增加，当前力量: {attributes.strength}");
+
+        LogManager.Log($"[BuffSystem] 增加敏捷，最终敏捷: {attributes.FinalAgility}");
     }
 
+    /// <summary>
+    /// 移除敏捷增加效果（通过activeModifiers实现）
+    /// </summary>
+    private void RemoveAgilityBoostEffect(ActiveBuff buff)
+    {
+        // 通过sourceId移除所有相关的修改器
+        attributes.RemoveModifiersBySource(GetBuffSourceId(buff));
+
+        LogManager.Log($"[BuffSystem] 移除敏捷增加，最终敏捷: {attributes.FinalAgility}");
+    }
+    /// <summary>
+    /// 应用移速增加效果（通过activeModifiers实现）
+    /// </summary>
     private void ApplySpeedBoostEffect(ActiveBuff buff)
     {
-        float speedAmount = buff.data.GetParameterValue("speedAmount");
-        float speedPercent = buff.data.GetParameterValue("speedPercent");
+        float speedAmount = buff.data.GetParameterValue("value");
+        float speedPercent = buff.data.GetParameterValue("percent");
 
-        if (speedPercent > 0)
+        // 通过activeModifiers添加固定值加成
+        if (speedAmount != 0)
         {
-            attributes.moveSpeed *= (1f + speedPercent / 100f);
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.MoveSpeed,
+                modifierType = ModifierType.Flat,
+                value = speedAmount * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
         }
-        else
+
+        // 通过activeModifiers添加百分比加成
+        if (speedPercent != 0)
         {
-            attributes.moveSpeed += speedAmount;
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.MoveSpeed,
+                modifierType = ModifierType.Percent,
+                value = speedPercent * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
         }
-        LogManager.Log($"[BuffSystem] 增加移速，当前移速: {attributes.moveSpeed}");
+
+        LogManager.Log($"[BuffSystem] 增加移速，最终移速: {attributes.FinalMoveSpeed}");
     }
 
+    /// <summary>
+    /// 移除移速增加效果（通过activeModifiers实现）
+    /// </summary>
     private void RemoveSpeedBoostEffect(ActiveBuff buff)
     {
-        float speedAmount = buff.data.GetParameterValue("speedAmount");
-        float speedPercent = buff.data.GetParameterValue("speedPercent");
+        // 通过sourceId移除所有相关的修改器
+        attributes.RemoveModifiersBySource(GetBuffSourceId(buff));
 
-        if (speedPercent > 0)
-        {
-            attributes.moveSpeed /= (1f + speedPercent / 100f);
-        }
-        else
-        {
-            attributes.moveSpeed -= speedAmount;
-        }
-        LogManager.Log($"[BuffSystem] 移除移速增加，当前移速: {attributes.moveSpeed}");
+        LogManager.Log($"[BuffSystem] 移除移速增加，最终移速: {attributes.FinalMoveSpeed}");
     }
 
     private void ApplyAttackBoostEffect(ActiveBuff buff)
     {
-        float attackAmount = buff.data.GetParameterValue("attackAmount");
-        float attackPercent = buff.data.GetParameterValue("attackPercent");
+        float attackAmount = buff.data.GetParameterValue("value") * buff.currentStacks;
+        float attackPercent = buff.data.GetParameterValue("percent") * buff.currentStacks;
+
+        if (attackAmount != 0)
+        {
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.Attack,
+                modifierType = ModifierType.Flat,
+                value = attackAmount * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
+
+        }
+        if (attackPercent != 0)
+        {
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.Attack,
+                modifierType = ModifierType.Percent,
+                value = attackPercent * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
+        }
 
         LogManager.Log($"[BuffSystem] 增加攻击: 固定值={attackAmount}, 百分比={attackPercent}%");
     }
 
     private void RemoveAttackBoostEffect(ActiveBuff buff)
     {
+        attributes.RemoveModifiersBySource(GetBuffSourceId(buff));
         LogManager.Log($"[BuffSystem] 移除攻击增加");
     }
 
+    /// <summary>
+    /// 应用防御增加效果（通过activeModifiers实现）
+    /// </summary>
     private void ApplyDefenseBoostEffect(ActiveBuff buff)
     {
-        float defenseAmount = buff.data.GetParameterValue("defenseAmount");
-        float defensePercent = buff.data.GetParameterValue("defensePercent");
+        float defenseAmount = buff.data.GetParameterValue("value");
+        float defensePercent = buff.data.GetParameterValue("percent");
 
-        if (defensePercent > 0)
+        // 通过activeModifiers添加固定值加成
+        if (defenseAmount != 0)
         {
-            attributes.defense = (int)(attributes.defense * (1f + defensePercent / 100f));
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.Defense,
+                modifierType = ModifierType.Flat,
+                value = defenseAmount * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
         }
-        else
+
+        // 通过activeModifiers添加百分比加成
+        if (defensePercent != 0)
         {
-            attributes.defense += (int)defenseAmount;
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.Defense,
+                modifierType = ModifierType.Percent,
+                value = defensePercent * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
         }
-        LogManager.Log($"[BuffSystem] 增加防御，当前防御: {attributes.defense}");
+
+        LogManager.Log($"[BuffSystem] 增加防御，最终防御: {attributes.FinalDefense}");
     }
 
+    /// <summary>
+    /// 移除防御增加效果（通过activeModifiers实现）
+    /// </summary>
     private void RemoveDefenseBoostEffect(ActiveBuff buff)
     {
-        float defenseAmount = buff.data.GetParameterValue("defenseAmount");
-        float defensePercent = buff.data.GetParameterValue("defensePercent");
+        // 通过sourceId移除所有相关的修改器
+        attributes.RemoveModifiersBySource(GetBuffSourceId(buff));
 
-        if (defensePercent > 0)
-        {
-            attributes.defense = (int)(attributes.defense / (1f + defensePercent / 100f));
-        }
-        else
-        {
-            attributes.defense -= (int)defenseAmount;
-        }
-        LogManager.Log($"[BuffSystem] 移除防御增加，当前防御: {attributes.defense}");
+        LogManager.Log($"[BuffSystem] 移除防御增加，最终防御: {attributes.FinalDefense}");
     }
 
+    /// <summary>
+    /// 应用暴击率增加效果（通过activeModifiers实现）
+    /// </summary>
     private void ApplyCritRateBoostEffect(ActiveBuff buff)
     {
-        float critRatePercent = buff.data.GetParameterValue("critRatePercent");
-        attributes.critRate += critRatePercent;
-        LogManager.Log($"[BuffSystem] 增加暴击率: {critRatePercent}%，当前暴击率: {attributes.critRate}%");
+        float critRatePercent = buff.data.GetParameterValue("percent");
+
+        // 通过activeModifiers添加百分比加成（暴击率一般使用固定值形式，但用Flat类型）
+        if (critRatePercent != 0)
+        {
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.CritRate,
+                modifierType = ModifierType.Flat,
+                value = critRatePercent * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
+        }
+
+        LogManager.Log($"[BuffSystem] 增加暴击率: {critRatePercent * buff.currentStacks}%，最终暴击率: {attributes.FinalCritRate}%");
     }
 
+    /// <summary>
+    /// 移除暴击率增加效果（通过activeModifiers实现）
+    /// </summary>
     private void RemoveCritRateBoostEffect(ActiveBuff buff)
     {
-        float critRatePercent = buff.data.GetParameterValue("critRatePercent");
-        attributes.critRate -= critRatePercent;
-        LogManager.Log($"[BuffSystem] 移除暴击率增加，当前暴击率: {attributes.critRate}%");
+        // 通过sourceId移除所有相关的修改器
+        attributes.RemoveModifiersBySource(GetBuffSourceId(buff));
+
+        LogManager.Log($"[BuffSystem] 移除暴击率增加，最终暴击率: {attributes.FinalCritRate}%");
     }
 
+    /// <summary>
+    /// 应用暴击伤害增加效果（通过activeModifiers实现）
+    /// </summary>
     private void ApplyCritDamageBoostEffect(ActiveBuff buff)
     {
-        float critDamagePercent = buff.data.GetParameterValue("critDamagePercent");
-        attributes.critMultiplier += (critDamagePercent / 100f);
-        LogManager.Log($"[BuffSystem] 增加暴击伤害: {critDamagePercent}%，当前暴击倍率: {attributes.critMultiplier}x");
+        float critDamagePercent = buff.data.GetParameterValue("percent");
+
+        // 通过activeModifiers添加百分比加成（转换为倍率的增量）
+        if (critDamagePercent != 0)
+        {
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.CritMultiplier,
+                modifierType = ModifierType.Flat,
+                value = (critDamagePercent / 100f) * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
+        }
+
+        LogManager.Log($"[BuffSystem] 增加暴击伤害: {critDamagePercent * buff.currentStacks}%，最终暴击倍率: {attributes.FinalCritMultiplier}x");
     }
 
+    /// <summary>
+    /// 移除暴击伤害增加效果（通过activeModifiers实现）
+    /// </summary>
     private void RemoveCritDamageBoostEffect(ActiveBuff buff)
     {
-        float critDamagePercent = buff.data.GetParameterValue("critDamagePercent");
-        attributes.critMultiplier -= (critDamagePercent / 100f);
-        LogManager.Log($"[BuffSystem] 移除暴击伤害增加，当前暴击倍率: {attributes.critMultiplier}x");
+        // 通过sourceId移除所有相关的修改器
+        attributes.RemoveModifiersBySource(GetBuffSourceId(buff));
+
+        LogManager.Log($"[BuffSystem] 移除暴击伤害增加，最终暴击倍率: {attributes.FinalCritMultiplier}x");
     }
 
+    /// <summary>
+    /// 应用最大生命值增加效果（通过activeModifiers实现）
+    /// </summary>
     private void ApplyMaxHealthBoostEffect(ActiveBuff buff)
     {
-        float maxHealthAmount = buff.data.GetParameterValue("maxHealthAmount");
-        float maxHealthPercent = buff.data.GetParameterValue("maxHealthPercent");
+        float maxHealthAmount = buff.data.GetParameterValue("value");
+        float maxHealthPercent = buff.data.GetParameterValue("percent");
 
-        if (maxHealthPercent > 0)
+        // 通过activeModifiers添加固定值加成
+        if (maxHealthAmount != 0)
         {
-            attributes.maxHealth *= (1f + maxHealthPercent / 100f);
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.MaxHealth,
+                modifierType = ModifierType.Flat,
+                value = maxHealthAmount * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
         }
-        else
+
+        // 通过activeModifiers添加百分比加成
+        if (maxHealthPercent != 0)
         {
-            attributes.maxHealth += maxHealthAmount;
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.MaxHealth,
+                modifierType = ModifierType.Percent,
+                value = maxHealthPercent * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
         }
-        LogManager.Log($"[BuffSystem] 增加生命上限，当前生命上限: {attributes.maxHealth}");
+
+        LogManager.Log($"[BuffSystem] 增加生命上限，最终生命上限: {attributes.FinalMaxHealth}");
     }
 
+    /// <summary>
+    /// 移除最大生命值增加效果（通过activeModifiers实现）
+    /// </summary>
     private void RemoveMaxHealthBoostEffect(ActiveBuff buff)
     {
-        float maxHealthAmount = buff.data.GetParameterValue("maxHealthAmount");
-        float maxHealthPercent = buff.data.GetParameterValue("maxHealthPercent");
+        // 通过sourceId移除所有相关的修改器
+        attributes.RemoveModifiersBySource(GetBuffSourceId(buff));
 
-        if (maxHealthPercent > 0)
-        {
-            attributes.maxHealth /= (1f + maxHealthPercent / 100f);
-        }
-        else
-        {
-            attributes.maxHealth -= maxHealthAmount;
-        }
-
-        attributes.currentHealth = Mathf.Min(attributes.currentHealth, attributes.maxHealth);
-        LogManager.Log($"[BuffSystem] 移除生命上限增加，当前生命上限: {attributes.maxHealth}");
+        LogManager.Log($"[BuffSystem] 移除生命上限增加，最终生命上限: {attributes.FinalMaxHealth}");
     }
 
+    /// <summary>
+    /// 应用最大能量增加效果（通过activeModifiers实现）
+    /// </summary>
     private void ApplyMaxEnergyBoostEffect(ActiveBuff buff)
     {
-        float maxEnergyAmount = buff.data.GetParameterValue("maxEnergyAmount");
-        float maxEnergyPercent = buff.data.GetParameterValue("maxEnergyPercent");
+        float maxEnergyAmount = buff.data.GetParameterValue("value");
+        float maxEnergyPercent = buff.data.GetParameterValue("percent");
 
+        // 通过activeModifiers添加固定值加成
+        if (maxEnergyAmount > 0)
+        {
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.MaxEnergy,
+                modifierType = ModifierType.Flat,
+                value = maxEnergyAmount * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
+        }
+
+        // 通过activeModifiers添加百分比加成
         if (maxEnergyPercent > 0)
         {
-            attributes.maxEnergy *= (1f + maxEnergyPercent / 100f);
+            var modifier = new AttributeModifierInstance
+            {
+                attributeType = AttributeType.MaxEnergy,
+                modifierType = ModifierType.Percent,
+                value = maxEnergyPercent * buff.currentStacks,
+                remainingDuration = buff.remainingDuration,
+                sourceId = GetBuffSourceId(buff),
+                stacks = buff.currentStacks
+            };
+            attributes.AddModifier(modifier);
         }
-        else
-        {
-            attributes.maxEnergy += maxEnergyAmount;
-        }
-        LogManager.Log($"[BuffSystem] 增加能量上限，当前能量上限: {attributes.maxEnergy}");
+
+        LogManager.Log($"[BuffSystem] 增加能量上限，最终能量上限: {attributes.FinalMaxEnergy}");
     }
 
+    /// <summary>
+    /// 移除最大能量增加效果（通过activeModifiers实现）
+    /// </summary>
     private void RemoveMaxEnergyBoostEffect(ActiveBuff buff)
     {
-        float maxEnergyAmount = buff.data.GetParameterValue("maxEnergyAmount");
-        float maxEnergyPercent = buff.data.GetParameterValue("maxEnergyPercent");
+        // 通过sourceId移除所有相关的修改器
+        attributes.RemoveModifiersBySource(GetBuffSourceId(buff));
 
-        if (maxEnergyPercent > 0)
+        LogManager.Log($"[BuffSystem] 移除能量上限增加，最终能量上限: {attributes.FinalMaxEnergy}");
+    }
+
+    /// <summary>
+    /// 应用顿帧效果
+    /// 通过降低Time.timeScale来制造打击感
+    /// 注意: 这会影响整个游戏的时间流速，包括物理、动画等所有基于时间的系统
+    /// </summary>
+    private void ApplyHitStopEffect(ActiveBuff buff)
+    {
+        // 获取时间缩放参数（默认为0.1，表示时间流速降低到10%）
+        float timeScale = buff.data.GetParameterValue("timeScale");
+        float priority = buff.data.GetParameterValue("priority");
+
+        // 如果没有设置timeScale参数，使用默认值0.1
+        if (timeScale == 0)
         {
-            attributes.maxEnergy /= (1f + maxEnergyPercent / 100f);
+            timeScale = 0.1f;
+        }
+
+        AdvancedHitStop.Instance.TriggerHitStop(buff.data.duration, timeScale, priority);
+
+        LogManager.Log($"[BuffSystem] 应用顿帧效果，时间缩放: {timeScale}, 持续时间: {buff.data.duration}秒（真实时间）");
+    }
+
+    /// <summary>
+    /// 移除顿帧效果
+    /// 恢复Time.timeScale到原始值
+    /// </summary>
+    private void RemoveHitStopEffect(ActiveBuff buff)
+    {
+        // 恢复时间缩放到原始值
+        Time.timeScale = originalTimeScale;
+
+        LogManager.Log($"[BuffSystem] 移除顿帧效果，恢复时间缩放: {originalTimeScale}");
+    }
+
+    /// <summary>
+    /// 应用镜头抖动效果
+    /// 通过CinemachineImpulseSource触发镜头震动
+    /// </summary>
+    private void ApplyCameraShakeEffect(ActiveBuff buff)
+    {
+        float force = buff.data.GetParameterValue("force");
+        if (force == 0)
+        {
+            force = 1.0f;
+        }
+
+        float priority = buff.data.GetParameterValue("priority");
+
+        float velocityX = buff.data.GetParameterValue("velocityX");
+        float velocityY = buff.data.GetParameterValue("velocityY");
+        float velocityZ = buff.data.GetParameterValue("velocityZ");
+
+        float duration = buff.data.duration > 0 ? buff.data.duration : 0.2f;
+
+        if (velocityX != 0 || velocityY != 0 || velocityZ != 0)
+        {
+            Vector3 velocity = new Vector3(velocityX, velocityY, velocityZ);
+            CameraShakeManager.Instance.TriggerCameraShake(force, velocity, priority, duration);
+            LogManager.Log($"[BuffSystem] 应用镜头抖动效果，力度: {force}, 方向: {velocity}, 优先级: {priority}");
         }
         else
         {
-            attributes.maxEnergy -= maxEnergyAmount;
+            CameraShakeManager.Instance.TriggerCameraShake(force, priority, duration);
+            LogManager.Log($"[BuffSystem] 应用镜头抖动效果，力度: {force}, 优先级: {priority}");
+        }
+    }
+
+    /// <summary>
+    /// 应用额外跳跃次数效果
+    /// 增加角色的空中跳跃次数
+    /// </summary>
+    private void ApplyExtraJumpEffect(ActiveBuff buff)
+    {
+        int extraJumpCount = Mathf.RoundToInt(buff.data.GetParameterValue("value")) * buff.currentStacks;
+
+        if (characterBase is CharacterLogic characterLogic)
+        {
+            characterLogic.AddExtraJumps(extraJumpCount);
+            LogManager.Log($"[BuffSystem] 增加额外跳跃次数: {extraJumpCount}");
+        }
+        else
+        {
+            LogManager.LogWarning($"[BuffSystem] 无法应用额外跳跃效果: 目标不是CharacterLogic类型");
+        }
+    }
+
+    /// <summary>
+    /// 移除额外跳跃次数效果
+    /// 减少角色的空中跳跃次数
+    /// </summary>
+    private void RemoveExtraJumpEffect(ActiveBuff buff)
+    {
+        int extraJumpCount = Mathf.RoundToInt(buff.data.GetParameterValue("value")) * buff.currentStacks;
+
+        if (characterBase is CharacterLogic characterLogic)
+        {
+            characterLogic.RemoveExtraJumps(extraJumpCount);
+            LogManager.Log($"[BuffSystem] 移除额外跳跃次数: {extraJumpCount}");
+        }
+    }
+
+    /// <summary>
+    /// 应用瞬移效果
+    /// 瞬间移动到目标身后或身前
+    /// 瞬移第一种情况,攻击者给自己施加瞬移Buff,则瞬移到target身后或身前  source是攻击者,target是目标
+    /// 第二种,攻击者给命中者施加瞬移Buff,则命中者瞬移到攻击者身后或身前  source是攻击者,target是命中者
+    /// </summary>
+    private void ApplyTeleportEffect(ActiveBuff buff)
+    {
+        if (buff.source == null)
+        {
+            LogManager.LogWarning($"[BuffSystem] 无法应用瞬移效果: 没有目标对象");
+            return;
         }
 
-        attributes.currentEnergy = Mathf.Min(attributes.currentEnergy, attributes.maxEnergy);
-        LogManager.Log($"[BuffSystem] 移除能量上限增加，当前能量上限: {attributes.maxEnergy}");
+        float offsetX = buff.data.GetParameterValue("offsetX");
+        float offsetY = buff.data.GetParameterValue("offsetY");
+
+        if (offsetX == 0)
+        {
+            offsetX = 2f;
+        }
+
+        Transform targetTransform = null;
+        bool targetFacingRight = true;
+
+        if (buff.data.effectTarget == EffectTarget.Attacker)//攻击者给自己施加瞬移Buff
+        {
+            if (buff.target)
+            {
+                targetTransform = buff.target.Transform;
+                targetFacingRight = buff.target.isFacingRight;
+            }
+            else
+            {
+                targetTransform = buff.source.Transform;
+                targetFacingRight = buff.source.isFacingRight;
+            }
+        }
+        else//攻击者给命中者施加瞬移Buff
+        {
+            targetTransform = buff.source.Transform;
+            targetFacingRight = buff.source.isFacingRight;
+        }
+
+        if (targetTransform == null)
+        {
+            LogManager.LogWarning($"[BuffSystem] 无法应用瞬移效果: 目标对象不存在");
+            return;
+        }
+
+        Vector3 targetPosition = targetTransform.position;
+
+        float actualOffsetX = targetFacingRight ? -offsetX : offsetX;
+
+        Vector3 teleportPosition = new Vector3(
+            targetPosition.x + actualOffsetX,
+            targetPosition.y + offsetY,
+            targetPosition.z
+        );
+
+        if (buff.data.effectTarget == EffectTarget.Attacker)//攻击者给自己施加瞬移Buff
+        {
+            buff.source.Transform.position = teleportPosition;
+
+            if (buff.source.rb != null)
+            {
+                buff.source.rb.linearVelocity = Vector2.zero;
+            }
+
+            LogManager.Log($"[BuffSystem] 攻击者瞬移到目标位置: {teleportPosition}");
+        }
+        else//攻击者给命中者施加瞬移Buff
+        {
+            if (buff.target != null)
+            {
+                buff.target.Transform.position = teleportPosition;//命中者瞬移到攻击者身后或身前位置
+                if (buff.target.rb != null)
+                {
+                    buff.target.rb.linearVelocity = Vector2.zero;
+                }
+            }
+            else//容错处理,如果没有命中者,则改为自己瞬移
+            {
+                characterBase.Transform.position = teleportPosition;
+
+                if (rd != null)
+                {
+                    rd.linearVelocity = Vector2.zero;
+                }
+            }
+
+
+
+            LogManager.Log($"[BuffSystem] 被击中者瞬移到目标位置: {teleportPosition}");
+        }
+    }
+
+    #endregion
+
+    #region 辅助方法
+
+    /// <summary>
+    /// 生成Buff的唯一来源ID
+    /// 用于在属性修改器中标识Buff来源，方便移除时定位
+    /// </summary>
+    /// <param name="buff">Buff实例</param>
+    /// <returns>唯一的来源ID字符串</returns>
+    private string GetBuffSourceId(ActiveBuff buff)
+    {
+        // 使用Buff数据的名称和实例的哈希码生成唯一ID
+        return $"{buff.data.effectName}_{buff.GetHashCode()}";
     }
 
     #endregion
@@ -1083,19 +1720,30 @@ public class BuffSystem : MonoBehaviour
     /// </summary>
     private void ApplyPeriodicEffects(float deltaTime)
     {
-        foreach (var buff in activeBuffs)
+        for (int i = activeBuffs.Count - 1; i >= 0; i--)
         {
+            // 检查索引是否有效（防止在循环过程中列表被修改）
+            if (i >= activeBuffs.Count) continue;
+
+            var buff = activeBuffs[i];
+
+            if (buff == null || !activeBuffs.Contains(buff)) continue;
+
+            // 检查角色是否已经死亡
+            if (attributes != null && attributes.currentHealth <= 0)
+                break;
+
             switch (buff.data.category)
             {
-                case EffectCategory.Burn:
-                    // 燃烧效果 - 每秒造成伤害
-                    ApplyBurnDamage(buff, deltaTime);
-                    break;
+                //case EffectCategory.Burn:
+                //    // 燃烧效果 - 每秒造成伤害
+                //    ApplyBurnDamage(buff, deltaTime);
+                //    break;
 
-                case EffectCategory.Poison:
-                    // 中毒效果 - 每秒造成伤害
-                    ApplyPoisonDamage(buff, deltaTime);
-                    break;
+                //case EffectCategory.Poison:
+                //    // 中毒效果 - 每秒造成伤害
+                //    ApplyPoisonDamage(buff, deltaTime);
+                //    break;
 
                 case EffectCategory.Bleed:
                     // 流血效果 - 每秒造成伤害
@@ -1123,20 +1771,58 @@ public class BuffSystem : MonoBehaviour
     #region 周期性效果实现
 
     /// <summary>
+    /// 应用Buff伤害
+    /// 根据伤害计算类型，使用DamageCalculator计算伤害或直接扣除生命值
+    /// </summary>
+    private void ApplyBuffDamage(ActiveBuff buff, float damageValue, string damageTypeName)
+    {
+        if (buff.data.damageCalcType == EDamageCalcType.Fixed)
+        {
+            attributes.ChangeHealth(-damageValue, buff.source);
+            DamageTextManager.Instance.ShowDamageText(damageValue, DamageTextType.Normal, transform.position);
+            LogManager.Log($"[BuffSystem] {damageTypeName}伤害(固定): {damageValue:F1}，剩余生命: {attributes.currentHealth}");
+        }
+        else
+        {
+            CharacterAttributes sourceAttributes = null;
+            BuffSystem sourceBuffSystem = null;
+
+            if (buff.source != null)
+            {
+                sourceAttributes = buff.source_CharacterAttributes;
+                sourceBuffSystem = buff.source_BuffSystem;
+            }
+
+            var damageInfo = new DamageInfo
+            {
+                baseDamage = damageValue
+            };
+
+            var damageResult = DamageCalculator.CalculateDamage(damageInfo, buff.source, characterBase);
+
+            if (!damageResult.isMiss)
+            {
+                attributes.ChangeHealth(-damageResult.healthDamage, buff.source);
+                DamageDisplayHelper.ShowDamageOnCharacter(damageResult, transform);
+                LogManager.Log($"[BuffSystem] {damageTypeName}伤害(普通): {damageResult.finalDamage:F1}(实际生命伤害: {damageResult.healthDamage:F1})，剩余生命: {attributes.currentHealth}");
+            }
+        }
+    }
+
+    /// <summary>
     /// 应用燃烧伤害
     /// 每秒造成持续伤害，伤害会随堆叠层数增加
     /// </summary>
     private void ApplyBurnDamage(ActiveBuff buff, float deltaTime)
     {
-        float damagePerSecond = buff.data.GetParameterValue("damagePerSecond") * buff.currentStacks;
+        float damagePerTick = buff.data.GetParameterValue("value") * buff.currentStacks;
         buff.accumulatedTime += deltaTime;
 
-        // 每1秒结算一次伤害
-        if (buff.accumulatedTime >= 1f)
+        float tickInterval = buff.data.tickInterval > 0 ? buff.data.tickInterval : 1f;
+        if (buff.accumulatedTime >= tickInterval)
         {
-            attributes.currentHealth = Mathf.Max(0, attributes.currentHealth - (int)damagePerSecond);
-            buff.accumulatedTime -= 1f;
-            LogManager.Log($"[BuffSystem] 燃烧伤害: {(int)damagePerSecond}，剩余生命: {attributes.currentHealth}");
+            ApplyBuffDamage(buff, damagePerTick, "燃烧");
+            buff.accumulatedTime -= tickInterval;
         }
     }
 
@@ -1146,15 +1832,14 @@ public class BuffSystem : MonoBehaviour
     /// </summary>
     private void ApplyPoisonDamage(ActiveBuff buff, float deltaTime)
     {
-        float damagePerSecond = buff.data.GetParameterValue("damagePerSecond") * buff.currentStacks;
+        float damagePerTick = buff.data.GetParameterValue("value") * buff.currentStacks;
         buff.accumulatedTime += deltaTime;
 
-        // 每1秒结算一次伤害
-        if (buff.accumulatedTime >= 1f)
+        float tickInterval = buff.data.tickInterval > 0 ? buff.data.tickInterval : 1f;
+        if (buff.accumulatedTime >= tickInterval)
         {
-            attributes.currentHealth = Mathf.Max(0, attributes.currentHealth - (int)damagePerSecond);
-            buff.accumulatedTime -= 1f;
-            LogManager.Log($"[BuffSystem] 中毒伤害: {(int)damagePerSecond}，剩余生命: {attributes.currentHealth}");
+            ApplyBuffDamage(buff, damagePerTick, "中毒");
+            buff.accumulatedTime -= tickInterval;
         }
     }
 
@@ -1164,15 +1849,14 @@ public class BuffSystem : MonoBehaviour
     /// </summary>
     private void ApplyBleedDamage(ActiveBuff buff, float deltaTime)
     {
-        float damagePerSecond = buff.data.GetParameterValue("damagePerSecond") * buff.currentStacks;
+        float damagePerTick = buff.data.GetParameterValue("value") * buff.currentStacks;
         buff.accumulatedTime += deltaTime;
 
-        // 每1秒结算一次伤害
-        if (buff.accumulatedTime >= 1f)
+        float tickInterval = buff.data.tickInterval > 0 ? buff.data.tickInterval : 1f;
+        if (buff.accumulatedTime >= tickInterval)
         {
-            attributes.currentHealth = Mathf.Max(0, attributes.currentHealth - (int)damagePerSecond);
-            buff.accumulatedTime -= 1f;
-            LogManager.Log($"[BuffSystem] 流血伤害: {(int)damagePerSecond}，剩余生命: {attributes.currentHealth}");
+            ApplyBuffDamage(buff, damagePerTick, "流血");
+            buff.accumulatedTime -= tickInterval;
         }
     }
 
@@ -1182,15 +1866,16 @@ public class BuffSystem : MonoBehaviour
     /// </summary>
     private void ApplyConditionalHeal(ActiveBuff buff, float deltaTime)
     {
-        float healPerSecond = buff.data.GetParameterValue("healPerSecond");
+        float healPerTick = buff.data.GetParameterValue("value") * buff.currentStacks;
         buff.accumulatedTime += deltaTime;
 
-        // 每1秒结算一次回复
-        if (buff.accumulatedTime >= 1f)
+        float tickInterval = buff.data.tickInterval > 0 ? buff.data.tickInterval : 1f;
+        if (buff.accumulatedTime >= tickInterval)
         {
-            attributes.currentHealth = Mathf.Min(attributes.maxHealth, attributes.currentHealth + (int)healPerSecond);
-            buff.accumulatedTime -= 1f;
-            LogManager.Log($"[BuffSystem] 回复生命: {(int)healPerSecond}，当前生命: {attributes.currentHealth}");
+            attributes.ChangeHealth(healPerTick, buff.source);
+            DamageDisplayHelper.ShowHealOnCharacter(healPerTick, transform);
+            buff.accumulatedTime -= tickInterval;
+            LogManager.Log($"[BuffSystem] 回复生命: {healPerTick}，当前生命: {attributes.currentHealth}");
         }
     }
 
@@ -1200,30 +1885,29 @@ public class BuffSystem : MonoBehaviour
     /// </summary>
     private void ApplyEnergyDrain(ActiveBuff buff, float deltaTime)
     {
-        float drainPerSecond = buff.data.GetParameterValue("drainPerSecond");
+        float drainPerTick = buff.data.GetParameterValue("value") * buff.currentStacks;
         buff.accumulatedTime += deltaTime;
 
-        // 每1秒结算一次能量消耗
-        if (buff.accumulatedTime >= 1f)
+        float tickInterval = buff.data.tickInterval > 0 ? buff.data.tickInterval : 1f;
+        if (buff.accumulatedTime >= tickInterval)
         {
-            // 这里需要能量系统支持
-            attributes.currentEnergy -= drainPerSecond;
-            buff.accumulatedTime -= 1f;
-            LogManager.Log($"[BuffSystem] 能量消耗: {(int)drainPerSecond}");
+            attributes.ChangeEnergy(-drainPerTick);
+            buff.accumulatedTime -= tickInterval;
+            LogManager.Log($"[BuffSystem] 能量消耗: {drainPerTick:F1}");
         }
     }
 
     private void ApplyEnergyRegeneration(ActiveBuff buff, float deltaTime)
     {
-        float energyPerSecond = buff.data.GetParameterValue("energyPerSecond");
+        float energyPerTick = buff.data.GetParameterValue("value") * buff.currentStacks;
         buff.accumulatedTime += deltaTime;
 
-        // 每1秒结算一次能量回复
-        if (buff.accumulatedTime >= 1f)
+        float tickInterval = buff.data.tickInterval > 0 ? buff.data.tickInterval : 1f;
+        if (buff.accumulatedTime >= tickInterval)
         {
-            attributes.currentEnergy = Mathf.Min(attributes.maxEnergy, attributes.currentEnergy + energyPerSecond);
-            buff.accumulatedTime -= 1f;
-            LogManager.Log($"[BuffSystem] 回复能量: {energyPerSecond}，当前能量: {attributes.currentEnergy}/{attributes.maxEnergy}");
+            attributes.ChangeEnergy(energyPerTick);
+            buff.accumulatedTime -= tickInterval;
+            LogManager.Log($"[BuffSystem] 回复能量: {energyPerTick}，当前能量: {attributes.currentEnergy}/{attributes.maxEnergy}");
         }
     }
 
@@ -1260,6 +1944,10 @@ public class ActiveBuff
     public EffectData data;              // Buff数据
     public float remainingDuration;      // 剩余持续时间
     public int currentStacks;            // 当前堆叠层数
-    public GameObject source;            // Buff来源
+    public CharacterBase source;            // Buff来源
+    public CharacterAttributes source_CharacterAttributes;
+    public BuffSystem source_BuffSystem;
+    public CharacterBase target;            // Buff目标
     public float accumulatedTime;        // 累积时间（用于周期性效果）
+    public bool isPermanent;             // 是否为永久效果
 }
