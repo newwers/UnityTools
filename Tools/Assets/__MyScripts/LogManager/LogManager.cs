@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.IO;
+using UnityEngine;
 
 public static class LogManager
 {
@@ -68,21 +69,21 @@ public static class LogManager
     }
 
     public static void PhoneSystemInfo(StreamWriter sw)
+    {
+        System.Diagnostics.Process process = new System.Diagnostics.Process();
+        process.StartInfo.FileName = "cmd.exe";
+        process.StartInfo.Arguments = "/c ver";
+        process.StartInfo.RedirectStandardOutput = true;
+        process.StartInfo.UseShellExecute = false;
+        process.StartInfo.CreateNoWindow = true;
+        process.Start();
+        string str = process.StandardOutput.ReadToEnd();
+        process.WaitForExit();
+        sw.WriteLine("*********************************************************************************************************start");
+        sw.WriteLine("By " + SystemInfo.deviceName);
+        System.DateTime now = System.DateTime.Now;
+        sw.WriteLine(string.Concat(new object[]
         {
-            Process process = new Process();
-            process.StartInfo.FileName = "cmd.exe";
-            process.StartInfo.Arguments = "/c ver";
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.CreateNoWindow = true;
-            process.Start();
-            string str = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-            sw.WriteLine("*********************************************************************************************************start");
-            sw.WriteLine("By " + SystemInfo.deviceName);
-            DateTime now = DateTime.Now;
-            sw.WriteLine(string.Concat(new object[]
-            {
                 now.Year.ToString(),
                 "年",
                 now.Month.ToString(),
@@ -94,23 +95,23 @@ public static class LogManager
                 now.Minute.ToString(),
                 ":",
                 now.Second.ToString()
-            }));
-            sw.WriteLine("操作系统详细版本:  " + str);
-            sw.WriteLine();
-            sw.WriteLine("操作系统:  " + SystemInfo.operatingSystem);
-            sw.WriteLine("系统内存大小:  " + SystemInfo.systemMemorySize.ToString());
-            sw.WriteLine("设备模型:  " + SystemInfo.deviceModel);
-            sw.WriteLine("设备唯一标识符:  " + SystemInfo.deviceUniqueIdentifier);
-            sw.WriteLine("处理器数量:  " + SystemInfo.processorCount.ToString());
-            sw.WriteLine("处理器类型:  " + SystemInfo.processorType);
-            sw.WriteLine("显卡标识符:  " + SystemInfo.graphicsDeviceID.ToString());
-            sw.WriteLine("显卡名称:  " + SystemInfo.graphicsDeviceName);
-            sw.WriteLine("显卡厂商:  " + SystemInfo.graphicsDeviceVendor);
-            sw.WriteLine("显卡驱动版本:  " + SystemInfo.graphicsDeviceVersion);
-            sw.WriteLine("显存大小:  " + SystemInfo.graphicsMemorySize.ToString());
-            sw.WriteLine("显卡着色器级别:  " + SystemInfo.graphicsShaderLevel.ToString());
-            sw.WriteLine("*********************************************************************************************************end");
-            sw.WriteLine("LogInfo:");
-            sw.WriteLine();
-        }
+        }));
+        sw.WriteLine("操作系统详细版本:  " + str);
+        sw.WriteLine();
+        sw.WriteLine("操作系统:  " + SystemInfo.operatingSystem);
+        sw.WriteLine("系统内存大小:  " + SystemInfo.systemMemorySize.ToString());
+        sw.WriteLine("设备模型:  " + SystemInfo.deviceModel);
+        sw.WriteLine("设备唯一标识符:  " + SystemInfo.deviceUniqueIdentifier);
+        sw.WriteLine("处理器数量:  " + SystemInfo.processorCount.ToString());
+        sw.WriteLine("处理器类型:  " + SystemInfo.processorType);
+        sw.WriteLine("显卡标识符:  " + SystemInfo.graphicsDeviceID.ToString());
+        sw.WriteLine("显卡名称:  " + SystemInfo.graphicsDeviceName);
+        sw.WriteLine("显卡厂商:  " + SystemInfo.graphicsDeviceVendor);
+        sw.WriteLine("显卡驱动版本:  " + SystemInfo.graphicsDeviceVersion);
+        sw.WriteLine("显存大小:  " + SystemInfo.graphicsMemorySize.ToString());
+        sw.WriteLine("显卡着色器级别:  " + SystemInfo.graphicsShaderLevel.ToString());
+        sw.WriteLine("*********************************************************************************************************end");
+        sw.WriteLine("LogInfo:");
+        sw.WriteLine();
+    }
 }
