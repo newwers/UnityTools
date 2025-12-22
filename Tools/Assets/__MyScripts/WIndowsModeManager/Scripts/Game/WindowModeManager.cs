@@ -125,6 +125,12 @@ public class WindowModeManager : MonoBehaviour
             // 可以在这里添加代码来恢复窗口的正常样式
         }
 
+        //先回到全屏模式
+        if (wallpaper != null)
+        {
+            wallpaper.StartCoroutine(wallpaper.DelayFullScreen());
+        }
+
         // 如果是第一次进入壁纸模式，使用特殊处理
         wallpaper.SetWallpaper();
     }
@@ -140,8 +146,11 @@ public class WindowModeManager : MonoBehaviour
             wallpaper.ExitWallparer();
         }
 
-        // 设置窗口化作为基础
-        //SetWindowedMode();
+        //先回到全屏模式
+        if (wallpaper != null)
+        {
+            wallpaper.StartCoroutine(wallpaper.DelayFullScreen());
+        }
 
         // 启用透明穿透
         if (transpareWindows != null)
@@ -175,16 +184,4 @@ public class WindowModeManager : MonoBehaviour
         SetDisplayMode(DisplayMode.Transparent);
     }
 
-    /// <summary>
-    /// 切换透明穿透的开关状态
-    /// </summary>
-    public void ToggleClickThrough(bool enabled)
-    {
-        if (transpareWindows != null)
-        {
-            // 这里需要根据TranspareWindows脚本的实际实现来调整
-            // 可能需要添加一个公共方法来控制穿透开关
-            transpareWindows.SetWindowTop(enabled);
-        }
-    }
 }

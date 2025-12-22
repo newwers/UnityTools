@@ -242,6 +242,7 @@ public class Wallpaper : MonoBehaviour
     /// <returns></returns>
     public IEnumerator FirstEnterWallpaper()
     {
+        yield return null;
         LogManager.Log("第一次设置壁纸模式，延时两次设置");
         SetWallpaper();
         yield return null;
