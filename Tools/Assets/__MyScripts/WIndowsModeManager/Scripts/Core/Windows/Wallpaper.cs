@@ -281,6 +281,11 @@ public class Wallpaper : MonoBehaviour
 
     public void SetWallpaper()
     {
+        if (isWallpaperMode)
+        {
+            LogManager.Log("已经处于壁纸模式，无需重复设置");
+            return;
+        }
         if (isFirstSet)
         {
             isFirstSet = false;

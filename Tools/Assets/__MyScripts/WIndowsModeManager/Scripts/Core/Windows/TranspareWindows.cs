@@ -116,6 +116,11 @@ public class TranspareWindows : MonoBehaviour
 
     public void SetTranspareWindows()
     {
+        if (isSetTranspareWindows)
+        {
+            LogManager.Log("已经处于透明窗口状态，无需重复设置");
+            return;
+        }
         StartCoroutine(DelaySetTranspareWindows());
     }
 
