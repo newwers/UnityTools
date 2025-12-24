@@ -3,7 +3,7 @@ using UnityEngine.Events;
 
 public class MouseEvents : MonoBehaviour
 {
-    public UnityEvent OnMouseClickHander;
+    public UnityEvent<bool> OnMouseClickHander;
     public UnityEvent OnMouseDownHander;
     public UnityEvent OnMouseUpHander;
     public UnityEvent OnMouseDragHander;
@@ -12,6 +12,7 @@ public class MouseEvents : MonoBehaviour
     private Collider2D m_Collider2D;
     private Vector3 m_MouseClickPos;
     private bool m_IsMouseDown = false;
+    private bool m_IsMouseDrag = false;
 
     private void Awake()
     {
@@ -23,6 +24,7 @@ public class MouseEvents : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
+            m_IsMouseDrag = false;
             Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
             mouseWorldPos.z = 0; // 确保Z轴为0，因为2D游戏通常在XY平面上工作
             if (m_Collider2D != null && m_Collider2D.OverlapPoint(mouseWorldPos))
@@ -55,6 +57,7 @@ public class MouseEvents : MonoBehaviour
 
         if (m_IsMouseDown && m_MouseClickPos != Input.mousePosition)
         {
+            m_IsMouseDrag = true;
             OnMouseDragEvent();
         }
     }
@@ -66,15 +69,10 @@ public class MouseEvents : MonoBehaviour
 
         if (hit.collider != null && hit.collider.gameObject == gameObject)
         {
-            OnMouseClickHander?.Invoke();
+            OnMouseClickHander?.Invoke(m_IsMouseDrag);
             //LogManager.Log("MouseEvents Update OnMouseUpAsButton");
         }
     }
-
-    //private void OnMouseUpAsButton()
-    //{
-    //    OnMouseClickHander?.Invoke();
-    //}
 
     private void OnMouseDownEvent()
     {
