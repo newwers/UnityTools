@@ -40,7 +40,7 @@ public class TimeTestWindow : EditorWindow
 
         // 时间缩放滑块
         EditorGUILayout.LabelField("调整时间缩放");
-        timeScale = EditorGUILayout.Slider(timeScale, 0f, 2f);
+        timeScale = EditorGUILayout.Slider(timeScale, 0f, 10f);
 
         GUILayout.Space(10);
 
@@ -82,6 +82,14 @@ public class TimeTestWindow : EditorWindow
             if (GUILayout.Button("2x"))
             {
                 SetTimeScale(2f);
+            }
+            if (GUILayout.Button("3x"))
+            {
+                SetTimeScale(3f);
+            }
+            if (GUILayout.Button("5x"))
+            {
+                SetTimeScale(5f);
             }
         }
         EditorGUILayout.EndHorizontal();

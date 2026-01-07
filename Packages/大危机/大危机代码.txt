@@ -1,0 +1,947 @@
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+
+// --- 基础枚举 ---
+public enum Faction { Good, Bad, Neutral }
+
+// --- 核心角色配置 (ScriptableObject) ---
+[CreateAssetMenu(fileName = "NewCharacter", menuName = "Crisis/CharacterData")]
+public class CrisisCharacterData : ScriptableObject
+{
+    public string roleName;
+    public Faction faction;
+    [TextArea] public string skillDescription;
+    public float baseMoveSpeed = 5f;
+    public AbilityData specialAbility;
+    public bool immuneToRiddler = false; // 谜语人免疫（普良特权）
+}
+
+// --- 技能基类 ---
+public abstract class AbilityData : ScriptableObject
+{
+    public string abilityName;
+    public float cooldown = 20f;
+    public virtual bool CanUse(GameCharacter user) => user.IsAlive;
+    public abstract void OnActivate(GameCharacter user, GameCharacter target);
+}
+
+// --- 具体技能实现 ---
+
+// 1. 击杀技能 (保安, 单刀, 坏人通用)
+[CreateAssetMenu(menuName = "Crisis/Abilities/Kill")]
+public class KillAbility : AbilityData
+{
+    public bool selfKillOnWrongTarget = false; // 错杀自爆（保安）
+    public int maxUses = -1; // 使用次数（单刀）
+
+    public override void OnActivate(GameCharacter user, GameCharacter target)
+    {
+        if (target == null || !target.IsAlive) return;
+
+        if (selfKillOnWrongTarget && target.Data.faction == Faction.Good)
+        {
+            Debug.Log($"{user.CharacterName} 错杀了队友，原地爆炸！");
+            user.OnDeath(null); 
+            return;
+        }
+
+        user.PerformKill(target);
+        if (maxUses > 0)
+        {
+            user.abilityRemainingUses--;
+            if (user.abilityRemainingUses <= 0) user.canUseAbility = false;
+        }
+    }
+}
+
+// 2. 隐身技能 (隐身杀手)
+[CreateAssetMenu(menuName = "Crisis/Abilities/Invisibility")]
+public class InvisibilityAbility : AbilityData
+{
+    public float duration = 5f;
+    public override void OnActivate(GameCharacter user, GameCharacter target)
+    {
+        user.StartCoroutine(InvisibilityRoutine(user));
+    }
+
+    IEnumerator InvisibilityRoutine(GameCharacter user)
+    {
+        user.SetVisibility(false);
+        yield return new WaitForSeconds(duration);
+        user.SetVisibility(true);
+    }
+}
+
+// 3. 变脸技能 (变脸杀手)
+[CreateAssetMenu(menuName = "Crisis/Abilities/Morph")]
+public class MorphAbility : AbilityData
+{
+    public override void OnActivate(GameCharacter user, GameCharacter target)
+    {
+        if (target != null) user.MorphInto(target);
+    }
+}
+
+// 4. 调查/嗅闻技能 (花生侠)
+[CreateAssetMenu(menuName = "Crisis/Abilities/Scent")]
+public class ScentAbility : AbilityData
+{
+    public override void OnActivate(GameCharacter user, GameCharacter target)
+    {
+        if (target == null) return;
+        // 检查目标是否在当前回合有过击杀
+        bool isKiller = target.hasKilledThisRound;
+        Debug.Log($"嗅闻结果：{target.CharacterName} 身上有杀气吗？ {isKiller}");
+        // 这里可以弹出UI告知好人
+    }
+}
+
+// --- 角色控制器基类 ---
+
+public class GameCharacter : MonoBehaviour
+{
+    public CrisisCharacterData Data;
+    public string CharacterName => Data.roleName;
+    public bool IsAlive = true;
+    public int abilityRemainingUses = -1;
+    public bool canUseAbility = true;
+    
+    // 状态记录
+    public bool hasKilledThisRound = false;
+    public bool isMuted = false; // 被禁言
+    private CrisisCharacterData currentIdentity; // 用于变脸
+
+    void Start() {
+        currentIdentity = Data;
+        if (Data.specialAbility is KillAbility ka && ka.maxUses > 0)
+            abilityRemainingUses = ka.maxUses;
+    }
+
+    // 处理死亡逻辑 (重点：实现主播、尖叫、死神/食肉结算)
+    public virtual void OnDeath(GameCharacter killer)
+    {
+        if (!IsAlive) return;
+        IsAlive = false;
+
+        // 1. 主播侠技能：死亡提示所有人
+        if (Data.roleName == "主播侠") {
+            UIManager.Instance.ShowNotification("【提示】主播侠 已在某处遇害！");
+        }
+
+        // 2. 尖叫侠技能：死亡瞬间开会 (除非被专杀)
+        if (Data.roleName == "尖叫侠") {
+            bool isProfessionalKill = killer != null && killer.Data.roleName == "专业杀手";
+            if (!isProfessionalKill) {
+                GameManager.Instance.ImmediateMeeting(this);
+            }
+        }
+
+        // 3. 食肉动物/死神逻辑
+        if (Data.roleName == "食肉动物" && eatenVictims.Count > 0) {
+            ReleaseEatenVictims(); // 死亡后肚子里的人出来
+        }
+
+        // 4. 复仇侠：检测周边死亡
+        CheckRevengeTrigger();
+
+        gameObject.SetActive(false);
+        GameManager.Instance.OnCharacterDie(this);
+    }
+
+    // 击杀逻辑
+    public void PerformKill(GameCharacter victim)
+    {
+        hasKilledThisRound = true;
+        victim.OnDeath(this);
+        
+        // 狂战杀手：击杀重置暴走计时 (这里简化处理)
+        if(Data.roleName == "狂战杀手") {
+             StopAllCoroutines();
+             StartCoroutine(BerserkTimer());
+        }
+    }
+
+    IEnumerator BerserkTimer() {
+        yield return new WaitForSeconds(120f);
+        if(IsAlive) OnDeath(null); // 120秒不杀人自爆
+    }
+
+    // 变脸逻辑
+    public void MorphInto(GameCharacter target) {
+        currentIdentity = target.Data;
+        Debug.Log($"{CharacterName} 变成了 {target.CharacterName}");
+        // 改变外观逻辑...
+    }
+
+    // --- 鹈鹕/食肉动物专属 ---
+    public List<GameCharacter> eatenVictims = new List<GameCharacter>();
+    public void ReleaseEatenVictims() {
+        foreach(var v in eatenVictims) {
+            v.gameObject.SetActive(true);
+            v.transform.position = transform.position;
+        }
+        eatenVictims.Clear();
+    }
+
+    // --- 环境感知 ---
+    void CheckRevengeTrigger() {
+        // 全局搜索复仇侠，如果他在死亡范围附近，获得1分钟刀
+        var revengers = FindObjectsOfType<GameCharacter>().Where(c => c.Data.roleName == "复仇侠" && c.IsAlive);
+        foreach(var r in revengers) {
+            if(Vector3.Distance(r.transform.position, transform.position) < 10f) {
+                r.EnableTemporaryKill(60f);
+            }
+        }
+    }
+
+    public void EnableTemporaryKill(float duration) {
+        StartCoroutine(TempKillRoutine(duration));
+    }
+
+    IEnumerator TempKillRoutine(float d) {
+        canUseAbility = true; // 临时获得刀
+        yield return new WaitForSeconds(d);
+        if(Data.roleName == "复仇侠") canUseAbility = false;
+    }
+
+    public void SetVisibility(bool visible) { /* 更改Alpha值或材质 */ }
+}
+
+// --- 游戏管理器：处理胜利条件和会议 ---
+
+public class GameManager : MonoBehaviour
+{
+    public static GameManager Instance;
+    public List<GameCharacter> players = new List<GameCharacter>();
+    public int fuelCount = 0;
+    public int jumpCount = 0;
+
+    void Update() {
+        CheckVictory();
+    }
+
+    void CheckVictory()
+    {
+        // 好人胜利：燃料+跃迁 或 踢出所有狼
+        if (fuelCount >= 10 && jumpCount >= 3) { EndGame(Faction.Good); return; }
+        
+        int goodCount = players.Count(p => p.IsAlive && p.Data.faction == Faction.Good);
+        int badCount = players.Count(p => p.IsAlive && p.Data.faction == Faction.Bad);
+        int neutralCount = players.Count(p => p.IsAlive && p.Data.faction == Faction.Neutral);
+
+        // 坏人胜利
+        if (badCount >= goodCount && badCount > 0) { EndGame(Faction.Bad); return; }
+
+        // 阿呆胜利 (在投票逻辑中触发)
+    }
+
+    public void ImmediateMeeting(GameCharacter reporter) {
+        Debug.Log("立即开启会议！");
+        // 会议逻辑...
+    }
+
+    public void OnCharacterDie(GameCharacter c) { /* 记录 */ }
+    
+    void EndGame(Faction winner) { Debug.Log($"{winner} 胜利！"); }
+}
+
+// --- 谜语杀手会议逻辑 (特供界面) ---
+public class RiddlerUI : MonoBehaviour {
+    public void OnTryGuess(GameCharacter target, string predictedRole) {
+        if (target.Data.roleName == predictedRole) {
+            Debug.Log("狙击成功！");
+            target.OnDeath(null);
+        } else {
+            Debug.Log("狙击失败，反噬！");
+            // 谜语人本体死亡逻辑
+        }
+    }
+}
+
+// --- UI 工具类 ---
+public class UIManager : MonoBehaviour {
+    public static UIManager Instance;
+    public void ShowNotification(string msg) { /* 显示在屏幕中央 */ }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+using UnityEngine;
+using UnityEngine.AI;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+
+// --- 基础定义 ---
+
+public enum Faction { Good, Bad, Neutral }
+public enum AIDifficulty { Low, Medium, High }
+public enum GameDifficulty { Low, Medium, High, Random }
+public enum GameState { Playing, Meeting, Voting, GameOver }
+public enum AbilityType { None, Kill, SelfBuff, TargetInteraction }
+
+// --- 技能系统 (核心新增) ---
+
+/// <summary>
+/// 技能基础配置 (ScriptableObject)
+/// </summary>
+public abstract class AbilityData : ScriptableObject
+{
+    public string abilityName;
+    [TextArea] public string description;
+    public float cooldown = 20f;
+    public float duration = 0f; // 持续时间 (如隐身)
+    public float range = 2.5f;
+    public bool isPassive = false; // 是否是被动
+
+    // 抽象方法：具体技能逻辑由子类实现
+    public abstract void OnActivate(GameCharacter user, GameCharacter target = null);
+}
+
+// 具体技能实现：普通击杀
+[CreateAssetMenu(menuName = "GooseGooseDuck/Abilities/StandardKill")]
+public class KillAbility : AbilityData
+{
+    public override void OnActivate(GameCharacter user, GameCharacter target)
+    {
+        if (target != null && target.IsAlive)
+        {
+            user.ExecuteKill(target);
+        }
+    }
+}
+
+// 具体技能实现：警长击杀 (杀错人自爆)
+[CreateAssetMenu(menuName = "GooseGooseDuck/Abilities/SheriffKill")]
+public class SheriffKillAbility : AbilityData
+{
+    public override void OnActivate(GameCharacter user, GameCharacter target)
+    {
+        if (target == null || !target.IsAlive) return;
+
+        if (target.Data.faction != Faction.Bad)
+        {
+            // 杀错了好人或中立，自己死
+            Debug.Log($"<color=red>{user.CharacterName} (警长) 杀错了人，由于羞愧而自杀！</color>");
+            user.OnDeath(); 
+        }
+        else
+        {
+            // 杀对了坏人
+            Debug.Log($"<color=green>{user.CharacterName} (警长) 正义执行！</color>");
+            user.ExecuteKill(target);
+        }
+    }
+}
+
+// 具体技能实现：隐身 (忍者/工程)
+[CreateAssetMenu(menuName = "GooseGooseDuck/Abilities/Invisibility")]
+public class InvisibilityAbility : AbilityData
+{
+    public override void OnActivate(GameCharacter user, GameCharacter target)
+    {
+        user.StartCoroutine(InvisibilityRoutine(user));
+    }
+
+    IEnumerator InvisibilityRoutine(GameCharacter user)
+    {
+        // 简单的隐身：关闭 MeshRenderer
+        var renderers = user.GetComponentsInChildren<Renderer>();
+        foreach (var r in renderers) r.enabled = false;
+        
+        Debug.Log($"{user.CharacterName} 隐身了！");
+
+        yield return new WaitForSeconds(duration);
+
+        foreach (var r in renderers) r.enabled = true;
+        Debug.Log($"{user.CharacterName} 现身了。");
+    }
+}
+
+// 具体技能实现：鹈鹕吞噬 (中立)
+[CreateAssetMenu(menuName = "GooseGooseDuck/Abilities/PelicanEat")]
+public class PelicanEatAbility : AbilityData
+{
+    public override void OnActivate(GameCharacter user, GameCharacter target)
+    {
+        if (target != null && target.IsAlive)
+        {
+            Debug.Log($"<color=orange>{user.CharacterName} (鹈鹕) 把 {target.CharacterName} 吞掉了！</color>");
+            // 鹈鹕吃人逻辑：
+            // 1. 目标不视为死亡，但从地图上消失（为了简单，我们暂时禁用它）
+            // 2. 只有开会时，被吃的人才真正判定死亡
+            
+            target.gameObject.SetActive(false); // 暂时隐藏
+            user.eatenVictims.Add(target); // 记录在肚子里
+        }
+    }
+}
+
+// --- 角色数据 ---
+
+[CreateAssetMenu(fileName = "NewCharacter", menuName = "GooseGooseDuck/CharacterData")]
+public class CharacterData : ScriptableObject
+{
+    public string characterName;
+    public Faction faction;
+    [TextArea] public string description;
+    public float moveSpeed = 5f;
+    
+    [Header("技能配置")]
+    public AbilityData specialAbility; // 每个角色携带一个特殊技能
+}
+
+// --- 游戏管理器 ---
+
+public class GameManager : MonoBehaviour
+{
+    public static GameManager Instance;
+    
+    [Header("游戏设置")]
+    public GameDifficulty gameDifficulty = GameDifficulty.Random;
+    public GameState currentState = GameState.Playing;
+    public Transform meetingPoint;
+
+    public List<GameCharacter> allCharacters = new List<GameCharacter>();
+    private Dictionary<GameCharacter, int> votes = new Dictionary<GameCharacter, int>();
+
+    void Awake() { Instance = this; }
+
+    void Start() { StartCoroutine(InitializeGame()); }
+
+    IEnumerator InitializeGame()
+    {
+        yield return null;
+        var ais = FindObjectsOfType<SmartAIController>();
+        var players = FindObjectsOfType<PlayerController>();
+
+        foreach (var p in players) allCharacters.Add(p);
+        foreach (var ai in ais)
+        {
+            allCharacters.Add(ai);
+            ai.InitializeDifficulty(gameDifficulty);
+        }
+    }
+
+    void Update()
+    {
+        if (currentState == GameState.Playing) CheckWinCondition();
+    }
+
+    // --- 会议系统 ---
+
+    public void StartMeeting(GameCharacter reporter)
+    {
+        if (currentState != GameState.Playing) return;
+
+        Debug.Log($"<color=red>尸体被 {reporter.CharacterName} 发现！开启会议！</color>");
+        
+        // 鹈鹕结算：会议开始时，肚子里的人全部死亡
+        foreach(var c in allCharacters)
+        {
+            if(c.eatenVictims.Count > 0)
+            {
+                foreach(var victim in c.eatenVictims)
+                {
+                    Debug.Log($"{victim.CharacterName} 在鹈鹕肚子里消化了。");
+                    victim.OnDeath(); // 真正死亡
+                }
+                c.eatenVictims.Clear();
+            }
+        }
+
+        currentState = GameState.Meeting;
+
+        foreach (var c in allCharacters)
+        {
+            if (c.IsAlive)
+            {
+                c.TeleportTo(GetMeetingPosition(c));
+                c.StopMovement();
+            }
+        }
+
+        var bodies = GameObject.FindGameObjectsWithTag("Body");
+        foreach (var b in bodies) Destroy(b);
+
+        StartCoroutine(MeetingRoutine());
+    }
+
+    Vector3 GetMeetingPosition(GameCharacter c)
+    {
+        if (meetingPoint == null) return Vector3.zero;
+        int index = allCharacters.IndexOf(c);
+        float angle = index * (360f / allCharacters.Count);
+        Vector3 dir = Quaternion.Euler(0, angle, 0) * Vector3.forward;
+        return meetingPoint.position + dir * 3f;
+    }
+
+    IEnumerator MeetingRoutine()
+    {
+        Debug.Log("进入讨论阶段 (5秒)...");
+        yield return new WaitForSeconds(5f);
+
+        currentState = GameState.Voting;
+        votes.Clear();
+        foreach (var c in allCharacters) if (c.IsAlive) votes[c] = 0;
+        
+        Debug.Log("进入投票阶段！");
+        
+        foreach (var c in allCharacters)
+        {
+            if (c is SmartAIController ai && ai.IsAlive) ai.PerformVote();
+        }
+    }
+
+    public void CastVote(GameCharacter voter, GameCharacter target)
+    {
+        if (currentState != GameState.Voting) return;
+        if (target != null) votes[target]++;
+    }
+
+    public void PlayerVote(GameCharacter target)
+    {
+        var player = allCharacters.Find(c => c is PlayerController);
+        CastVote(player, target);
+        StartCoroutine(EjectionRoutine());
+    }
+
+    IEnumerator EjectionRoutine()
+    {
+        yield return new WaitForSeconds(1f);
+        
+        // 简易票数结算
+        GameCharacter mostVoted = votes.OrderByDescending(x => x.Value).FirstOrDefault().Key;
+        int maxVote = votes.Values.Max(); // 需处理平票逻辑，这里简化
+        
+        if (maxVote > 0 && mostVoted != null)
+        {
+            Debug.Log($"<color=red>{mostVoted.CharacterName} 被票出局！</color>");
+            mostVoted.OnEjected();
+            
+            // 鹈鹕特殊判定：如果鹈鹕被票出，肚子里的人如果还没死（理论上会议开始就死了），逻辑上已经消化了
+        }
+
+        yield return new WaitForSeconds(2f);
+        
+        if (!CheckWinCondition())
+        {
+            currentState = GameState.Playing;
+            foreach (var c in allCharacters) if (c.IsAlive) c.ResumeMovement();
+        }
+    }
+
+    bool CheckWinCondition()
+    {
+        int goodCount = 0;
+        int badCount = 0;
+        int neutralCount = 0;
+        GameCharacter pelican = null;
+
+        foreach (var c in allCharacters)
+        {
+            if (c.IsAlive)
+            {
+                if (c.Data.faction == Faction.Good) goodCount++;
+                else if (c.Data.faction == Faction.Bad) badCount++;
+                else 
+                {
+                    neutralCount++;
+                    // 假设中立技能是PelicanEatAbility的就是鹈鹕
+                    if(c.Data.specialAbility is PelicanEatAbility) pelican = c;
+                }
+            }
+        }
+
+        // 鹈鹕胜利：只剩鹈鹕一个人活着
+        if (pelican != null && goodCount == 0 && badCount == 0 && neutralCount == 1)
+        {
+            EndGame("鹈鹕胜利！");
+            return true;
+        }
+
+        if (badCount >= goodCount + neutralCount && badCount > 0)
+        {
+            EndGame("坏人胜利！");
+            return true;
+        }
+        if (badCount == 0 && neutralCount == 0)
+        {
+            EndGame("好人胜利！");
+            return true;
+        }
+
+        return false;
+    }
+
+    void EndGame(string result)
+    {
+        currentState = GameState.GameOver;
+        Debug.Log($"<color=green>游戏结束: {result}</color>");
+    }
+
+    void OnGUI()
+    {
+        if (currentState == GameState.Voting)
+        {
+            GUILayout.BeginArea(new Rect(Screen.width / 2 - 150, Screen.height / 2 - 200, 300, 400));
+            GUILayout.Box("投票阶段");
+            foreach (var c in allCharacters)
+            {
+                if (c.IsAlive && !(c is PlayerController))
+                {
+                    if (GUILayout.Button($"投给 {c.CharacterName}")) PlayerVote(c);
+                }
+            }
+            if (GUILayout.Button("弃票")) PlayerVote(null);
+            GUILayout.EndArea();
+        }
+        
+        // 显示当前技能冷却 UI
+        var player = allCharacters.Find(c => c is PlayerController);
+        if (player != null && player.IsAlive && player.Data.specialAbility != null)
+        {
+             GUILayout.BeginArea(new Rect(10, Screen.height - 100, 200, 90));
+             GUILayout.Box($"技能: {player.Data.specialAbility.abilityName}");
+             if(player.currentAbilityCooldown > 0)
+                 GUILayout.Label($"冷却: {player.currentAbilityCooldown:F1}s");
+             else
+                 GUILayout.Label("就绪 (按 F)");
+             GUILayout.EndArea();
+        }
+    }
+}
+
+// --- 角色抽象基类 ---
+
+public abstract class GameCharacter : MonoBehaviour
+{
+    public abstract CharacterData Data { get; }
+    public string CharacterName => Data != null ? Data.characterName : gameObject.name;
+    public bool IsAlive = true;
+    
+    // 运行时状态
+    public float currentAbilityCooldown = 0f;
+    public List<GameCharacter> eatenVictims = new List<GameCharacter>(); // 鹈鹕肚子里的人
+
+    public virtual void TeleportTo(Vector3 pos) { transform.position = pos; }
+    public abstract void StopMovement();
+    public abstract void ResumeMovement();
+    
+    public virtual void OnDeath() 
+    { 
+        if(!IsAlive) return;
+        IsAlive = false; 
+        
+        // 如果鹈鹕死了，肚子里的人放出来
+        if(eatenVictims.Count > 0)
+        {
+            foreach(var v in eatenVictims)
+            {
+                v.gameObject.SetActive(true);
+                v.transform.position = transform.position; // 在鹈鹕死亡位置出现
+                Debug.Log($"{v.CharacterName} 从鹈鹕肚子里逃出来了！");
+            }
+            eatenVictims.Clear();
+        }
+    }
+    
+    public virtual void OnEjected() 
+    {
+        OnDeath();
+        gameObject.SetActive(false);
+    }
+
+    public void ExecuteKill(GameCharacter victim)
+    {
+        // 通用击杀逻辑
+        if(GameManager.Instance.currentState != GameState.Playing) return;
+
+        transform.position = victim.transform.position; 
+        
+        // 生成尸体预制体 (如果有)
+        // var prefab = Resources.Load<GameObject>("DeadBody");
+        // Instantiate(prefab, victim.transform.position, victim.transform.rotation);
+
+        // 生成尸体Tag的物体用于报告
+        GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        body.transform.position = victim.transform.position;
+        body.transform.rotation = Quaternion.Euler(90,0,0); // 躺下
+        body.tag = "Body";
+        body.name = $"Body of {victim.CharacterName}";
+        
+        victim.OnDeath();
+        victim.gameObject.SetActive(false); // 隐藏本体
+    }
+}
+
+// --- 玩家控制器 ---
+
+public class PlayerController : GameCharacter
+{
+    public CharacterData characterData;
+    public override CharacterData Data => characterData;
+    public float rotationSpeed = 720f;
+    private Rigidbody rb;
+    private Vector3 moveInput;
+    private bool canMove = true;
+
+    void Start()
+    {
+        rb = GetComponent<Rigidbody>();
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        if (characterData != null && characterData.specialAbility != null) 
+            currentAbilityCooldown = characterData.specialAbility.cooldown; // 初始冷却
+    }
+
+    void Update()
+    {
+        if (!IsAlive) return;
+        if (GameManager.Instance.currentState == GameState.Playing && canMove)
+        {
+            HandleMovement();
+            HandleInteraction();
+            HandleAbility();
+        }
+    }
+
+    void HandleMovement()
+    {
+        moveInput.x = Input.GetAxisRaw("Horizontal");
+        moveInput.z = Input.GetAxisRaw("Vertical");
+        moveInput = moveInput.normalized;
+
+        if (moveInput != Vector3.zero)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(moveInput);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+        }
+    }
+
+    void FixedUpdate()
+    {
+        if (!IsAlive || characterData == null || !canMove || GameManager.Instance.currentState != GameState.Playing) return;
+        rb.MovePosition(rb.position + moveInput * characterData.moveSpeed * Time.fixedDeltaTime);
+    }
+
+    void HandleInteraction()
+    {
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            Collider[] hits = Physics.OverlapSphere(transform.position, 2f);
+            foreach (var hit in hits)
+            {
+                if (hit.CompareTag("Body"))
+                {
+                    GameManager.Instance.StartMeeting(this);
+                    return;
+                }
+            }
+        }
+    }
+
+    void HandleAbility()
+    {
+        if (currentAbilityCooldown > 0) currentAbilityCooldown -= Time.deltaTime;
+
+        // 按 F 释放技能
+        if (Input.GetKeyDown(KeyCode.F) && characterData.specialAbility != null)
+        {
+            if (currentAbilityCooldown <= 0)
+            {
+                TryUseAbility();
+            }
+            else
+            {
+                Debug.Log("技能冷却中...");
+            }
+        }
+    }
+
+    void TryUseAbility()
+    {
+        GameCharacter target = null;
+        
+        // 如果技能需要目标 (范围检测)
+        if (characterData.specialAbility.range > 0)
+        {
+            Collider[] hits = Physics.OverlapSphere(transform.position, characterData.specialAbility.range);
+            float minDist = Mathf.Infinity;
+            foreach (var hit in hits)
+            {
+                var c = hit.GetComponent<GameCharacter>();
+                if (c != null && c != this && c.IsAlive)
+                {
+                    float d = Vector3.Distance(transform.position, c.transform.position);
+                    if (d < minDist)
+                    {
+                        minDist = d;
+                        target = c;
+                    }
+                }
+            }
+        }
+
+        // 无论有没有目标，都尝试触发 (有些技能不需要目标，如隐身)
+        characterData.specialAbility.OnActivate(this, target);
+        currentAbilityCooldown = characterData.specialAbility.cooldown;
+    }
+
+    public override void StopMovement() { canMove = false; rb.velocity = Vector3.zero; }
+    public override void ResumeMovement() { canMove = true; }
+}
+
+// --- AI 系统 ---
+
+[RequireComponent(typeof(NavMeshAgent))]
+public class SmartAIController : GameCharacter
+{
+    public CharacterData characterData;
+    public override CharacterData Data => characterData;
+    public List<Transform> waypoints;
+    public AIDifficulty difficulty;
+    
+    private NavMeshAgent agent;
+    private int currentWaypointIndex;
+    private float waitTimer;
+
+    void Awake() { agent = GetComponent<NavMeshAgent>(); }
+
+    public void InitializeDifficulty(GameDifficulty gameDiff)
+    {
+        if (gameDiff == GameDifficulty.Random) difficulty = (AIDifficulty)Random.Range(0, 3);
+        else difficulty = (AIDifficulty)gameDiff;
+        
+        if (characterData != null) agent.speed = characterData.moveSpeed;
+        if (characterData.specialAbility != null) currentAbilityCooldown = characterData.specialAbility.cooldown;
+        
+        GoToNextWaypoint();
+    }
+
+    void Update()
+    {
+        if (!IsAlive || GameManager.Instance.currentState != GameState.Playing) return;
+
+        if (currentAbilityCooldown > 0) currentAbilityCooldown -= Time.deltaTime;
+
+        HandleLogic();
+        HandleNavigation();
+    }
+
+    void HandleLogic()
+    {
+        // 发现尸体报告
+        Collider[] hits = Physics.OverlapSphere(transform.position, 3f);
+        foreach(var h in hits)
+        {
+            if(h.CompareTag("Body")) 
+            {
+                GameManager.Instance.StartMeeting(this);
+                return;
+            }
+        }
+
+        // AI 使用技能逻辑
+        if (currentAbilityCooldown <= 0 && characterData.specialAbility != null)
+        {
+            // 简单的 AI 技能释放逻辑
+            // 1. 如果是击杀类或鹈鹕吃人类，寻找目标
+            if (characterData.specialAbility is KillAbility || characterData.specialAbility is SheriffKillAbility || characterData.specialAbility is PelicanEatAbility)
+            {
+                GameCharacter target = FindTargetInAbilityRange();
+                if (target != null)
+                {
+                    // 阵营判断简化：坏人杀好人，警长杀坏人
+                    bool shouldAct = false;
+                    if (Data.faction == Faction.Bad && target.Data.faction != Faction.Bad) shouldAct = true;
+                    if (Data.faction == Faction.Good && target.Data.faction == Faction.Bad) shouldAct = (difficulty == AIDifficulty.High); // 高难度警长才敢杀
+                    if (Data.faction == Faction.Neutral) shouldAct = true; // 鹈鹕见人就吃
+
+                    if (shouldAct)
+                    {
+                        characterData.specialAbility.OnActivate(this, target);
+                        currentAbilityCooldown = characterData.specialAbility.cooldown;
+                    }
+                }
+            }
+            // 2. 如果是隐身类，随机使用
+            else if (characterData.specialAbility is InvisibilityAbility)
+            {
+                if(Random.value < 0.01f) // 低概率随机隐身
+                {
+                    characterData.specialAbility.OnActivate(this, null);
+                    currentAbilityCooldown = characterData.specialAbility.cooldown;
+                }
+            }
+        }
+    }
+
+    GameCharacter FindTargetInAbilityRange()
+    {
+        Collider[] hits = Physics.OverlapSphere(transform.position, characterData.specialAbility.range);
+        foreach (var h in hits)
+        {
+            var c = h.GetComponent<GameCharacter>();
+            if (c != null && c != this && c.IsAlive) return c;
+        }
+        return null;
+    }
+
+    void HandleNavigation()
+    {
+        if (!agent.pathPending && agent.remainingDistance < 0.5f)
+        {
+            if (waitTimer <= 0) waitTimer = Random.Range(2f, 5f);
+            else
+            {
+                waitTimer -= Time.deltaTime;
+                if (waitTimer <= 0) GoToNextWaypoint();
+            }
+        }
+    }
+    
+    void GoToNextWaypoint()
+    {
+        if (waypoints.Count == 0) return;
+        currentWaypointIndex = Random.Range(0, waypoints.Count);
+        agent.destination = waypoints[currentWaypointIndex].position;
+    }
+
+    public override void StopMovement() { agent.isStopped = true; }
+    public override void ResumeMovement() { agent.isStopped = false; GoToNextWaypoint(); }
+    public override void OnDeath() { base.OnDeath(); agent.isStopped = true; gameObject.SetActive(false); }
+
+    public void PerformVote()
+    {
+        StartCoroutine(VoteRoutine());
+    }
+
+    IEnumerator VoteRoutine()
+    {
+        yield return new WaitForSeconds(Random.Range(1f, 3f));
+        // 简单AI投票：随机投一个活人
+        var alive = GameManager.Instance.allCharacters.Where(c => c.IsAlive && c != this).ToList();
+        GameCharacter target = alive.Count > 0 ? alive[Random.Range(0, alive.Count)] : null;
+        GameManager.Instance.CastVote(this, target);
+    }
+}
