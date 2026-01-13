@@ -92,5 +92,7 @@ MonoBehaviour:
     effects: []
     hitEffect: {fileID: 0}
     hitSound: {fileID: 0}
+    projectile: {fileID: 0}
+    projectileSpawnOffset: {x: 1, y: 0.5}
   hitEffect: {fileID: 0}
   attackSound: {fileID: 0}

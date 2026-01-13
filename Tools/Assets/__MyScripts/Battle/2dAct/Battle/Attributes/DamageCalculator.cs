@@ -248,7 +248,9 @@ public class DamageCalculator
     }
 }
 
-
+/// <summary>
+/// 伤害结果
+/// </summary>
 public class DamageResult
 {
     /// <summary>

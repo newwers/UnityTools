@@ -1,3 +1,6 @@
+﻿/// <summary>
+/// 伤害信息(不包括最终伤害计算)
+/// </summary>
 public class DamageInfo
 {
     public float baseDamage;

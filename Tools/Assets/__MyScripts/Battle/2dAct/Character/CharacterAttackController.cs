@@ -1,4 +1,4 @@
-
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 
@@ -47,6 +47,9 @@ public class CharacterAttackController : MonoBehaviour
     private AttackActionData activeHoldAttack = null;
     private float holdAttackTimer = 0f;
     private int holdTickCount = 0;
+
+    // 记录在当前攻击（active阶段）已经发射过投掷物的帧索引，避免重复发射
+    private HashSet<int> launchedProjectileFrames = new HashSet<int>();
 
     public void SetCharacterAnimation(CharacterAnimation characterAnimation)
     {
@@ -254,6 +257,9 @@ public class CharacterAttackController : MonoBehaviour
         currentAttackTimer = 0f;
         currentAttackId = null;
 
+        // 清空本次攻击已发射投掷物的记录
+        launchedProjectileFrames.Clear();
+
         if (animHandler != null)
         {
             CharacterAnimation.SetActionAnimationParameter(animHandler.Animator, currentAttackActionData);
@@ -288,13 +294,32 @@ public class CharacterAttackController : MonoBehaviour
                 if (AttackHitDetector.Instance != null && !string.IsNullOrEmpty(currentAttackId))
                 {
                     bool facingRight = transform.localScale.x > 0f;
-                    AttackHitDetector.Instance.CheckHitForFrame(
+                    var frameData = AttackHitDetector.Instance.CheckHitForFrame(
                         currentAttackId,
                         currentAttackActionData,
                         transform.position,
                         facingRight,
                         currentAttackTimer,
                         characterLogic);
+
+                    // 处理投掷物发射（如果当前帧配置了投掷物）
+                    if (frameData != null && frameData.projectile != null)
+                    {
+                        // 确保每个帧索引只发射一次
+                        if (!launchedProjectileFrames.Contains(frameData.frameIndex))
+                        {
+                            launchedProjectileFrames.Add(frameData.frameIndex);
+
+                            bool facingRightDir = transform.localScale.x > 0f;
+                            Vector2 spawnPos = (Vector2)transform.position + new Vector2(frameData.projectileSpawnOffset.x * (facingRightDir ? 1 : -1), frameData.projectileSpawnOffset.y);
+                            Vector2 dir = facingRightDir ? Vector2.right : Vector2.left;
+
+                            if (ProjectileManager.Instance != null)
+                            {
+                                ProjectileManager.Instance.LaunchProjectile(frameData.projectile, spawnPos, dir, characterLogic);
+                            }
+                        }
+                    }
                 }
 
                 if (currentAttackActionData != null && currentAttackTimer >= currentAttackActionData.windUpTime + currentAttackActionData.activeTime)
@@ -409,13 +434,25 @@ public class CharacterAttackController : MonoBehaviour
                 facingRight,
                 characterLogic);
             // 立即进行一次命中检测,不走通用的前摇后摇逻辑
-            AttackHitDetector.Instance.CheckHitForFrame(
+            var frameData = AttackHitDetector.Instance.CheckHitForFrame(
                 tickAttackId,
                 activeHoldAttack,
                 transform.position,
                 facingRight,
                 0f,
                 characterLogic);
+
+            if (frameData != null && frameData.projectile != null)//发射投掷物
+            {
+                bool facingRightDir = transform.localScale.x > 0f;
+                Vector2 spawnPos = (Vector2)transform.position + new Vector2(frameData.projectileSpawnOffset.x * (facingRightDir ? 1 : -1), frameData.projectileSpawnOffset.y);
+                Vector2 dir = facingRightDir ? Vector2.right : Vector2.left;
+
+                if (ProjectileManager.Instance != null)
+                {
+                    ProjectileManager.Instance.LaunchProjectile(frameData.projectile, spawnPos, dir, characterLogic);
+                }
+            }
 
             AttackHitDetector.Instance.EndAttackDetection(tickAttackId);
         }
@@ -425,6 +462,8 @@ public class CharacterAttackController : MonoBehaviour
             CharacterAnimation.SetAttackAnimationSpeed(animHandler.Animator, characterLogic.PlayerAttributes, activeHoldAttack, activeHoldAttack.holdTickInterval);//设置攻击速度
             CharacterAnimation.SetActionAnimationParameter(animHandler.Animator, activeHoldAttack);//设置攻击动画
         }
+
+
 
         LogManager.Log($"[CharacterAttackController] Hold攻击触发第{holdTickCount + 1}次");
     }

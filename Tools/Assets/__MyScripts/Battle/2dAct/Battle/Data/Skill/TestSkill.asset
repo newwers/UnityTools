@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SkillName: "\u6280\u80FD\u6D4B\u8BD5_\u653B\u51FB\u540E\u76EE\u6807\u65E0\u654C"
   icon: {fileID: 0}
-  EnergyCost: 10
-  Cooldown: 1
+  EnergyCost: 0
+  Cooldown: 0
   baseDamage: 10
   knockbackForce: {x: 1, y: 0}
   breakPower: 0

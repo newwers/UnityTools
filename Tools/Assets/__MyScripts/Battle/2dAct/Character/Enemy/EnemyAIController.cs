@@ -1,3 +1,6 @@
+﻿using Senses;
+#if UNITY_EDITOR
+#endif
 using System.Collections;
 using UnityEngine;
 
@@ -23,12 +26,16 @@ public enum EnemyAIState
     Death            // 死亡
 }
 
-[DisallowMultipleComponent, RequireComponent(typeof(AttackHitVisualizer), typeof(PlayerAttributes))]
+[DisallowMultipleComponent, RequireComponent(typeof(AttackHitVisualizer), typeof(PlayerAttributes), typeof(SenseSystemManager))]
 public class EnemyAIController : CharacterBase
 {
     [Header("AI配置")]
     [Tooltip("敌人配置数据")]
     public EnemyConfigData configData;
+
+    [Header("感知系统")]
+    [Tooltip("感知系统管理器")]
+    public SenseSystemManager senseManager;
 
     [Header("受击设置")]
     [Tooltip("受击时的闪烁颜色")]
@@ -111,10 +118,35 @@ public class EnemyAIController : CharacterBase
         PlayerAttributes.characterAtttibute.OnDeath += HandleDeath;
         InitializeAI();
 
+        // 初始化感知系统
+        InitializeSenseSystem();
+
         ChangeState(EnemyAIState.Idle);
         if (animator)
         {
             animator.SetBool("Grounded", true);
+        }
+    }
+
+    /// <summary>
+    /// 初始化感知系统
+    /// </summary>
+    private void InitializeSenseSystem()
+    {
+        // 如果感知系统管理器未赋值，则尝试获取或添加组件
+        if (senseManager == null)
+        {
+            senseManager = GetComponent<SenseSystemManager>();
+            if (senseManager == null)
+            {
+                senseManager = gameObject.AddComponent<SenseSystemManager>();
+            }
+        }
+
+        // 订阅感知事件
+        if (senseManager != null)
+        {
+            senseManager.OnSenseEvent += HandleSenseEvent;
         }
     }
 
@@ -261,13 +293,13 @@ public class EnemyAIController : CharacterBase
 
     private void UpdateIdleState()
     {
-        GameObject target = FindNearestTarget();
-        if (target != null)
-        {
-            currentTarget = target.transform;
-            ChangeState(EnemyAIState.Chase);
-            return;
-        }
+        //GameObject target = FindNearestTarget();
+        //if (target != null)
+        //{
+        //    currentTarget = target.transform;
+        //    ChangeState(EnemyAIState.Chase);
+        //    return;
+        //}
 
         idleTimer += Time.deltaTime;
 
@@ -288,13 +320,13 @@ public class EnemyAIController : CharacterBase
 
     private void UpdatePatrolState()
     {
-        GameObject target = FindNearestTarget();
-        if (target != null)
-        {
-            currentTarget = target.transform;
-            ChangeState(EnemyAIState.Chase);
-            return;
-        }
+        //GameObject target = FindNearestTarget();
+        //if (target != null)
+        //{
+        //    currentTarget = target.transform;
+        //    ChangeState(EnemyAIState.Chase);
+        //    return;
+        //}
 
         float distanceToTarget = Vector3.Distance(transform.position, currentPatrolTarget);
 
@@ -780,6 +812,7 @@ public class EnemyAIController : CharacterBase
     {
         if (currentConfig == null) return;
 
+        // 绘制传统检测范围
         Gizmos.color = Color.yellow;
         if (currentConfig.detectRangeType == DetectRangeType.Circle)
         {
@@ -791,11 +824,24 @@ public class EnemyAIController : CharacterBase
             Gizmos.DrawWireCube(transform.position, boxSize);
         }
 
+
+        // 绘制攻击范围
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, currentConfig.attackRange);
 
+        // 绘制巡逻区域
         Vector3 center = Application.isPlaying ? spawnPosition : transform.position;
         currentConfig.patrolArea.DrawGizmos(center, Color.green);
+
+        // 绘制目标连接线
+        //if (currentTarget != null)
+        //{
+        //    Gizmos.color = Color.green;
+        //    Gizmos.DrawLine(transform.position, currentTarget.position);
+        //    //在线中间显示由EnemyAIController指向目标的文本
+        //    Vector3 midPoint = (transform.position + currentTarget.position) / 2;
+        //    Handles.Label(midPoint, "EnemyAIController的目标");
+        //}
     }
 
     public GameObject FindNearestPlayer()
@@ -810,7 +856,7 @@ public class EnemyAIController : CharacterBase
             Vector2 boxSize = new Vector2(configData.detectWidth, configData.detectHeight);
             colliders = Physics2D.OverlapBoxAll(transform.position, boxSize, 0f, configData.targetLayers);
         }
-        
+
         GameObject nearest = null;
         float minDistance = float.MaxValue;
 
@@ -831,6 +877,19 @@ public class EnemyAIController : CharacterBase
     public void SetCurrentTarget(Transform target)
     {
         currentTarget = target;
+    }
+
+    /// <summary>
+    /// 启用或禁用视觉感知
+    /// </summary>
+    /// <param name="enable">是否启用视觉感知</param>
+    public void EnableVision(bool enable)
+    {
+        if (senseManager != null)
+        {
+            senseManager.SetVisionEnabled(enable);
+            LogManager.Log($"[EnemyAIController] 视觉感知已{(enable ? "启用" : "禁用")}");
+        }
     }
 
     public void ApplyAIConfig(EnemyConfigData newConfig)
@@ -891,6 +950,39 @@ public class EnemyAIController : CharacterBase
 
         aiStrategy = GetOrCreateStrategy(configData);
         aiStrategy.Initialize(this, configData);
+    }
+
+    /// <summary>
+    /// 处理感知事件
+    /// </summary>
+    /// <param name="senseEvent">感知事件数据</param>
+    private void HandleSenseEvent(SenseEvent senseEvent)
+    {
+        // 只处理视觉感知事件
+        if (senseEvent.senseType == SenseType.Vision)
+        {
+            HandleVisionEvent(senseEvent);
+        }
+    }
+
+    /// <summary>
+    /// 处理视觉感知事件
+    /// </summary>
+    /// <param name="senseEvent">视觉感知事件数据</param>
+    private void HandleVisionEvent(SenseEvent senseEvent)
+    {
+        // 设置当前目标为检测到的对象
+        if (senseEvent.detectedObject != null)
+        {
+            currentTarget = senseEvent.detectedObject.transform;
+            LogManager.Log($"[EnemyAIController] 视觉检测到: {senseEvent.detectedObject.name}, 强度: {senseEvent.intensity}");
+
+            // 如果当前状态不是追击或攻击，则切换到追击状态
+            if (currentState != EnemyAIState.Chase && currentState != EnemyAIState.Attack && currentState != EnemyAIState.Death)
+            {
+                ChangeState(EnemyAIState.Chase);
+            }
+        }
     }
 
     private void ExecutePatrolState()

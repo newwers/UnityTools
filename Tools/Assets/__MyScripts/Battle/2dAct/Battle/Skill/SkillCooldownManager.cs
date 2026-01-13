@@ -1,6 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-
+[DisallowMultipleComponent]
 public class SkillCooldownManager : MonoBehaviour
 {
     private Dictionary<AttackActionData, float> cooldownTimers = new Dictionary<AttackActionData, float>();

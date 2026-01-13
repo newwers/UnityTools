@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e6165d4e26330345b4805bc14705197, type: 3}
+  m_Name: Projectile_Normal2
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 1044853259504728766, guid: 3f12d276d5d62a04d9d5dd37256fad79, type: 3}
+  hitLayers:
+    serializedVersion: 2
+    m_Bits: 384
+  initialSpeed: 4
+  bodyType: 0
+  gravityScale: 0
+  directionOffset: {x: 1, y: 0}
+  linearDamping: 0
+  angularDamping: 0
+  isTrigger: 0
+  lifetime: 5
+  maxHitTargets: 1
+  damage: 1
+  knockbackForce: {x: 0, y: 0}
+  skillData: {fileID: 0}
+  effects: []
+  hitVfxPrefab: {fileID: 0}
+  hitSfx: {fileID: 0}

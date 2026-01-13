@@ -1,6 +1,6 @@
-using UnityEngine;
+﻿using System.Collections;
 using TMPro;
-using System.Collections;
+using UnityEngine;
 
 public class DamageTextController : MonoBehaviour
 {
@@ -9,37 +9,37 @@ public class DamageTextController : MonoBehaviour
     public float fadeDuration = 1f;
     public float lifetime = 1.5f;
     public Vector2 randomOffset = new Vector2(30f, 10f);
-    
+
     [Header("颜色设置")]
     public Color normalDamageColor = Color.white;
     public Color criticalDamageColor = Color.yellow;
     public Color missColor = Color.gray;
     public Color blockColor = Color.cyan;
     public Color healColor = Color.green;
-    
+
     private TextMeshProUGUI textMesh;
     private RectTransform rectTransform;
     private CanvasGroup canvasGroup;
     private Vector3 moveDirection;
-    
+
     private void Awake()
     {
         textMesh = GetComponent<TextMeshProUGUI>();
         rectTransform = GetComponent<RectTransform>();
-        
+
         canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null)
         {
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
     }
-    
+
     public void Initialize(float damage, DamageTextType textType, Vector3 worldPosition)
     {
         string damageText = "";
         Color textColor = normalDamageColor;
         float fontSize = 24f;
-        
+
         switch (textType)
         {
             case DamageTextType.Normal:
@@ -53,12 +53,12 @@ public class DamageTextController : MonoBehaviour
                 fontSize = 32f;
                 break;
             case DamageTextType.Miss:
-                damageText = "闪避";
+                damageText = "Miss";
                 textColor = missColor;
                 fontSize = 20f;
                 break;
             case DamageTextType.Block:
-                damageText = "格挡";
+                damageText = "Block";
                 textColor = blockColor;
                 fontSize = 20f;
                 break;
@@ -68,20 +68,20 @@ public class DamageTextController : MonoBehaviour
                 fontSize = 24f;
                 break;
         }
-        
+
         textMesh.text = damageText;
         textMesh.color = textColor;
         textMesh.fontSize = fontSize;
-        
+
         SetPosition(worldPosition);
-        
+
         float randomX = Random.Range(-randomOffset.x, randomOffset.x);
         float randomY = Random.Range(0, randomOffset.y);
         moveDirection = new Vector3(randomX, moveSpeed + randomY, 0f);
-        
+
         StartCoroutine(AnimateText());
     }
-    
+
     private void SetPosition(Vector3 worldPosition)
     {
         Canvas canvas = GetComponentInParent<Canvas>();
@@ -98,27 +98,27 @@ public class DamageTextController : MonoBehaviour
             rectTransform.localPosition = localPoint;
         }
     }
-    
+
     private IEnumerator AnimateText()
     {
         float elapsed = 0f;
         Vector3 startPosition = rectTransform.localPosition;
-        
+
         while (elapsed < lifetime)
         {
             elapsed += Time.deltaTime;
-            
+
             rectTransform.localPosition += moveDirection * Time.deltaTime;
-            
+
             if (elapsed >= lifetime - fadeDuration)
             {
                 float fadeProgress = (lifetime - elapsed) / fadeDuration;
                 canvasGroup.alpha = fadeProgress;
             }
-            
+
             yield return null;
         }
-        
+
         Destroy(gameObject);
     }
 }

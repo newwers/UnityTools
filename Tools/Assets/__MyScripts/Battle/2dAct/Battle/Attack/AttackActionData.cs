@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -83,6 +83,13 @@ public class AttackFrameData
     [Header("特效")]
     public GameObject hitEffect;
     public AudioClip hitSound;
+
+    [Header("投掷物配置")]
+    [Tooltip("配置投掷物数据（可为空），配置后此帧会发射投掷物")]
+    public ProjectileData projectile; // 投掷物SO，可以配置为null表示不发射
+
+    [Tooltip("投掷物生成偏移（相对于角色位置）")]
+    public Vector2 projectileSpawnOffset = new Vector2(1f, 0.5f);
 }
 
 

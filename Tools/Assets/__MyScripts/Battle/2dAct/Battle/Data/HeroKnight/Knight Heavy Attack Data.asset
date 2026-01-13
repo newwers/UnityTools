@@ -75,6 +75,7 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 384
     allowIndependentHit: 0
+    maxHitTargets: 0
     hitboxType: 0
     hitboxOffset: {x: 0.5, y: 0.93}
     hitboxSize: {x: 1.96, y: 1.04}
@@ -86,5 +87,7 @@ MonoBehaviour:
     effects: []
     hitEffect: {fileID: 0}
     hitSound: {fileID: 0}
+    projectile: {fileID: 0}
+    projectileSpawnOffset: {x: 1, y: 0.5}
   hitEffect: {fileID: 0}
   attackSound: {fileID: 0}

@@ -22,11 +22,6 @@ public class ActionDataEditor : EditorWindow
     private bool showFrameByFrame = false;
     private float lastFrameUpdateTime = 0f;
 
-    // 预览相机控制
-    private Vector3 previewCameraOffset = new Vector3(2, 1, -3);
-    private float previewCameraDistance = 5f;
-    private bool autoRotateCamera = false;
-    private float cameraRotationSpeed = 10f;
 
     private ActionManager actionManager;
     private Vector2 scrollPosition;
@@ -362,14 +357,6 @@ public class ActionDataEditor : EditorWindow
             }
             EditorGUILayout.EndHorizontal();
 
-            // 相机控制
-            EditorGUILayout.BeginHorizontal();
-            autoRotateCamera = EditorGUILayout.Toggle("自动旋转预览相机", autoRotateCamera, GUILayout.Width(120));
-            if (autoRotateCamera)
-            {
-                cameraRotationSpeed = EditorGUILayout.Slider("旋转速度", cameraRotationSpeed, 1f, 30f);
-            }
-            EditorGUILayout.EndHorizontal();
 
             // 显示当前动画信息
             if (previewAnimationClip != null)
@@ -412,11 +399,6 @@ public class ActionDataEditor : EditorWindow
             UpdatePreviewTime();
         }
 
-        // 更新相机自动旋转
-        if (autoRotateCamera)
-        {
-            UpdatePreviewCamera();
-        }
     }
 
     // 添加动画剪辑变化检测
@@ -529,22 +511,6 @@ public class ActionDataEditor : EditorWindow
         }
     }
 
-    // 新增：更新预览相机
-    private void UpdatePreviewCamera()
-    {
-        SceneView sceneView = SceneView.lastActiveSceneView;
-        if (sceneView != null && previewInstance != null)
-        {
-            // 计算相机位置（围绕角色旋转）
-            float angle = Time.realtimeSinceStartup * cameraRotationSpeed * Mathf.Deg2Rad;
-            Vector3 cameraPos = previewInstance.transform.position +
-                              new Vector3(Mathf.Cos(angle) * previewCameraDistance,
-                                         previewCameraOffset.y,
-                                         Mathf.Sin(angle) * previewCameraDistance);
-
-            sceneView.LookAt(cameraPos, Quaternion.LookRotation(previewInstance.transform.position - cameraPos));
-        }
-    }
 
 
     private void DrawFrameHitboxPreview(AttackFrameData frameData, SceneView sceneView)

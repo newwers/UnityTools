@@ -93,5 +93,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: ca24871e297a4f946a9d884cbfad689d, type: 2}
     hitEffect: {fileID: 0}
     hitSound: {fileID: 0}
+    projectile: {fileID: 0}
+    projectileSpawnOffset: {x: 1, y: 0.5}
   hitEffect: {fileID: 0}
   attackSound: {fileID: 0}

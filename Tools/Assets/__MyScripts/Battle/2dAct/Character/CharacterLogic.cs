@@ -49,7 +49,7 @@ public class CharacterLogic : CharacterBase
     public System.Action OnDeath;
     // 添加格挡成功事件
     public System.Action OnBlockSuccess; // 格挡成功
-    public System.Action<GameObject> OnParrySuccess; // 弹反成功（参数为被弹反的敌人）
+    public System.Action<CharacterBase> OnParrySuccess; // 弹反成功（参数为被弹反的敌人）
     //硬直事件
     public System.Action OnStunned;
 
@@ -127,7 +127,7 @@ public class CharacterLogic : CharacterBase
     private string currentCharacterName;
     private string specialAttackOriginalCharacterName;
     private bool isSpecialAttackActive = false;
-
+    private Coroutine dashCoroutine;
 
     public InputHandler InputHandler
     {
@@ -265,6 +265,7 @@ public class CharacterLogic : CharacterBase
         {
             hit = Physics2D.Raycast(transform.position + halfHeight, Vector2.down, 10f, actionManager.jumpAction.groundLayer);
             yield return null;
+            yield return null;//等两帧再检测
         }
         Physics2D.IgnoreCollision(boxCollider2D, platformCollider, false);
     }
@@ -676,7 +677,7 @@ public class CharacterLogic : CharacterBase
 
     IEnumerator RecoverFromHurt(float duration)
     {
-        yield return new WaitForSeconds(duration);
+        yield return WaitForSecondsCache.WaitForSeconds(duration);
         m_RecoverFromHurt_Coroutine = null;
         if (CurrentState == PlayerState.Hurt)
         {
@@ -744,7 +745,7 @@ public class CharacterLogic : CharacterBase
 
         canParry = false; // 防止重复触发
 
-        OnParrySuccess?.Invoke(null);
+        OnParrySuccess?.Invoke(null);//todo:若需要给订阅者（UI/效果）知道被反弹的敌人，应该在触发时携带该攻击来源（需要在触发点保存 attacker）
     }
 
     /// <summary>
@@ -1098,6 +1099,11 @@ public class CharacterLogic : CharacterBase
     {
         if (currentAttackActionData == null || !currentAttackActionData.enableMovement) return;
 
+        if (currentAttackActionData.activeTime <= 0)
+        {
+            LogManager.LogWarning("[CharacterLogic] 当前攻击动作数据的 activeTime 小于等于0，无法计算攻击移动");
+            return;
+        }
         float phaseProgress = (currentAttackTimer - currentAttackActionData.windUpTime) / currentAttackActionData.activeTime;
         float movementFactor = currentAttackActionData.movementCurve.Evaluate(phaseProgress);
 
@@ -1152,7 +1158,12 @@ public class CharacterLogic : CharacterBase
             // 如果当前正在冲刺，先结束冲刺
             if (CurrentState == PlayerState.Dashing)
             {
-                StopCoroutine(EndDashAfterTime());
+                if (dashCoroutine != null)
+                {
+                    StopCoroutine(dashCoroutine);
+                    dashCoroutine = null;
+                }
+
                 ChangeState(PlayerState.Jumping);
             }
 
@@ -1783,8 +1794,16 @@ public class CharacterLogic : CharacterBase
         // 冲刺时忽略角色层和Enemy层之间的碰撞
         Physics2D.IgnoreLayerCollision(PlayerLayer, EnemyLayer, true);
 
-        StartCoroutine(EndDashAfterTime());
+        // 保存协程引用以便后续 Stop
+        if (dashCoroutine != null)
+        {
+            StopCoroutine(dashCoroutine);
+            dashCoroutine = null;
+        }
+
+        dashCoroutine = StartCoroutine(EndDashAfterTime());
         StartCoroutine(HandleDodgeInvincibility());
+
 
         LogManager.Log($"[CharacterLogic] 执行冲刺，打断当前状态");
     }
@@ -1966,7 +1985,7 @@ public class CharacterLogic : CharacterBase
     #region 协程
     private IEnumerator EndDashAfterTime()
     {
-        yield return new WaitForSeconds(actionManager.dashAction.dashDuration);
+        yield return WaitForSecondsCache.WaitForSeconds(actionManager.dashAction.dashDuration);
         if (CurrentState == PlayerState.Dashing)
         {
             RefreshState();
@@ -1980,14 +1999,14 @@ public class CharacterLogic : CharacterBase
             yield break;
         }
 
-        yield return new WaitForSeconds(actionManager.dashAction.invincibleStartTime);
+        yield return WaitForSecondsCache.WaitForSeconds(actionManager.dashAction.invincibleStartTime);
 
         if (PlayerAttributes.characterAtttibute.isDodging)
         {
             PlayerAttributes.characterAtttibute.AddInvincibility();
             LogManager.Log($"[CharacterLogic] 闪避无敌开始 (计数: {PlayerAttributes.characterAtttibute.isInvincible})");
 
-            yield return new WaitForSeconds(actionManager.dashAction.invincibleDuration);
+            yield return WaitForSecondsCache.WaitForSeconds(actionManager.dashAction.invincibleDuration);
 
             PlayerAttributes.characterAtttibute.RemoveInvincibility();
             LogManager.Log($"[CharacterLogic] 闪避无敌结束 (计数: {PlayerAttributes.characterAtttibute.isInvincible})");
@@ -2011,7 +2030,7 @@ public class CharacterLogic : CharacterBase
 
     private IEnumerator DeactivateParryWindowAfterTime()
     {
-        yield return new WaitForSeconds(actionManager.blockAction.parryWindow);
+        yield return WaitForSecondsCache.WaitForSeconds(actionManager.blockAction.parryWindow);
 
         if (isParryWindowActive)
         {
@@ -2087,7 +2106,7 @@ public class CharacterLogic : CharacterBase
 
 
         // 检查是否在格挡状态,并且在弹反窗口内
-        if (isBlocking)//格挡状态
+        if (isBlocking)//格挡状态•	TryParry()
         {
             LogManager.Log($"当前在格挡状态");
             if (CanBlockAttack(attacker.transform.position))//检测格挡攻击方向

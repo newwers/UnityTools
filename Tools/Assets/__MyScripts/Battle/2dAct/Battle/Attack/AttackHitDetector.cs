@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
@@ -358,7 +358,8 @@ public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
                 lifeStealPercent = lifeStealPercent,
                 attacker = attacker,
                 target = target,
-                skillData = skillData
+                skillData = skillData,
+                isBlocked = target.PlayerAttributes.characterAtttibute.isBlocking,
             };
         }
 
