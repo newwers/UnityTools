@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 
@@ -612,40 +612,68 @@ public class CharacterAttackController : MonoBehaviour
     public static void ApplySkillEffectsOnCast(AttackActionData attackData, CharacterBase self, CharacterBase targetedEnemy = null)
     {
         if (attackData == null || attackData.skillData == null) return;
-        if (attackData.skillData.effectsOnCast == null || attackData.skillData.effectsOnCast.Count == 0) return;
-
-        foreach (var effect in attackData.skillData.effectsOnCast)
+        
+        // 1. 处理直接从SkillData配置的召唤效果
+        if (attackData.skillData.summonData != null)
         {
-            if (effect != null)
+            SkillData skillData = attackData.skillData;
+            Vector3 summonPosition = self.transform.position;
+            
+            // 应用召唤偏移
+            summonPosition.x += skillData.summonOffsetX;
+            summonPosition.y += skillData.summonOffsetY;
+            
+            // 直接调用SummonManager进行召唤
+            for (int i = 0; i < skillData.summonCount; i++)
             {
-                // 根据效果目标类型选择施加对象
-                CharacterBase effectReceiver = null;
-                if (effect.effectTarget == EffectTarget.Attacker)
+                // 添加随机偏移，避免召唤物重叠
+                Vector3 randomOffset = new Vector3(
+                    Random.Range(-0.5f, 0.5f),
+                    Random.Range(-0.5f, 0.5f),
+                    0
+                );
+                
+                SummonManager.Instance.Summon(skillData.summonData, summonPosition + randomOffset, self);
+                LogManager.Log($"[CharacterAttackController] 直接从SkillData召唤: {skillData.summonData.summonName}");
+            }
+        }
+        
+        // 2. 处理传统的效果列表
+        if (attackData.skillData.effectsOnCast != null && attackData.skillData.effectsOnCast.Count > 0)
+        {
+            foreach (var effect in attackData.skillData.effectsOnCast)
+            {
+                if (effect != null)
                 {
-                    effectReceiver = self;
-                }
-                else if (effect.effectTarget == EffectTarget.Target)
-                {
-                    effectReceiver = targetedEnemy;
-                }
+                    // 根据效果目标类型选择施加对象
+                    CharacterBase effectReceiver = null;
+                    if (effect.effectTarget == EffectTarget.Attacker)
+                    {
+                        effectReceiver = self;
+                    }
+                    else if (effect.effectTarget == EffectTarget.Target)
+                    {
+                        effectReceiver = targetedEnemy;
+                    }
 
-                if (effectReceiver == null)
-                {
-                    LogManager.LogWarning($"[CharacterAttackController] 技能释放前效果 {effect.effectName} 的目标类型为Target，但没有目标对象");
-                    continue;
-                }
+                    if (effectReceiver == null)
+                    {
+                        LogManager.LogWarning($"[CharacterAttackController] 技能释放前效果 {effect.effectName} 的目标类型为Target，但没有目标对象");
+                        continue;
+                    }
 
-                // 获取BuffSystem组件
-                var receiverBuffSystem = effectReceiver.BuffSystem;
-                if (receiverBuffSystem == null)
-                {
-                    LogManager.LogWarning($"[CharacterAttackController] 效果接收者 {effectReceiver.name} 没有BuffSystem组件，无法应用技能释放前效果 {effect.effectName}");
-                    continue;
-                }
+                    // 获取BuffSystem组件
+                    var receiverBuffSystem = effectReceiver.BuffSystem;
+                    if (receiverBuffSystem == null)
+                    {
+                        LogManager.LogWarning($"[CharacterAttackController] 效果接收者 {effectReceiver.name} 没有BuffSystem组件，无法应用技能释放前效果 {effect.effectName}");
+                        continue;
+                    }
 
-                // 应用效果
-                receiverBuffSystem.ApplyBuff(effect, self, targetedEnemy);
-                LogManager.Log($"[CharacterAttackController] 应用技能释放前效果: {effect.effectName} 到 {effectReceiver.name}");
+                    // 应用效果
+                    receiverBuffSystem.ApplyBuff(effect, self, targetedEnemy);
+                    LogManager.Log($"[CharacterAttackController] 应用技能释放前效果: {effect.effectName} 到 {effectReceiver.name}");
+                }
             }
         }
     }

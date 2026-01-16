@@ -108,6 +108,8 @@ public class TestDummy : CharacterBase
     // 自动攻击相关变量
     private float attackTimer = 0f;
 
+    private bool isAttacking = false;
+
 
 
     /// <summary>
@@ -217,6 +219,7 @@ public class TestDummy : CharacterBase
     {
         if (attackData == null) yield break;
 
+        isAttacking = true;
         // 技能释放前效果
         CharacterAttackController.ApplySkillEffectsOnCast(attackData, this);
 
@@ -288,6 +291,8 @@ public class TestDummy : CharacterBase
 
         // 结束攻击检测
         AttackHitDetector.Instance.EndAttackDetection(attackId);
+
+        isAttacking = false;
 
 #if UNITY_EDITOR
         ClearAttackPreview();
@@ -409,6 +414,11 @@ public class TestDummy : CharacterBase
         attackTimer = attackInterval; // 重置计时器
 
         LogManager.Log($"[TestDummy] 自动攻击: {(enabled ? "启用" : "禁用")}");
+    }
+
+    public override bool IsAttacking()
+    {
+        return isAttacking;
     }
 
     #endregion

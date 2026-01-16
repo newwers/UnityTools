@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 
@@ -43,5 +43,18 @@ public class SkillData : ScriptableObject
     [Header("视觉效果")]
     public GameObject vfxPrefab;
     public AudioClip sfxClip;
+
+    [Header("召唤设置")]
+    [Tooltip("召唤物数据")]
+    public SummonData summonData;
+
+    [Tooltip("召唤数量")]
+    public int summonCount = 1;
+
+    [Tooltip("召唤偏移X")]
+    public float summonOffsetX = 0f;
+
+    [Tooltip("召唤偏移Y")]
+    public float summonOffsetY = 0f;
 
 }

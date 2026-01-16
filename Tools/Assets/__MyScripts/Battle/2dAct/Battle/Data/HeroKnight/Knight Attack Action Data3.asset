@@ -29,7 +29,7 @@ MonoBehaviour:
     animationFloatValue: 1
     animationBoolValue: 0
   canCancel: 1
-  skillData: {fileID: 11400000, guid: e1a91d5f343c8f04b9c5bac0561c08a5, type: 2}
+  skillData: {fileID: 0}
   triggerType: 0
   longPressTimeThreshold: 0.3
   holdTickInterval: 0.1
@@ -92,7 +92,7 @@ MonoBehaviour:
     effects: []
     hitEffect: {fileID: 0}
     hitSound: {fileID: 0}
-    projectile: {fileID: 0}
+    projectile: {fileID: 11400000, guid: 4b9cbefe5fdb6344ab07d0bb09df0970, type: 2}
     projectileSpawnOffset: {x: 1, y: 0.5}
   hitEffect: {fileID: 0}
   attackSound: {fileID: 0}

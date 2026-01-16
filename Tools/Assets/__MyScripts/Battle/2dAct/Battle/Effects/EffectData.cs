@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -297,6 +297,7 @@ public enum EffectCategory
     /// </summary>
     Teleport = 41,
 
+
     //[InspectorName("沉默")]
     ///// <summary>
     ///// 沉默效果 - 无法使用技能，但可以移动和普通攻击
@@ -366,6 +367,8 @@ public class EffectData : ScriptableObject
 
     [Tooltip("是否需要命中才触发：true=必须命中目标才生效，false=无论命中与否都生效")]
     public bool requireHit = true;
+
+
 
     [Header("持续时间")]
     [Tooltip("效果持续时间（秒）")]

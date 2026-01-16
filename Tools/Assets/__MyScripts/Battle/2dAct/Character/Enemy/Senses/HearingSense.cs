@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace Senses
@@ -73,7 +73,7 @@ namespace Senses
             RaycastHit2D hit = Physics2D.Linecast(transform.position, soundSource.transform.position);
             return hit.collider != null && hit.collider.gameObject != soundSource.gameObject;
         }
-
+#if UNITY_EDITOR
         public override void DrawGizmos()
         {
             if (!isEnabled)
@@ -96,6 +96,7 @@ namespace Senses
         {
             DrawGizmos();
         }
+#endif
 
         public List<SoundSource> GetDetectedSounds()
         {

@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9904f132a6ab0d3449e59d4b4b94d9d3, type: 3}
+  m_Name: New Summon
+  m_EditorClassIdentifier: 
+  summonName: "\u6D4B\u8BD5\u53EC\u5524\u7269"
+  summonPrefab: {fileID: 7088251249636006080, guid: a4fc80373b2f01d4cb5f022ae780a60d, type: 3}
+  lifetime: 30
+  aiStrategy: {fileID: 11400000, guid: 210abe19ca7e2924baae4282451e389c, type: 2}
+  baseHealth: 100
+  baseAttack: 20
+  baseDefense: 10
+  moveSpeed: 3
+  patrolSpeed: 2
+  chaseSpeed: 4
+  patrolDuration: 2
+  idleTimeMin: 1
+  idleTimeMax: 3
+  attackRange: 2
+  attackCooldown: 2
+  loseTargetDistance: 12
+  attackActions:
+  - {fileID: 11400000, guid: cdd99f7935d565544a6c380fa5943257, type: 2}
+  skills: []
+  followSummoner: 1
+  followDistance: 5
+  alertRange: 10
+  autoAttack: 1
+  retreatHealthThreshold: 0
+  dodgeHealthThreshold: 0
+  dodgeCooldown: 2
+  dodgeDuration: 0.5
+  dodgeProbability: 0.5
+  recoverySkillHealthThreshold: 0
+  recoverySkillCooldown: 10
+  recoverySkillProbability: 0.5
+  recoverySkillActions: []
+  summonTags: []
+  summonEffectPrefab: {fileID: 0}
+  summonSound: {fileID: 0}
+  deathEffectPrefab: {fileID: 0}
+  deathSound: {fileID: 0}

@@ -4,28 +4,6 @@
 using System.Collections;
 using UnityEngine;
 
-public enum EnemyAIState
-{
-    [InspectorName("待机")]
-    Idle,           // 待机
-    [InspectorName("巡逻")]
-    Patrol,         // 巡逻
-    [InspectorName("追击")]
-    Chase,          // 追击
-    [InspectorName("攻击")]
-    Attack,         // 攻击
-    [InspectorName("特殊攻击")]
-    SpecialAttack,  // 特殊攻击
-    [InspectorName("撤退")]
-    Retreat,        // 撤退
-    [InspectorName("硬直")]
-    Stunned,        // 硬直
-    [InspectorName("受伤")]
-    Hurt,           //受伤
-    [InspectorName("死亡")]
-    Death            // 死亡
-}
-
 [DisallowMultipleComponent, RequireComponent(typeof(AttackHitVisualizer), typeof(PlayerAttributes), typeof(SenseSystemManager))]
 public class EnemyAIController : CharacterBase
 {
@@ -52,28 +30,26 @@ public class EnemyAIController : CharacterBase
     public string hurtTriggerName = "Hurt";
     [Tooltip("死亡动画触发器名称")]
     public string dieTriggerName = "Death";
+    [Tooltip("闪避动画触发器名称")]
+    public string dashTriggerName = "Dash";
     private readonly int stun = Animator.StringToHash("Stun");
 
 
     [Header("状态")]
     [SerializeField]
-    private EnemyAIState currentState = EnemyAIState.Idle;
-    [SerializeField]
-    private bool isDead = false;
-    [SerializeField]
     private bool isStunned = false;
 
-    public override bool IsDead => isDead;
-    public EnemyAIState CurrentAIState => currentState;
-    public Transform CurrentTarget => currentTarget;
+    public override bool IsDead => CurrentState == CharacterState.Death;
+    public CharacterState CurrentAIState => CurrentState;
+
     public bool IsStunned => isStunned;
     public Vector3 PatrolCenter => transform.position;
     public bool IsFacingRight => isFacingRight;
 
-    private IAIStrategy aiStrategy;
-    private SpriteRenderer spriteRenderer;
-    private Animator animator;
-    private Color originalColor;
+    protected IAIStrategy aiStrategy;
+    protected SpriteRenderer spriteRenderer;
+    protected Animator animator;
+    protected Color originalColor;
 
     private Vector3 spawnPosition;
     private Vector3 currentPatrolTarget;
@@ -81,12 +57,27 @@ public class EnemyAIController : CharacterBase
     private float currentIdleTime;
     private float lastAttackTime;
     private float hitFlashTimer;
-    private Transform currentTarget;
+    private CharacterBase currentTarget_CharacterBase;
     private float stunTimer;
+
+    // 闪避相关变量
+    private float dodgeTimer;
+    private float lastDodgeTime;
+    protected Vector2 dodgeDirection;
+    private bool isDodging;
+
+    // 碰撞层相关变量
+    private int EnemyLayer;
+    private int PlayerLayer;
+    private int ProjectileLayer;
+
+    // 恢复技能相关变量
+    private float lastRecoverySkillTime;
 
     private EnemyConfigData currentConfig;
     private int currentBossPhaseIndex = 0;
     private bool hasTriggeredPhaseChange = false;
+    private bool isAttaking = false;
 
 
     protected override void Awake()
@@ -115,16 +106,31 @@ public class EnemyAIController : CharacterBase
 
         ApplyConfig(configData);
 
+
         PlayerAttributes.characterAtttibute.OnDeath += HandleDeath;
         InitializeAI();
 
         // 初始化感知系统
         InitializeSenseSystem();
 
-        ChangeState(EnemyAIState.Idle);
+        // 初始化碰撞层
+        EnemyLayer = LayerMask.NameToLayer("Enemy");
+        PlayerLayer = LayerMask.NameToLayer("Player");
+        ProjectileLayer = LayerMask.NameToLayer("Projectile");
+
+        ChangeState(CharacterState.Idle);
         if (animator)
         {
             animator.SetBool("Grounded", true);
+        }
+    }
+
+    void OnDestroy()
+    {
+        // 取消订阅感知事件
+        if (senseManager != null)
+        {
+            senseManager.OnSenseEvent -= HandleSenseEvent;
         }
     }
 
@@ -150,9 +156,9 @@ public class EnemyAIController : CharacterBase
         }
     }
 
-    private void Update()
+    protected virtual void Update()
     {
-        if (isDead) return;
+        if (IsDead) return;
 
         UpdateStun();
         UpdateHitFlash();
@@ -170,15 +176,7 @@ public class EnemyAIController : CharacterBase
 
         if (config.attributes != null)
         {
-            PlayerAttributes.characterAtttibute = new CharacterAttributes
-            {
-                maxHealth = config.attributes.maxHealth,
-                currentHealth = config.attributes.maxHealth,
-                healthRegenRate = config.attributes.healthRegenRate,
-                maxEnergy = config.attributes.maxEnergy,
-                currentEnergy = config.attributes.maxEnergy,
-                energyRegenRate = config.attributes.energyRegenRate
-            };
+            PlayerAttributes.characterAtttibute = config.attributes;
             PlayerAttributes.Initialize();
 
             if (GameDifficultyManager.Instance != null)
@@ -189,7 +187,7 @@ public class EnemyAIController : CharacterBase
         }
     }
 
-    private void CheckBossPhaseTransition()
+    protected virtual void CheckBossPhaseTransition()
     {
         if (currentConfig.difficulty != EnemyDifficulty.Boss) return;
         if (currentConfig.bossPhases == null || currentConfig.bossPhases.Count == 0) return;
@@ -267,25 +265,28 @@ public class EnemyAIController : CharacterBase
 
         switch (currentState)
         {
-            case EnemyAIState.Idle:
+            case CharacterState.Idle:
                 UpdateIdleState();
                 break;
-            case EnemyAIState.Patrol:
+            case CharacterState.Patrol:
                 UpdatePatrolState();
                 break;
-            case EnemyAIState.Chase:
+            case CharacterState.Chase:
                 UpdateChaseState();
                 break;
-            case EnemyAIState.Attack:
+            case CharacterState.Attacking:
                 UpdateAttackState();
                 break;
-            case EnemyAIState.SpecialAttack:
+            case CharacterState.SpecialAttacking:
                 ExecuteSpecialAttackState();
                 break;
-            case EnemyAIState.Retreat:
+            case CharacterState.Retreat:
                 ExecuteRetreatState();
                 break;
-            case EnemyAIState.Stunned:
+            case CharacterState.Dodging:
+                UpdateDodgeState();
+                break;
+            case CharacterState.Stunned:
                 //ExecuteStunnedState();//todo:执行眩晕
                 break;
         }
@@ -293,23 +294,16 @@ public class EnemyAIController : CharacterBase
 
     private void UpdateIdleState()
     {
-        //GameObject target = FindNearestTarget();
-        //if (target != null)
-        //{
-        //    currentTarget = target.transform;
-        //    ChangeState(EnemyAIState.Chase);
-        //    return;
-        //}
-
         idleTimer += Time.deltaTime;
 
         if (idleTimer >= currentIdleTime)
         {
-            ChangeState(EnemyAIState.Patrol);
+            ChangeState(CharacterState.Patrol);
             return;
         }
 
-        rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+        // 使用Move方法停止移动
+        Move(Vector2.zero);
 
         if (animator != null)
         {
@@ -320,30 +314,18 @@ public class EnemyAIController : CharacterBase
 
     private void UpdatePatrolState()
     {
-        //GameObject target = FindNearestTarget();
-        //if (target != null)
-        //{
-        //    currentTarget = target.transform;
-        //    ChangeState(EnemyAIState.Chase);
-        //    return;
-        //}
-
         float distanceToTarget = Vector3.Distance(transform.position, currentPatrolTarget);
 
         if (distanceToTarget < 0.5f)
         {
-            ChangeState(EnemyAIState.Idle);
+            ChangeState(CharacterState.Idle);
             return;
         }
 
         Vector3 direction = (currentPatrolTarget - transform.position).normalized;
 
-        if ((direction.x > 0 && !isFacingRight) || (direction.x < 0 && isFacingRight))
-        {
-            Flip();
-        }
-
-        rb.linearVelocity = new Vector2(direction.x * currentConfig.patrolSpeed, rb.linearVelocity.y);
+        // 使用Move方法处理巡逻移动
+        Move(new Vector2(direction.x, 0));
 
         if (animator != null)
         {
@@ -356,7 +338,7 @@ public class EnemyAIController : CharacterBase
     {
         if (currentTarget == null)
         {
-            ChangeState(EnemyAIState.Idle);
+            ChangeState(CharacterState.Idle);
             return;
         }
 
@@ -364,24 +346,21 @@ public class EnemyAIController : CharacterBase
 
         if (distanceToTarget > currentConfig.loseTargetDistance)
         {
-            currentTarget = null;
-            ChangeState(EnemyAIState.Idle);
+            SetCurrentTarget(null);
+            ChangeState(CharacterState.Idle);
             return;
         }
 
         if (distanceToTarget <= currentConfig.attackRange)
         {
-            ChangeState(EnemyAIState.Attack);
+            ChangeState(CharacterState.Attacking);
             return;
         }
 
         Vector3 direction = (currentTarget.transform.position - transform.position).normalized;
-        if ((direction.x > 0 && !isFacingRight) || (direction.x < 0 && isFacingRight))
-        {
-            Flip();
-        }
 
-        rb.linearVelocity = new Vector2(direction.x * currentConfig.chaseSpeed, rb.linearVelocity.y);
+        // 使用Move方法处理追击移动
+        Move(new Vector2(direction.x, 0));
 
         if (animator != null)
         {
@@ -394,7 +373,7 @@ public class EnemyAIController : CharacterBase
     {
         if (currentTarget == null)
         {
-            ChangeState(EnemyAIState.Idle);
+            ChangeState(CharacterState.Idle);
             return;
         }
 
@@ -402,11 +381,12 @@ public class EnemyAIController : CharacterBase
 
         if (distanceToTarget > currentConfig.attackRange * 1.5f)
         {
-            ChangeState(EnemyAIState.Chase);
+            ChangeState(CharacterState.Chase);
             return;
         }
 
-        rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+        // 使用Move方法停止移动
+        Move(Vector2.zero);
 
         Vector3 direction = (currentTarget.transform.position - transform.position).normalized;
         if ((direction.x > 0 && !isFacingRight) || (direction.x < 0 && isFacingRight))
@@ -426,20 +406,90 @@ public class EnemyAIController : CharacterBase
         }
     }
 
-    private void PerformAttack()
+
+    public override void PerformAttack()
     {
         var attackData = aiStrategy.SelectAttack();
         if (attackData == null) return;
 
+        PerformAttack(attackData);
+    }
+
+    public override void PerformAttack(AttackActionData attackData)
+    {
+        if (attackData == null) return;
+
         lastAttackTime = Time.time;
+
+        // 攻击实现
         StartCoroutine(ExecuteAttackWithHitDetector(attackData));
     }
+
+    public override bool CanAttack()
+    {
+        return !IsDead && !isStunned && currentTarget != null;
+    }
+
+    #region IMoveable 接口重写
+    public override bool CanMove()
+    {
+        // 死亡或硬直状态下不能移动
+        if (IsDead || isStunned)
+            return false;
+
+        return true;
+    }
+
+    public override void Move(Vector2 direction)
+    {
+        if (!CanMove())
+            return;
+
+        // 根据当前状态执行不同的移动速度
+        float moveSpeed = 0f;
+        switch (currentState)
+        {
+            case CharacterState.Patrol:
+                moveSpeed = currentConfig.patrolSpeed;
+                break;
+            case CharacterState.Chase:
+                moveSpeed = currentConfig.chaseSpeed;
+                break;
+            case CharacterState.Retreat:
+                moveSpeed = currentConfig.patrolSpeed;
+                break;
+            case CharacterState.Dodging:
+                moveSpeed = currentConfig.chaseSpeed * 5f;
+                break;
+            default:
+                moveSpeed = 0f;
+                break;
+        }
+
+        // 应用移动速度
+        rb.linearVelocity = new Vector2(direction.x * moveSpeed, rb.linearVelocity.y);
+
+        // 转向处理
+        if ((direction.x > 0 && !isFacingRight) || (direction.x < 0 && isFacingRight))
+        {
+            Flip();
+        }
+    }
+
+    public override bool IsMoving()
+    {
+        // 根据刚体速度判断是否正在移动
+        return Mathf.Abs(rb.linearVelocity.x) > 0.1f;
+    }
+    #endregion IMoveable 接口重写
 
     private IEnumerator ExecuteAttackWithHitDetector(AttackActionData attackActionData)
     {
         if (attackActionData == null) yield break;
 
-        CharacterBase targetedEnemy = currentTarget != null ? currentTarget.GetComponent<CharacterBase>() : null;
+        isAttaking = true;
+
+        CharacterBase targetedEnemy = currentTarget_CharacterBase;
         CharacterAttackController.ApplySkillEffectsOnCast(attackActionData, this, targetedEnemy);
 
         string attackId = AttackHitDetector.Instance.StartAttackDetection(
@@ -492,6 +542,32 @@ public class EnemyAIController : CharacterBase
 
         AttackHitDetector.Instance.EndAttackDetection(attackId);
 
+        isAttaking = false;
+
+        // 攻击结束后自动恢复到合适的状态
+        if (CurrentState == CharacterState.Attacking || CurrentState == CharacterState.SpecialAttacking)
+        {
+            if (currentTarget != null)
+            {
+                float distanceToTarget = Vector3.Distance(transform.position, currentTarget.transform.position);
+                if (distanceToTarget <= currentConfig.attackRange)
+                {
+                    // 仍在攻击范围内，保持攻击状态
+                }
+                else if (distanceToTarget <= currentConfig.loseTargetDistance)
+                {
+                    ChangeState(CharacterState.Chase);
+                }
+                else
+                {
+                    ChangeState(CharacterState.Idle);
+                }
+            }
+            else
+            {
+                ChangeState(CharacterState.Idle);
+            }
+        }
     }
 
     private void SetActionAnimationParameter(ActionData actionData)
@@ -502,7 +578,7 @@ public class EnemyAIController : CharacterBase
     public override void TakeDamage(DamageInfo damageInfo, AttackActionData attackActionData, AttackFrameData frameData, CharacterBase attacker)
     {
         base.TakeDamage(damageInfo, attackActionData, frameData, attacker);
-        if (isDead) return;
+        if (IsDead) return;
 
         if (BuffSystem != null && PlayerAttributes.characterAtttibute.IsInvincible())
         {
@@ -573,7 +649,7 @@ public class EnemyAIController : CharacterBase
 
     private bool ShouldPlayHitAnimation(int priority)
     {
-        return currentState != EnemyAIState.Death || currentState != EnemyAIState.Stunned;
+        return CurrentState != CharacterState.Death && CurrentState != CharacterState.Stunned;
     }
 
     private void PlayHitFeedback(Vector2 hitPosition)
@@ -596,7 +672,7 @@ public class EnemyAIController : CharacterBase
 
     public override void ApplyStun(float duration)
     {
-        if (isDead) return;
+        if (IsDead) return;
 
         if (isStunned)
         {
@@ -613,7 +689,7 @@ public class EnemyAIController : CharacterBase
         StopAllCoroutines();
         rb.linearVelocity = Vector2.zero;
 
-        ChangeState(EnemyAIState.Stunned);
+        ChangeState(CharacterState.Stunned);
         OnStunned();
     }
 
@@ -624,7 +700,7 @@ public class EnemyAIController : CharacterBase
         LogManager.Log($"[EnemyAIController] 硬直结束");
 
         OnStunnedEnd();
-        ChangeState(EnemyAIState.Idle);
+        ChangeState(CharacterState.Idle);
     }
 
     private void OnStunned()
@@ -639,9 +715,7 @@ public class EnemyAIController : CharacterBase
 
     private void HandleDeath(CharacterBase killer = null)
     {
-        if (isDead) return;
-
-        isDead = true;
+        if (IsDead) return;
 
         LogManager.Log($"[EnemyAIController] 敌人死亡");
 
@@ -674,89 +748,9 @@ public class EnemyAIController : CharacterBase
             BuffSystem.ClearAllBuffs();
         }
 
-        ChangeState(EnemyAIState.Death);
+        ChangeState(CharacterState.Death);
     }
 
-    private GameObject FindNearestTarget()
-    {
-        Collider2D[] colliders = GetTargetsInDetectRange();
-        GameObject nearest = null;
-        float minDistance = float.MaxValue;
-
-        foreach (var col in colliders)
-        {
-            float distance = Vector3.Distance(transform.position, col.transform.position);
-            if (distance < minDistance)
-            {
-                minDistance = distance;
-                nearest = col.gameObject;
-            }
-        }
-
-        return nearest;
-    }
-
-    private Collider2D[] GetTargetsInDetectRange()
-    {
-        if (currentConfig.detectRangeType == DetectRangeType.Circle)
-        {
-            float effectiveDetectRange = GetEffectiveDetectRange();
-            return Physics2D.OverlapCircleAll(transform.position, effectiveDetectRange, currentConfig.targetLayers);
-        }
-        else
-        {
-            float effectiveWidth = GetEffectiveDetectWidth();
-            float effectiveHeight = GetEffectiveDetectHeight();
-            Vector2 boxSize = new Vector2(effectiveWidth, effectiveHeight);
-            return Physics2D.OverlapBoxAll(transform.position, boxSize, 0f, currentConfig.targetLayers);
-        }
-    }
-
-    private float GetEffectiveDetectRange()
-    {
-        float baseRange = currentConfig.detectRange;
-        if (GameDifficultyManager.Instance != null)
-        {
-            return baseRange * GameDifficultyManager.Instance.GetDetectRangeMultiplier();
-        }
-        return baseRange;
-    }
-
-    private float GetEffectiveDetectWidth()
-    {
-        float baseWidth = currentConfig.detectWidth;
-        if (GameDifficultyManager.Instance != null)
-        {
-            return baseWidth * GameDifficultyManager.Instance.GetDetectRangeMultiplier();
-        }
-        return baseWidth;
-    }
-
-    private float GetEffectiveDetectHeight()
-    {
-        float baseHeight = currentConfig.detectHeight;
-        if (GameDifficultyManager.Instance != null)
-        {
-            return baseHeight * GameDifficultyManager.Instance.GetDetectRangeMultiplier();
-        }
-        return baseHeight;
-    }
-
-    public bool IsTargetInDetectRange(Vector3 targetPosition)
-    {
-        if (currentConfig.detectRangeType == DetectRangeType.Circle)
-        {
-            float effectiveRange = GetEffectiveDetectRange();
-            return Vector3.Distance(transform.position, targetPosition) <= effectiveRange;
-        }
-        else
-        {
-            float halfWidth = GetEffectiveDetectWidth() / 2f;
-            float halfHeight = GetEffectiveDetectHeight() / 2f;
-            Vector3 offset = targetPosition - transform.position;
-            return Mathf.Abs(offset.x) <= halfWidth && Mathf.Abs(offset.y) <= halfHeight;
-        }
-    }
 
     private float GetEffectiveAttackCooldown()
     {
@@ -768,36 +762,96 @@ public class EnemyAIController : CharacterBase
         return baseCooldown;
     }
 
-    private void ChangeState(EnemyAIState newState)
+    public override void ChangeState(CharacterState newState)
     {
-        if (currentState == newState) return;
+        if (CurrentState == newState) return;
 
-        OnStateExit(currentState);
+        OnStateExit(CurrentState);
 
-        EnemyAIState previousState = currentState;
-        currentState = newState;
+        CharacterState previousState = CurrentState;
+        base.ChangeState(newState);
 
-        OnStateEnter(newState);
-
-        LogManager.Log($"[EnemyAIController] 状态切换: {previousState} -> {newState}");
+        // 触发状态变更事件
+        //OnStateChanged?.Invoke(previousState, newState);
+        LogManager.Log($"[EnemyAIController] 状态切换: {previousState} -> {CurrentState}");
     }
 
-    private void OnStateEnter(EnemyAIState state)
+    protected override void OnStateEnter(CharacterState state)
     {
         switch (state)
         {
-            case EnemyAIState.Idle:
+            case CharacterState.Idle:
                 currentIdleTime = Random.Range(currentConfig.idleTimeMin, currentConfig.idleTimeMax);
                 idleTimer = 0f;
                 break;
-            case EnemyAIState.Patrol:
+            case CharacterState.Patrol:
                 currentPatrolTarget = currentConfig.patrolArea.GetRandomPointInArea(spawnPosition);
+                break;
+            case CharacterState.Dodging:
+                animator.SetTrigger(dashTriggerName);
+                animator.SetFloat("animRollSpeed", 0.643f / currentConfig.dodgeDuration);//闪避速度倍数计算,后面这边可以将动画时长提取成配置
+                break;
+            case CharacterState.Attacking:
+            case CharacterState.SpecialAttacking:
+                // 攻击状态进入时的处理
+                break;
+            case CharacterState.Stunned:
+                // 硬直状态进入时的处理
                 break;
         }
     }
 
-    private void OnStateExit(EnemyAIState state)
+    protected override void OnStateExit(CharacterState state)
     {
+        switch (state)
+        {
+            case CharacterState.Dodging:
+                // 闪避状态退出时的处理
+                break;
+            case CharacterState.Attacking:
+            case CharacterState.SpecialAttacking:
+                // 攻击状态退出时的处理
+                break;
+        }
+    }
+
+    /// <summary>
+    /// 强制刷新状态到合适的状态
+    /// </summary>
+    public void ForceRefreshState()
+    {
+        if (IsDead)
+        {
+            ChangeState(CharacterState.Death);
+            return;
+        }
+
+        if (isStunned)
+        {
+            ChangeState(CharacterState.Stunned);
+            return;
+        }
+
+        if (currentTarget != null)
+        {
+            float distanceToTarget = Vector3.Distance(transform.position, currentTarget.transform.position);
+            if (distanceToTarget <= currentConfig.attackRange)
+            {
+                ChangeState(CharacterState.Attacking);
+            }
+            else if (distanceToTarget <= currentConfig.loseTargetDistance)
+            {
+                ChangeState(CharacterState.Chase);
+            }
+            else
+            {
+                ChangeState(CharacterState.Idle);
+            }
+        }
+        else
+        {
+            ChangeState(CharacterState.Idle);
+        }
     }
 
     private void Flip()
@@ -808,22 +862,9 @@ public class EnemyAIController : CharacterBase
         transform.localScale = scale;
     }
 
-    private void OnDrawGizmosSelected()
+    protected virtual void OnDrawGizmosSelected()
     {
         if (currentConfig == null) return;
-
-        // 绘制传统检测范围
-        Gizmos.color = Color.yellow;
-        if (currentConfig.detectRangeType == DetectRangeType.Circle)
-        {
-            Gizmos.DrawWireSphere(transform.position, GetEffectiveDetectRange());
-        }
-        else
-        {
-            Vector3 boxSize = new Vector3(GetEffectiveDetectWidth(), GetEffectiveDetectHeight(), 0f);
-            Gizmos.DrawWireCube(transform.position, boxSize);
-        }
-
 
         // 绘制攻击范围
         Gizmos.color = Color.red;
@@ -833,50 +874,15 @@ public class EnemyAIController : CharacterBase
         Vector3 center = Application.isPlaying ? spawnPosition : transform.position;
         currentConfig.patrolArea.DrawGizmos(center, Color.green);
 
-        // 绘制目标连接线
-        //if (currentTarget != null)
-        //{
-        //    Gizmos.color = Color.green;
-        //    Gizmos.DrawLine(transform.position, currentTarget.position);
-        //    //在线中间显示由EnemyAIController指向目标的文本
-        //    Vector3 midPoint = (transform.position + currentTarget.position) / 2;
-        //    Handles.Label(midPoint, "EnemyAIController的目标");
-        //}
     }
 
-    public GameObject FindNearestPlayer()
-    {
-        Collider2D[] colliders;
-        if (configData.detectRangeType == DetectRangeType.Circle)
-        {
-            colliders = Physics2D.OverlapCircleAll(transform.position, configData.detectRange, configData.targetLayers);
-        }
-        else
-        {
-            Vector2 boxSize = new Vector2(configData.detectWidth, configData.detectHeight);
-            colliders = Physics2D.OverlapBoxAll(transform.position, boxSize, 0f, configData.targetLayers);
-        }
 
-        GameObject nearest = null;
-        float minDistance = float.MaxValue;
-
-        foreach (var col in colliders)
-        {
-            float distance = Vector3.Distance(transform.position, col.transform.position);
-            if (distance < minDistance)
-            {
-                minDistance = distance;
-                nearest = col.gameObject;
-            }
-        }
-
-        return nearest;
-    }
 
     // 公共方法
     public void SetCurrentTarget(Transform target)
     {
         currentTarget = target;
+        currentTarget_CharacterBase = target != null ? target.GetComponent<CharacterBase>() : null;
     }
 
     /// <summary>
@@ -956,7 +962,7 @@ public class EnemyAIController : CharacterBase
     /// 处理感知事件
     /// </summary>
     /// <param name="senseEvent">感知事件数据</param>
-    private void HandleSenseEvent(SenseEvent senseEvent)
+    protected virtual void HandleSenseEvent(SenseEvent senseEvent)
     {
         // 只处理视觉感知事件
         if (senseEvent.senseType == SenseType.Vision)
@@ -969,31 +975,41 @@ public class EnemyAIController : CharacterBase
     /// 处理视觉感知事件
     /// </summary>
     /// <param name="senseEvent">视觉感知事件数据</param>
-    private void HandleVisionEvent(SenseEvent senseEvent)
+    protected virtual void HandleVisionEvent(SenseEvent senseEvent)
     {
         // 设置当前目标为检测到的对象
         if (senseEvent.detectedObject != null)
         {
-            currentTarget = senseEvent.detectedObject.transform;
-            LogManager.Log($"[EnemyAIController] 视觉检测到: {senseEvent.detectedObject.name}, 强度: {senseEvent.intensity}");
-
-            // 如果当前状态不是追击或攻击，则切换到追击状态
-            if (currentState != EnemyAIState.Chase && currentState != EnemyAIState.Attack && currentState != EnemyAIState.Death)
+            if (senseEvent.detectedObject.layer == PlayerLayer)//检测到玩家
             {
-                ChangeState(EnemyAIState.Chase);
+                SetCurrentTarget(senseEvent.detectedObject.transform);
+
+                // 如果当前状态不是追击或攻击，则切换到追击状态
+                if (CurrentState != CharacterState.Chase && CurrentState != CharacterState.Attacking && CurrentState != CharacterState.Death)
+                {
+                    ChangeState(CharacterState.Chase);
+                }
             }
+            if (senseEvent.detectedObject.layer == ProjectileLayer)//检测到投掷物
+            {
+                if (aiStrategy.ShouldDodge())
+                {
+                    dodgeDirection = (senseEvent.detectedObject.transform.position - transform.position).normalized;
+                    PerformDash(dodgeDirection);
+                }
+            }
+
+            //LogManager.Log($"[EnemyAIController] 视觉检测到: {senseEvent.detectedObject.name}, 强度: {senseEvent.intensity}");
+
         }
     }
 
-    private void ExecutePatrolState()
-    {
-    }
 
     private void ExecuteSpecialAttackState()
     {
         if (currentTarget == null)
         {
-            ChangeState(EnemyAIState.Idle);
+            ChangeState(CharacterState.Idle);
             return;
         }
 
@@ -1026,18 +1042,213 @@ public class EnemyAIController : CharacterBase
 
         // 远离目标移动
         Vector3 retreatDirection = (transform.position - currentTarget.position).normalized;
-        Vector3 retreatPosition = transform.position + retreatDirection * configData.patrolArea.circleRadius;//todo:这边距离后面调
 
-        MoveToPosition(retreatPosition, configData.patrolSpeed);
+        // 使用Move方法处理撤退移动
+        Move(new Vector2(retreatDirection.x, 0));
+    }
+
+    private void UpdateDodgeState()
+    {
+        dodgeTimer += Time.deltaTime;
+
+        // 执行闪避移动
+        if (dodgeTimer < currentConfig.dodgeDuration) // 闪避动作持续时间
+        {
+            // 使用Move方法处理闪避移动
+            Move(dodgeDirection);
+        }
+        else
+        {
+            // 闪避结束，使用Move方法停止移动
+            Move(Vector2.zero);
+
+            // 退出闪避状态，根据实际情况切换到合适的状态
+            if (currentTarget != null)
+            {
+                float distanceToTarget = Vector3.Distance(transform.position, currentTarget.transform.position);
+                if (distanceToTarget <= currentConfig.attackRange)
+                {
+                    ChangeState(CharacterState.Attacking);
+                }
+                else if (distanceToTarget <= currentConfig.loseTargetDistance)
+                {
+                    ChangeState(CharacterState.Chase);
+                }
+                else
+                {
+                    ChangeState(CharacterState.Idle);
+                }
+            }
+            else
+            {
+                ChangeState(CharacterState.Idle);
+            }
+        }
+
+        //if (animator != null)
+        //{
+        //    animator.SetFloat("MoveX", Mathf.Abs(dodgeDirection.x));
+        //    //animator.SetFloat("animMoveSpeed", Mathf.Abs(currentConfig.chaseSpeed * 2f));
+        //}
     }
 
     private void MoveToPosition(Vector3 targetPosition, float speed)
     {
         Vector3 direction = (targetPosition - transform.position).normalized;
-        rb.linearVelocity = new Vector2(direction.x * speed, rb.linearVelocity.y);
 
-        // 面向移动方向
-        if (direction.x > 0 && !isFacingRight) Flip();
-        else if (direction.x < 0 && isFacingRight) Flip();
+        // 使用Move方法处理移动
+        Move(new Vector2(direction.x, 0));
+    }
+
+
+    /// <summary>
+    /// 检查是否可以闪避
+    /// 状态检测
+    /// 冷却检测
+    /// 生命条件检测
+    /// 
+    /// </summary>
+    /// <returns>是否可以闪避</returns>
+    public override bool CanDash()
+    {
+        if (IsDead || isStunned || isAttaking || isDodging) return false;
+        if (CurrentState == CharacterState.Hurt || CurrentState == CharacterState.Retreat) return false;
+
+        // 检查冷却时间
+        if (Time.time - lastDodgeTime < currentConfig.dodgeCooldown)
+        {
+            return false;
+        }
+
+        // 检查生命值阈值
+        float healthPercent = PlayerAttributes.characterAtttibute.currentHealth / PlayerAttributes.characterAtttibute.maxHealth;
+        if (healthPercent > currentConfig.dodgeHealthThreshold)
+        {
+            return false;
+        }
+
+        //if (CurrentTarget == null)//当前没有目标不能闪避
+        //{
+        //    return false;
+        //}
+
+        // 检查是否有投掷物在身前
+        if (ProjectileManager.Instance.HasProjectileInFront(this))
+        {
+            return true;
+        }
+
+        if (currentTarget_CharacterBase && (currentTarget_CharacterBase.IsDead || currentTarget_CharacterBase.IsAttacking() == false))//目标死了或者没攻击不能闪避
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+
+    public override void PerformDash(Vector2 direction)
+    {
+        if (!CanDash()) return;
+
+        lastDodgeTime = Time.time;
+        dodgeTimer = 0f;
+        dodgeDirection = direction.normalized;
+        isDodging = true;
+
+        // 记录闪避日志
+        LogManager.Log($"[EnemyAIController] 执行闪避! 方向: {dodgeDirection}");
+
+        // 闪避时忽略敌人层和玩家层之间的碰撞
+        Physics2D.IgnoreLayerCollision(EnemyLayer, PlayerLayer, true);
+        Physics2D.IgnoreLayerCollision(EnemyLayer, ProjectileLayer, true);
+
+        // 启动闪避无敌帧协程
+        StartCoroutine(HandleDodgeInvincibility());
+
+        // 切换到闪避状态
+        ChangeState(CharacterState.Dodging);
+    }
+
+    public override bool IsDodging()
+    {
+        return isDodging;
+    }
+
+    /// <summary>
+    /// 执行恢复技能
+    /// </summary>
+    public void PerformRecoverySkill()
+    {
+        lastRecoverySkillTime = Time.time;
+
+        // 播放恢复技能动画
+        if (currentConfig.recoverySkillActions != null && currentConfig.recoverySkillActions.Count > 0)
+        {
+            var recoveryAction = currentConfig.recoverySkillActions[Random.Range(0, currentConfig.recoverySkillActions.Count)];
+            if (recoveryAction != null && animator != null && recoveryAction.animationParameters != null)
+            {
+                PerformAttack(recoveryAction);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 检查是否可以使用恢复技能
+    /// </summary>
+    /// <returns>是否可以使用恢复技能</returns>
+    public bool CanUseRecoverySkill()
+    {
+        if (IsDead || isStunned) return false;
+
+        // 检查冷却时间
+        if (Time.time - lastRecoverySkillTime < currentConfig.recoverySkillCooldown)
+        {
+            return false;
+        }
+
+        // 检查生命值阈值
+        float healthPercent = PlayerAttributes.characterAtttibute.currentHealth / PlayerAttributes.characterAtttibute.maxHealth;
+        if (healthPercent > currentConfig.recoverySkillHealthThreshold)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 处理闪避无敌帧
+    /// </summary>
+    private IEnumerator HandleDodgeInvincibility()
+    {
+        // 设置无敌状态
+        if (PlayerAttributes != null && PlayerAttributes.characterAtttibute != null)
+        {
+            PlayerAttributes.characterAtttibute.isDodging = true;
+        }
+
+        // 闪避无敌持续时间
+        yield return WaitForSecondsCache.WaitForSeconds(currentConfig.dodgeDuration);
+
+        // 结束无敌状态
+        if (PlayerAttributes != null && PlayerAttributes.characterAtttibute != null)
+        {
+            PlayerAttributes.characterAtttibute.isDodging = false;
+        }
+
+        isDodging = false;
+
+        // 恢复碰撞
+        Physics2D.IgnoreLayerCollision(EnemyLayer, PlayerLayer, false);
+        Physics2D.IgnoreLayerCollision(EnemyLayer, ProjectileLayer, false);
+
+        LogManager.Log($"[EnemyAIController] 闪避无敌帧结束");
+    }
+
+
+    public override bool IsAttacking()
+    {
+        return isAttaking;
     }
 }

@@ -29,7 +29,7 @@ MonoBehaviour:
     animationFloatValue: 1
     animationBoolValue: 0
   canCancel: 1
-  skillData: {fileID: 11400000, guid: 1668c8de13e3e2f43be5136ac6820f4d, type: 2}
+  skillData: {fileID: 11400000, guid: da8afe503d10a2347821552c1b9aee24, type: 2}
   triggerType: 0
   longPressTimeThreshold: 0.3
   holdTickInterval: 0.1
@@ -87,13 +87,13 @@ MonoBehaviour:
     hitboxRadius: 0.5
     hitboxAngle: 90
     hitboxEndPoint: {x: 1, y: 0}
-    damage: 1
+    damage: 10
     knockbackForce: {x: 0, y: 0}
     effects:
     - {fileID: 11400000, guid: 941b4ba324bcd8143aaad9852b16b960, type: 2}
     hitEffect: {fileID: 0}
     hitSound: {fileID: 0}
-    projectile: {fileID: 11400000, guid: 4b9cbefe5fdb6344ab07d0bb09df0970, type: 2}
+    projectile: {fileID: 0}
     projectileSpawnOffset: {x: 1, y: 0.5}
   hitEffect: {fileID: 0}
   attackSound: {fileID: 0}

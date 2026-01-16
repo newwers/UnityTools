@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34d506ca134f9004b91fe746725325cb, type: 3}
+  m_Name: EnemyConfig_Elite
+  m_EditorClassIdentifier: 
+  enemyName: "\u6D4B\u8BD5\u654C\u4EBA"
+  difficulty: 1
+  aiStrategy: {fileID: 11400000, guid: e99048617daa56d4ab056cb79315b341, type: 2}
+  attributes:
+    maxHealth: 100
+    currentHealth: 100
+    healthRegenRate: 1
+    maxEnergy: 100
+    currentEnergy: 100
+    energyRegenRate: 10
+    baseStrength: 0
+    baseAgility: 0
+    baseMoveSpeed: 1
+    baseMoveSpeedMultiplier: 1
+    baseCritRate: 5
+    baseCritMultiplier: 1.5
+    maxBlockValue: 50
+    currentBlockValue: 50
+    isBlocking: 0
+    maxShield: 0
+    currentShield: 0
+    maxDodgeCount: 2
+    currentDodgeCount: 2
+    dodgeRegenInterval: 3
+    isDodging: 0
+    maxStagger: 100
+    currentStagger: 0
+    staggerRecoveryRate: 20
+    staggerStunThreshold: 100
+    isStaggered: 0
+    baseAttackDamage: 0
+    hasSuperArmor: 0
+    isInvincible: 0
+    baseDefense: 0
+  patrolArea:
+    patrolType: 2
+    circleRadius: 5
+    rectangleSize: {x: 5, y: 1}
+  idleTimeMin: 1
+  idleTimeMax: 3
+  patrolSpeed: 2
+  patrolDuration: 2
+  chaseSpeed: 2
+  loseTargetDistance: 5
+  retreatHealthThreshold: 0
+  attackActions:
+  - {fileID: 11400000, guid: 89d5dbaa5477ad34f90aa91ff7eae769, type: 2}
+  - {fileID: 11400000, guid: 57632d06853e401448fdb343ebfe9406, type: 2}
+  - {fileID: 11400000, guid: cdd99f7935d565544a6c380fa5943257, type: 2}
+  attackRange: 1.5
+  attackCooldown: 2
+  eliteAttackActions: []
+  bossAttackActions: []
+  bossPhases:
+  - phaseName: 
+    healthPercentThreshold: 0.3
+    phaseTransitionEffect: {fileID: 0}
+    phaseTransitionSound: {fileID: 0}
+    phaseConfig: {fileID: 0}
+  dodgeHealthThreshold: 1
+  dodgeCooldown: 3
+  dodgeDuration: 0.3
+  dodgeProbability: 1
+  recoverySkillHealthThreshold: 0.7
+  recoverySkillCooldown: 10
+  recoverySkillProbability: 1
+  recoverySkillActions:
+  - {fileID: 11400000, guid: 56a568bec2a6bfe4d9365990638ab786, type: 2}
+  deathEffect: {fileID: 0}
+  deathSound: {fileID: 0}

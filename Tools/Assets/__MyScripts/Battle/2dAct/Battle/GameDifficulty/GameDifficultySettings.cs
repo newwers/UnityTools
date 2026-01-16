@@ -18,7 +18,9 @@ public class GameDifficultySettings : ScriptableObject
             aiDecisionSpeedMultiplier = 1f,
             useEnhancedAI = false,
             expMultiplier = 1f,
-            lootMultiplier = 1f
+            lootMultiplier = 1f,
+            dodgeProbabilityMultiplier = 1f,
+            recoverySkillProbabilityMultiplier = 1f
         }
     };
 
@@ -36,7 +38,9 @@ public class GameDifficultySettings : ScriptableObject
             aiDecisionSpeedMultiplier = 1.2f,
             useEnhancedAI = false,
             expMultiplier = 1.5f,
-            lootMultiplier = 1.3f
+            lootMultiplier = 1.3f,
+            dodgeProbabilityMultiplier = 1.5f,
+            recoverySkillProbabilityMultiplier = 1.5f
         }
     };
 
@@ -54,7 +58,9 @@ public class GameDifficultySettings : ScriptableObject
             aiDecisionSpeedMultiplier = 1.5f,
             useEnhancedAI = true,
             expMultiplier = 2f,
-            lootMultiplier = 1.8f
+            lootMultiplier = 1.8f,
+            dodgeProbabilityMultiplier = 2.0f,
+            recoverySkillProbabilityMultiplier = 2.0f
         }
     };
 

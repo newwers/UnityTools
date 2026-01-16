@@ -34,14 +34,14 @@ MonoBehaviour:
   longPressTimeThreshold: 0.3
   holdTickInterval: 0.1
   maxHoldTicks: 10
-  windUpTime: 0.5
+  windUpTime: 0.07
   activeTime: 0.071428575
   recoveryTime: 0.2857143
   comboWindow: 0.28
   ActualWindUpFrames: 1
   ActualActiveFrames: 1
   ActualRecoveryFrames: 4
-  windUpFrames: 7
+  windUpFrames: 1
   activeFrames: 1
   recoveryFrames: 4
   enableMovement: 1
@@ -94,7 +94,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 941b4ba324bcd8143aaad9852b16b960, type: 2}
     hitEffect: {fileID: 0}
     hitSound: {fileID: 0}
-    projectile: {fileID: 11400000, guid: ab8bc073b9fa1184da64ea622c476213, type: 2}
+    projectile: {fileID: 0}
     projectileSpawnOffset: {x: 1, y: 0.5}
   hitEffect: {fileID: 0}
   attackSound: {fileID: 0}

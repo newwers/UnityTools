@@ -6,7 +6,7 @@ public interface IDamageable
 
     bool IsDead { get; }
 
-    Transform Transform { get; }
+    Transform transform { get; }
 }
 
 public interface IStunnable

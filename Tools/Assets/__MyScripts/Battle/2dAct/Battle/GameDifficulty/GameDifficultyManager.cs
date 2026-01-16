@@ -81,6 +81,16 @@ public class GameDifficultyManager : BaseMonoSingleClass<GameDifficultyManager>
         return currentModifiers?.lootMultiplier ?? 1f;
     }
 
+    public float GetDodgeProbabilityMultiplier()
+    {
+        return currentModifiers?.dodgeProbabilityMultiplier ?? 1f;
+    }
+
+    public float GetRecoverySkillProbabilityMultiplier()
+    {
+        return currentModifiers?.recoverySkillProbabilityMultiplier ?? 1f;
+    }
+
     private void UpdateModifiers()
     {
         if (difficultySettings == null) return;

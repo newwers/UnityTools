@@ -42,7 +42,7 @@ public class PlayerAttributes : MonoBehaviour
             characterAtttibute.currentEnergy = characterAtttibute.maxEnergy;
         }
 
-        healthBar.Initialize(characterAtttibute, transform);
+        healthBar?.Initialize(characterAtttibute, transform);
     }
 
 }
@@ -109,7 +109,7 @@ public class PlayerAttributesEditor : Editor
 
         // 防御属性
         EditorGUILayout.LabelField("防御属性", EditorStyles.miniBoldLabel);
-        EditorGUILayout.LabelField($"防御力: {attributes.FinalDefense} (基础: {attributes.BaseDefense})");
+        EditorGUILayout.LabelField($"防御力: {attributes.FinalDefense} (基础: {attributes.baseDefense})");
         EditorGUILayout.LabelField($"格挡值: {attributes.currentBlockValue:F1} / {attributes.maxBlockValue:F1}");
         EditorGUILayout.LabelField($"护盾: {attributes.currentShield:F1} / {attributes.maxShield:F1}");
 

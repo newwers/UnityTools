@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d406d200fa5d9a649a5e2623b8ea4ba2, type: 3}
+  m_Name: Knight Recovery Data
+  m_EditorClassIdentifier: 
+  acitonName: "Knight_\u6062\u590D\u8840\u91CF\u6280\u80FD"
+  priority: 250
+  character: {fileID: 5771301279390029218, guid: 825b2b521de0e0146b836fb7a8d11906, type: 3}
+  animationClip: {fileID: 7400000, guid: 2ae4e3832ca6ee840add51262f49f4a8, type: 2}
+  frameRate: 10
+  animationParameters:
+  - parameterName: Recovery
+    type: 0
+    animationIntValue: 0
+    animationFloatValue: 0
+    animationBoolValue: 1
+  canCancel: 1
+  skillData: {fileID: 11400000, guid: 510249866d2227d4da85e2115ae00b53, type: 2}
+  triggerType: 0
+  longPressTimeThreshold: 0.3
+  holdTickInterval: 0.1
+  maxHoldTicks: 10
+  windUpTime: 0.071428575
+  activeTime: 0.071428575
+  recoveryTime: 0.2857143
+  comboWindow: 0.28
+  ActualWindUpFrames: 1
+  ActualActiveFrames: 1
+  ActualRecoveryFrames: 4
+  windUpFrames: 1
+  activeFrames: 1
+  recoveryFrames: 3
+  enableMovement: 0
+  IsAccumulateForce: 0
+  movementSpeed: {x: 10, y: 0}
+  movementCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: -1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: -1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  canCombo: 0
+  resetComboOnMiss: 0
+  frameData: []
+  hitEffect: {fileID: 0}
+  attackSound: {fileID: 0}

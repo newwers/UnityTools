@@ -285,16 +285,16 @@ public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
             return false;
         }
 
-        IDamageable damageable = target.GetComponent<IDamageable>();
 
-        if (damageable == null)
+        if (target == null)
         {
             LogManager.LogWarning($"[AttackHitDetector] 目标 {target.name} 没有实现IDamageable接口");
             return false;
         }
 
-        if (damageable.IsDead)
+        if (target.IsDead || target.PlayerAttributes.characterAtttibute.isDodging)//过滤死亡和闪避状态
         {
+            LogManager.Log($"[AttackHitDetector] 目标 {target.name} 已死亡或处于闪避状态，跳过受击处理");
             return false;
         }
 
@@ -314,7 +314,7 @@ public class AttackHitDetector : BaseMonoSingleClass<AttackHitDetector>
         ApplyFrameEffects(frameData, damageInfo, true);
 
         // 应用伤害
-        damageable.TakeDamage(damageInfo, attackActionData, frameData, attacker);
+        target.TakeDamage(damageInfo, attackActionData, frameData, attacker);
 
         return true;
     }

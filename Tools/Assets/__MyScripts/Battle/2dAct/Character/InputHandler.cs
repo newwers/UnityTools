@@ -45,6 +45,7 @@ public class InputHandler : MonoBehaviour
     public System.Action OnAssistAttack;
     public System.Action OnSpecialAttack;
     public System.Action OnSpecialAttack2;
+    public System.Action OnSummonActionInput;
     /// <summary>
     /// 攻击输入事件
     /// </summary>
@@ -79,6 +80,7 @@ public class InputHandler : MonoBehaviour
     private InputAction assistAction;
     private InputAction specialAction;
     private InputAction specialAction2;
+    private InputAction summonAction;
 
     private void Awake()
     {
@@ -92,6 +94,7 @@ public class InputHandler : MonoBehaviour
         assistAction = playerInput.actions["AssistAttack"];
         specialAction = playerInput.actions["SpecialAttack"];
         specialAction2 = playerInput.actions.FindAction("SpecialAttack2", throwIfNotFound: false);
+        summonAction = playerInput.actions["TestInput"];
 
         //LogManager.Log($"[InputHandler] 初始化完成，缓冲区大小: {inputBuffer.Count}");
     }
@@ -122,12 +125,13 @@ public class InputHandler : MonoBehaviour
             specialAction2.performed += OnSpecial2PerformedCallback;
             specialAction2.canceled += OnSpecial2CanceledCallback;
         }
-        else
-        {
-            LogManager.LogWarning("[InputHandler] 未在输入资产中找到 SpecialAttack2");
-        }
+
+        summonAction.started += OnSummonAction_started;
+
         LogManager.Log($"[InputHandler] 输入事件已订阅");
     }
+
+
 
     private void OnDisable()
     {
@@ -154,6 +158,8 @@ public class InputHandler : MonoBehaviour
             specialAction2.performed -= OnSpecial2PerformedCallback;
             specialAction2.canceled -= OnSpecial2CanceledCallback;
         }
+
+        summonAction.started -= OnSummonAction_started;
 
         LogManager.Log($"[InputHandler] 输入事件已取消订阅");
     }
@@ -189,6 +195,12 @@ public class InputHandler : MonoBehaviour
     }
 
     #region 输入回调方法
+
+    private void OnSummonAction_started(InputAction.CallbackContext obj)
+    {
+        OnSummonActionInput?.Invoke();
+    }
+
     private void OnJumpStarted(InputAction.CallbackContext context)
     {
         //AddToBuffer(new InputCommand(InputCommandType.Jump, Time.time));// 不再添加到缓冲区，直接触发事件

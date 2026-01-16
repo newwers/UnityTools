@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -136,7 +136,7 @@ public class CharacterAnimation : MonoBehaviour
     }
 
     #region 动画事件处理
-    private void OnStateChanged(PlayerState previousState, PlayerState newState)
+    private void OnStateChanged(CharacterState previousState, CharacterState newState)
     {
         // 根据状态切换动画
         if (previousState == newState)
@@ -144,24 +144,24 @@ public class CharacterAnimation : MonoBehaviour
             return;
         }
 
-        if (previousState == PlayerState.Stunned)//眩晕结束
+        if (previousState == CharacterState.Stunned)//眩晕结束
         {
             OnStunnedEnd();
         }
 
         switch (newState)
         {
-            case PlayerState.Dashing:
+            case CharacterState.Dodging:
                 animator.SetFloat(animRollSpeed, dashAnimationLength / logic.actionManager.dashAction.dashDuration);
                 //animator.SetTrigger(roll);
                 break;
 
-            //case PlayerState.Blocking:
+            //case CharacterState.Blocking:
             //    animator.SetTrigger(block);
             //    animator.SetBool(idleBlock, true);
             //    break;
 
-            case PlayerState.Stunned://眩晕状态
+            case CharacterState.Stunned://眩晕状态
                 OnStunned();
                 return;//眩晕状态不处理后续动画参数设置,否则会覆盖眩晕动画,眩晕没有对应的ActionData,后面看看要不要统一
         }

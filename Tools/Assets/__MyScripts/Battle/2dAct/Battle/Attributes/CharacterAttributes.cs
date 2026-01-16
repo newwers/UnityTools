@@ -60,6 +60,9 @@ public class CharacterAttributes
     public int currentDodgeCount = 2;
     public float dodgeRegenInterval = 3f;
     private float dodgeRegenTimer = 0f;
+    /// <summary>
+    /// 闪避中
+    /// </summary>
     public bool isDodging = false;
 
     [Header("震击相关")]
@@ -73,7 +76,7 @@ public class CharacterAttributes
     /// <summary>
     /// 基础附加伤害（不包含任何加成）
     /// </summary>
-    [SerializeField] private float baseAttackDamage = 0f;
+    public int baseAttackDamage = 0;
 
     [Header("战斗状态")]
     /// <summary>
@@ -87,7 +90,7 @@ public class CharacterAttributes
     /// <summary>
     /// 基础防御（不包含任何加成）
     /// </summary>
-    [SerializeField] private int baseDefense = 0;
+    public int baseDefense = 0;
 
     [Header("属性修改器")]
     /// <summary>
@@ -155,10 +158,6 @@ public class CharacterAttributes
     /// </summary>
     public float FinalCritMultiplier => GetModifiedValue(AttributeType.CritMultiplier, baseCritMultiplier);
 
-    /// <summary>
-    /// 获取基础防御（不包含buff加成）
-    /// </summary>
-    public int BaseDefense => baseDefense;
 
     /// <summary>
     /// 获取最终防御（包含所有buff加成）
@@ -190,11 +189,6 @@ public class CharacterAttributes
     /// 获取最终最大能量（包含所有buff加成）
     /// </summary>
     public float FinalMaxEnergy => GetModifiedValue(AttributeType.MaxEnergy, BaseMaxEnergy);
-
-    /// <summary>
-    /// 获取基础附加伤害（不包含buff加成）
-    /// </summary>
-    public float BaseAttackDamage => baseAttackDamage;
 
     /// <summary>
     /// 获取最终附加伤害（包含所有buff加成）

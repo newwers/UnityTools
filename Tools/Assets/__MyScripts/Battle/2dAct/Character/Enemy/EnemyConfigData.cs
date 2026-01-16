@@ -30,16 +30,16 @@ public class EnemyConfigData : ScriptableObject
     public float patrolSpeed = 2f;
     public float patrolDuration = 2f;// 巡逻时间
 
-    [Header("检测设置")]
-    public DetectRangeType detectRangeType = DetectRangeType.Circle;
-    [Tooltip("圆形检测时的半径")]
-    public float detectRange = 8f;
-    [Tooltip("矩形检测时的宽度")]
-    public float detectWidth = 10f;
-    [Tooltip("矩形检测时的高度")]
-    public float detectHeight = 6f;
-    public float loseTargetRange = 12f;//丢失目标距离
-    public LayerMask targetLayers;
+    //[Header("检测设置(暂时没用,用视觉检测代替,后面可以将视觉检测参数提取到配置中)")]
+    //public DetectRangeType detectRangeType = DetectRangeType.Circle;
+    //[Tooltip("圆形检测时的半径")]
+    //public float detectRange = 8f;
+    //[Tooltip("矩形检测时的宽度")]
+    //public float detectWidth = 10f;
+    //[Tooltip("矩形检测时的高度")]
+    //public float detectHeight = 6f;
+    //public float loseTargetRange = 12f;//丢失目标距离 丢失目标距离其实就是视觉距离
+    //public LayerMask targetLayers;
 
     [Header("追击设置")]
     public float chaseSpeed = 4f;
@@ -63,6 +63,30 @@ public class EnemyConfigData : ScriptableObject
     public List<AttackActionData> bossAttackActions = new List<AttackActionData>();
     [Tooltip("Boss的阶段配置列表")]
     public List<BossPhaseConfig> bossPhases = new List<BossPhaseConfig>();
+
+    [Header("闪避设置")]
+    [Tooltip("触发闪避的生命值阈值")]
+    [Range(0f, 1f)]
+    public float dodgeHealthThreshold = 0.3f;
+    [Tooltip("闪避冷却时间")]
+    public float dodgeCooldown = 3f;
+    [Tooltip("闪避持续时间")]
+    public float dodgeDuration = 0.3f;
+    [Tooltip("基础闪避概率")]
+    [Range(0f, 1f)]
+    public float dodgeProbability = 0.3f;
+
+    [Header("恢复技能设置")]
+    [Tooltip("触发恢复技能的生命值阈值")]
+    [Range(0f, 1f)]
+    public float recoverySkillHealthThreshold = 0.4f;
+    [Tooltip("恢复技能冷却时间")]
+    public float recoverySkillCooldown = 10f;
+    [Tooltip("基础恢复技能使用概率")]
+    [Range(0f, 1f)]
+    public float recoverySkillProbability = 0.5f;
+    [Tooltip("恢复技能的动作数据列表")]
+    public List<AttackActionData> recoverySkillActions = new List<AttackActionData>();
 
     [Header("视觉效果")]
     public GameObject deathEffect;

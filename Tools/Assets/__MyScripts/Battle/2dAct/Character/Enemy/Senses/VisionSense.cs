@@ -139,6 +139,12 @@ namespace Senses
 
             return false;
         }
+#if UNITY_EDITOR
+
+        private void OnDrawGizmosSelected()
+        {
+            DrawGizmos();
+        }
 
         public override void DrawGizmos()
         {
@@ -161,6 +167,7 @@ namespace Senses
                 }
             }
         }
+#endif
 
         private void DrawViewCone()
         {
@@ -190,10 +197,6 @@ namespace Senses
             Gizmos.DrawWireSphere(rayStart, viewDistance);
         }
 
-        private void OnDrawGizmosSelected()
-        {
-            DrawGizmos();
-        }
 
         public List<GameObject> GetVisibleTargets()
         {

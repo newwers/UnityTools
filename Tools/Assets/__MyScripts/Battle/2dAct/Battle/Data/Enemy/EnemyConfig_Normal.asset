@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 34d506ca134f9004b91fe746725325cb, type: 3}
-  m_Name: New Enemy Config
+  m_Name: EnemyConfig_Normal
   m_EditorClassIdentifier: 
   enemyName: "\u6D4B\u8BD5\u654C\u4EBA"
   difficulty: 0
-  aiStrategy: {fileID: 0}
+  aiStrategy: {fileID: 11400000, guid: 210abe19ca7e2924baae4282451e389c, type: 2}
   attributes:
     maxHealth: 100
     currentHealth: 100
@@ -54,14 +54,6 @@ MonoBehaviour:
   idleTimeMax: 3
   patrolSpeed: 2
   patrolDuration: 2
-  detectRangeType: 1
-  detectRange: 1
-  detectWidth: 5
-  detectHeight: 1
-  loseTargetRange: 12
-  targetLayers:
-    serializedVersion: 2
-    m_Bits: 128
   chaseSpeed: 2
   loseTargetDistance: 5
   retreatHealthThreshold: 0
@@ -80,5 +72,13 @@ MonoBehaviour:
     phaseTransitionEffect: {fileID: 0}
     phaseTransitionSound: {fileID: 0}
     phaseConfig: {fileID: 0}
+  dodgeHealthThreshold: 1
+  dodgeCooldown: 3
+  dodgeDuration: 0.3
+  dodgeProbability: 1
+  recoverySkillHealthThreshold: 0.4
+  recoverySkillCooldown: 10
+  recoverySkillProbability: 0.5
+  recoverySkillActions: []
   deathEffect: {fileID: 0}
   deathSound: {fileID: 0}

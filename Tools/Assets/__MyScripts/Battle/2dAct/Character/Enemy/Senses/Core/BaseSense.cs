@@ -49,8 +49,11 @@ namespace Senses
         }
 
         public abstract void UpdateDetection();
-        public abstract void DrawGizmos();
+#if UNITY_EDITOR
 
+
+        public abstract void DrawGizmos();
+#endif
         protected void TriggerSenseEvent(SenseEvent senseEvent)
         {
             OnSenseDetected?.Invoke(senseEvent);

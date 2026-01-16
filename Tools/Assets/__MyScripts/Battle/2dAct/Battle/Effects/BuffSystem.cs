@@ -633,12 +633,12 @@ public class BuffSystem : MonoBehaviour
                 ApplyTeleportEffect(buff);
                 break;
 
+
             default:
                 // 其他效果类型的通用处理
                 break;
         }
     }
-
 
 
 
@@ -1629,18 +1629,18 @@ public class BuffSystem : MonoBehaviour
         {
             if (buff.target)
             {
-                targetTransform = buff.target.Transform;
+                targetTransform = buff.target.transform;
                 targetFacingRight = buff.target.isFacingRight;
             }
             else
             {
-                targetTransform = buff.source.Transform;
+                targetTransform = buff.source.transform;
                 targetFacingRight = buff.source.isFacingRight;
             }
         }
         else//攻击者给命中者施加瞬移Buff
         {
-            targetTransform = buff.source.Transform;
+            targetTransform = buff.source.transform;
             targetFacingRight = buff.source.isFacingRight;
         }
 
@@ -1662,7 +1662,7 @@ public class BuffSystem : MonoBehaviour
 
         if (buff.data.effectTarget == EffectTarget.Attacker)//攻击者给自己施加瞬移Buff
         {
-            buff.source.Transform.position = teleportPosition;
+            buff.source.transform.position = teleportPosition;
 
             if (buff.source.rb != null)
             {
@@ -1675,7 +1675,7 @@ public class BuffSystem : MonoBehaviour
         {
             if (buff.target != null)
             {
-                buff.target.Transform.position = teleportPosition;//命中者瞬移到攻击者身后或身前位置
+                buff.target.transform.position = teleportPosition;//命中者瞬移到攻击者身后或身前位置
                 if (buff.target.rb != null)
                 {
                     buff.target.rb.linearVelocity = Vector2.zero;
@@ -1683,7 +1683,7 @@ public class BuffSystem : MonoBehaviour
             }
             else//容错处理,如果没有命中者,则改为自己瞬移
             {
-                characterBase.Transform.position = teleportPosition;
+                characterBase.transform.position = teleportPosition;
 
                 if (rd != null)
                 {

@@ -9,27 +9,7 @@ using System.Linq;
 using UnityEngine;
 using static CharacterDatabase;
 
-public enum PlayerState
-{
-    Idle,           // 待机
-    Running,        // 移动
-    Jumping,        // 跳跃
-    Falling,        // 下落
-    Attacking,      // 普通攻击
-    JumpAttacking,  // 跳跃攻击
-    HeavyAttacking, // 重攻击
-    AssistAttacking,// 协助攻击
-    SpecialAttacking,// 特殊攻击
-    Dashing,        // 冲刺
-    DashAttacking,  // 冲刺攻击
-    Blocking,       // 格挡
-    Parrying,       // 弹反
-    Down,           // 倒地
-    GettingUp,      // 爬起
-    Stunned,         // 硬直
-    Hurt,         // 受伤
-    Death,         // 死亡
-}
+
 
 
 
@@ -40,8 +20,6 @@ public class CharacterLogic : CharacterBase
     private int EnemyLayer;
     private int PlayerLayer;
 
-    // 逻辑事件
-    public System.Action<PlayerState, PlayerState> OnStateChanged;
     public System.Action<int> OnAttackCombo;
     public System.Action OnJump;
     public System.Action OnLandAction;
@@ -63,10 +41,6 @@ public class CharacterLogic : CharacterBase
     [Tooltip("额外的跳跃次数（通过Buff获得）")]
     public int extraJumpCount = 0;
 
-
-
-    [Header("逻辑状态")]
-    public PlayerState CurrentState = PlayerState.Idle;
 
     [Header("角色切换")]
     [Tooltip("角色数据库")]
@@ -140,11 +114,11 @@ public class CharacterLogic : CharacterBase
 
     public bool IsStunned
     {
-        get { return CurrentState == PlayerState.Stunned; }
+        get { return CurrentState == CharacterState.Stunned; }
     }
 
 
-    public override bool IsDead => CurrentState == PlayerState.Death || (PlayerAttributes != null && PlayerAttributes.IsDead);
+    public override bool IsDead => CurrentState == CharacterState.Death || (PlayerAttributes != null && PlayerAttributes.IsDead);
 
 
     protected override void Awake()
@@ -181,6 +155,7 @@ public class CharacterLogic : CharacterBase
             inputHandler.OnSpecialAttack += HandleSpecialAttack;
             inputHandler.OnSpecialAttack2 += HandleSpecialAttack2;
             inputHandler.OnAttackCanceled += OnInputAttackCanceled;
+            inputHandler.OnSummonActionInput += HandleSummonAction;
         }
 
         if (attackController != null)
@@ -193,6 +168,7 @@ public class CharacterLogic : CharacterBase
             PlayerAttributes.characterAtttibute.OnDeath += HandleDeath;
         }
     }
+
 
 
     private void OnDisable()
@@ -212,6 +188,7 @@ public class CharacterLogic : CharacterBase
             inputHandler.OnSpecialAttack -= HandleSpecialAttack;
             inputHandler.OnSpecialAttack2 -= HandleSpecialAttack2;
             inputHandler.OnAttackCanceled -= OnInputAttackCanceled;
+            inputHandler.OnSummonActionInput -= HandleSummonAction;
         }
         if (attackController != null)
         {
@@ -242,7 +219,7 @@ public class CharacterLogic : CharacterBase
     //实现下+跳跃输入,执行跳下平台
     private void HandleDownJumpInput()
     {
-        if ((CurrentState == PlayerState.Idle || CurrentState == PlayerState.Blocking) && inputHandler != null && inputHandler.MoveInput.y < -0.1f && inputHandler.IsJumpPressed)
+        if ((CurrentState == CharacterState.Idle || CurrentState == CharacterState.Blocking) && inputHandler != null && inputHandler.MoveInput.y < -0.1f && inputHandler.IsJumpPressed)
         {
             //实现跳下功能
             // 检测脚下是否是一-way平台
@@ -268,6 +245,16 @@ public class CharacterLogic : CharacterBase
             yield return null;//等两帧再检测
         }
         Physics2D.IgnoreCollision(boxCollider2D, platformCollider, false);
+    }
+
+
+    /// <summary>
+    /// 按下召唤按键
+    /// </summary>
+    private void HandleSummonAction()
+    {
+
+
     }
 
     /// <summary>
@@ -460,12 +447,12 @@ public class CharacterLogic : CharacterBase
 
     private void UpdateTimers()
     {
-        if (CurrentState == PlayerState.Jumping && rb.linearVelocity.y < 0)
+        if (CurrentState == CharacterState.Jumping && rb.linearVelocity.y < 0)
         {
-            ChangeState(PlayerState.Falling);
+            ChangeState(CharacterState.Falling);
         }
 
-        if (CurrentState == PlayerState.Stunned && stunTimer > 0)
+        if (CurrentState == CharacterState.Stunned && stunTimer > 0)
         {
             stunTimer -= Time.deltaTime;
             if (stunTimer <= 0)
@@ -490,7 +477,7 @@ public class CharacterLogic : CharacterBase
         animHandler?.OnHurt(shouldPlayHitAnimation);
         if (shouldPlayHitAnimation)//只有播放受击动画时才切换状态
         {
-            ChangeState(PlayerState.Hurt);//todo:打断攻击时,如何中断伤害?
+            ChangeState(CharacterState.Hurt);//todo:打断攻击时,如何中断伤害?
             //根据受伤时间,切换回之前的状态
             if (m_RecoverFromHurt_Coroutine != null)
             {
@@ -679,7 +666,7 @@ public class CharacterLogic : CharacterBase
     {
         yield return WaitForSecondsCache.WaitForSeconds(duration);
         m_RecoverFromHurt_Coroutine = null;
-        if (CurrentState == PlayerState.Hurt)
+        if (CurrentState == CharacterState.Hurt)
         {
             RefreshState();
         }
@@ -737,7 +724,7 @@ public class CharacterLogic : CharacterBase
         SetIsBlockState(false);//弹反时,取消格挡状态
 
         // 切换到弹反状态
-        ChangeState(PlayerState.Parrying);
+        ChangeState(CharacterState.Parrying);
 
         PerformAttack();//执行弹反攻击
 
@@ -753,16 +740,16 @@ public class CharacterLogic : CharacterBase
     /// </summary>
     public void ForceRefreshState()
     {
-        PlayerState newState = DetermineAppropriateState();
+        CharacterState newState = DetermineAppropriateState();
         ChangeState(newState);
         LogManager.Log($"[CharacterLogic] 强制刷新状态到: {newState}");
     }
 
     /// <summary>
     /// 安全刷新状态，只在特定状态下刷新
-    /// characterLogic.SafeRefreshState(PlayerState.Idle, PlayerState.Running);
+    /// characterLogic.SafeRefreshState(CharacterState.Idle, CharacterState.Running);
     /// </summary>
-    public void SafeRefreshState(params PlayerState[] allowedStates)
+    public void SafeRefreshState(params CharacterState[] allowedStates)
     {
         if (allowedStates.Contains(CurrentState) || allowedStates.Length == 0)
         {
@@ -780,7 +767,7 @@ public class CharacterLogic : CharacterBase
         if (!CanStateBeRefreshed())
             return;
 
-        PlayerState newState = DetermineAppropriateState();
+        CharacterState newState = DetermineAppropriateState();
 
         if (CurrentState != newState)
         {
@@ -794,7 +781,7 @@ public class CharacterLogic : CharacterBase
     /// </summary>
     private bool CanStateBeRefreshed()
     {
-        if (CurrentState == PlayerState.Death)
+        if (CurrentState == CharacterState.Death)
         {
             return false;
         }
@@ -804,23 +791,23 @@ public class CharacterLogic : CharacterBase
     /// <summary>
     /// 根据当前条件确定最合适的状态
     /// </summary>
-    private PlayerState DetermineAppropriateState()
+    private CharacterState DetermineAppropriateState()
     {
         // 优先检查地面状态
         if (!m_IsGrounded)
         {
             // 空中状态
             if (rb.linearVelocity.y > 0.1f)
-                return PlayerState.Jumping;
+                return CharacterState.Jumping;
             else
-                return PlayerState.Falling;
+                return CharacterState.Falling;
         }
 
         // 地面状态
         if (inputHandler && Mathf.Abs(inputHandler.MoveInput.x) > 0.1f)
-            return PlayerState.Running;
+            return CharacterState.Running;
         else
-            return PlayerState.Idle;
+            return CharacterState.Idle;
     }
 
     private void CheckGround()
@@ -879,28 +866,28 @@ public class CharacterLogic : CharacterBase
 
         switch (CurrentState)
         {
-            case PlayerState.Idle:
-            case PlayerState.Running:
+            case CharacterState.Idle:
+            case CharacterState.Running:
                 HandleGroundedState();
                 break;
 
-            case PlayerState.Jumping:
-            case PlayerState.Falling:
+            case CharacterState.Jumping:
+            case CharacterState.Falling:
                 HandleAirborneState();
                 break;
 
-            case PlayerState.Dashing:
+            case CharacterState.Dodging:
                 HandleDashState();
                 break;
 
-            case PlayerState.Blocking:
+            case CharacterState.Blocking:
                 HandleBlockState();
                 break;
 
-            case PlayerState.Attacking:
-            case PlayerState.HeavyAttacking:
-            case PlayerState.DashAttacking:
-            case PlayerState.JumpAttacking:
+            case CharacterState.Attacking:
+            case CharacterState.HeavyAttacking:
+            case CharacterState.DashAttacking:
+            case CharacterState.JumpAttacking:
                 HandleAttackState();
                 break;
         }
@@ -912,11 +899,11 @@ public class CharacterLogic : CharacterBase
         // 状态转换
         if (inputHandler != null && Mathf.Abs(inputHandler.MoveInput.x) > 0.1f)
         {
-            ChangeState(PlayerState.Running);
+            ChangeState(CharacterState.Running);
         }
         else
         {
-            ChangeState(PlayerState.Idle);
+            ChangeState(CharacterState.Idle);
         }
     }
 
@@ -928,7 +915,7 @@ public class CharacterLogic : CharacterBase
         // 落地检测
         if (m_IsGrounded)
         {
-            ChangeState(PlayerState.Idle);
+            ChangeState(CharacterState.Idle);
         }
     }
 
@@ -953,7 +940,7 @@ public class CharacterLogic : CharacterBase
 
     private void HandleAttackState()
     {
-        if (CurrentState == PlayerState.JumpAttacking)
+        if (CurrentState == CharacterState.JumpAttacking)
         {
             // 跳跃攻击时使用空中移动逻辑
             HandleAirMovement();
@@ -982,23 +969,23 @@ public class CharacterLogic : CharacterBase
         // 根据所选攻击数据设置对应的状态（保持与原语义一致）
         if (actionManager != null && attackData == actionManager.heavyAttack)
         {
-            ChangeState(PlayerState.HeavyAttacking);
+            ChangeState(CharacterState.HeavyAttacking);
         }
         else if (actionManager != null && attackData == actionManager.dashAttack)
         {
-            ChangeState(PlayerState.DashAttacking);
+            ChangeState(CharacterState.DashAttacking);
         }
         else if (actionManager != null && (attackData == actionManager.jumpAttack || attackData == actionManager.downAttack))//普通跳跃攻击和下落攻击都是属于跳跃攻击
         {
-            ChangeState(PlayerState.JumpAttacking);
+            ChangeState(CharacterState.JumpAttacking);
         }
         else if (actionManager != null && attackData == actionManager.parryAttack)
         {
-            ChangeState(PlayerState.Parrying);
+            ChangeState(CharacterState.Parrying);
         }
         else
         {
-            ChangeState(PlayerState.Attacking);
+            ChangeState(CharacterState.Attacking);
         }
 
         // 与原逻辑保持一致，让 currentActionData 指向当前攻击数据
@@ -1009,7 +996,7 @@ public class CharacterLogic : CharacterBase
     private void HandleAttackControllerEnded(bool isBreak)
     {
         // 如果刚结束的是弹反攻击，走弹反结束路径；否则刷新状态
-        if (CurrentState == PlayerState.Parrying)
+        if (CurrentState == CharacterState.Parrying)
         {
             OnParryAttackEnd();
         }
@@ -1036,7 +1023,7 @@ public class CharacterLogic : CharacterBase
         // 切换到攻击状态或返回格挡状态(这个体验不好,弹反后进入待机状态)
         //if (inputHandler && inputHandler.IsBlockPressed)
         //{
-        //    ChangeState(PlayerState.Blocking);
+        //    ChangeState(CharacterState.Blocking);
         //}
         //else
         {
@@ -1054,7 +1041,7 @@ public class CharacterLogic : CharacterBase
     public override void ApplyStun(float duration)
     {
         base.ApplyStun(duration);
-        if (CurrentState == PlayerState.Stunned)
+        if (CurrentState == CharacterState.Stunned)
         {
             stunTimer = duration;
             LogManager.Log($"[CharacterLogic] 刷新硬直时间: {duration}秒");
@@ -1065,7 +1052,7 @@ public class CharacterLogic : CharacterBase
 
         LogManager.Log($"[CharacterLogic] 施加硬直时间: {duration}秒");
 
-        ChangeState(PlayerState.Stunned);
+        ChangeState(CharacterState.Stunned);
 
         OnStunned?.Invoke();
     }
@@ -1076,7 +1063,7 @@ public class CharacterLogic : CharacterBase
     /// </summary>
     private void RecoverFromStun()
     {
-        if (CurrentState == PlayerState.Stunned)
+        if (CurrentState == CharacterState.Stunned)
         {
             LogManager.Log($"[CharacterLogic] 从硬直状态恢复");
             RefreshState();
@@ -1128,47 +1115,14 @@ public class CharacterLogic : CharacterBase
     #region 输入处理
     private void HandleMoveInput(Vector2 input)
     {
-        if (CurrentState == PlayerState.Idle || CurrentState == PlayerState.Running)
-        {
-            HandleMovement(input);
-        }
-        else if (CurrentState == PlayerState.Jumping || CurrentState == PlayerState.Falling)
-        {
-            HandleAirMovement();
-        }
-
-        // 转向处理
-        // 攻击过程中不允许改变朝向，避免攻击动作被输入打断
-        //格挡中不允许改变朝向
-        //眩晕状态不允许改变朝向
-        if (!IsAttacking() && !isBlocking && !IsStunned)
-        {
-            if (input.x > 0 && !isFacingRight)
-                Flip();
-            else if (input.x < 0 && isFacingRight)
-                Flip();
-        }
+        // 调用新的Move接口方法，内部会处理不同状态下的移动逻辑
+        Move(input);
     }
 
     private void HandleJumpInput()
     {
-        // 跳跃优先级最高，可以打断除不可打断状态外的所有状态
-        if (CanJump())
-        {
-            // 如果当前正在冲刺，先结束冲刺
-            if (CurrentState == PlayerState.Dashing)
-            {
-                if (dashCoroutine != null)
-                {
-                    StopCoroutine(dashCoroutine);
-                    dashCoroutine = null;
-                }
-
-                ChangeState(PlayerState.Jumping);
-            }
-
-            PerformJump();
-        }
+        // 调用新的PerformJump接口方法，内部会处理跳跃逻辑
+        PerformJump();
     }
 
     private void HandleJumpCanceled()
@@ -1180,9 +1134,9 @@ public class CharacterLogic : CharacterBase
     {
         if (CanDash())
         {
-            if (CurrentState == PlayerState.Jumping || CurrentState == PlayerState.Falling)
+            if (CurrentState == CharacterState.Jumping || CurrentState == CharacterState.Falling)
             {
-                ChangeState(PlayerState.Dashing);
+                ChangeState(CharacterState.Dodging);
             }
 
             PerformDash();
@@ -1211,7 +1165,7 @@ public class CharacterLogic : CharacterBase
         else if (CanAttack())
         {
             // 攻击时取消格挡状态
-            if (isBlocking)
+            if (IsBlocking())
             {
                 SetIsBlockState(false);
                 isParryWindowActive = false;
@@ -1220,7 +1174,7 @@ public class CharacterLogic : CharacterBase
             }
 
             // 检查是否在跳跃状态且按下了下键（下+攻击键组合）
-            bool isInAir = CurrentState == PlayerState.Jumping || CurrentState == PlayerState.Falling;
+            bool isInAir = CurrentState == CharacterState.Jumping || CurrentState == CharacterState.Falling;
             bool isDownPressed = inputHandler != null && inputHandler.MoveInput.y < -0.1f;
 
             if (isInAir && isDownPressed && actionManager != null && actionManager.downAttack != null)
@@ -1246,9 +1200,9 @@ public class CharacterLogic : CharacterBase
                 {
                     // 由攻击子系统选择并开始合适的攻击类型（普通攻击）
                     attackController?.TryPerformAttack(
-                        CurrentState == PlayerState.Dashing,
+                        CurrentState == CharacterState.Dodging,
                         m_IsGrounded,
-                        CurrentState == PlayerState.Parrying,
+                        CurrentState == CharacterState.Parrying,
                         canParry);
                     // 消耗基础攻击输入
                     inputHandler?.ConsumeInput(InputCommandType.Attack);
@@ -1277,7 +1231,7 @@ public class CharacterLogic : CharacterBase
     /// <summary>
     /// 执行攻击动作
     /// </summary>
-    private void PerformAttack()
+    public override void PerformAttack()
     {
         if (attackController == null)
         {
@@ -1287,9 +1241,9 @@ public class CharacterLogic : CharacterBase
 
         // 让攻击子系统选择并开始攻击
         attackController.TryPerformAttack(
-            CurrentState == PlayerState.Dashing,
+            CurrentState == CharacterState.Dodging,
             m_IsGrounded,
-            CurrentState == PlayerState.Parrying,
+            CurrentState == CharacterState.Parrying,
             canParry);
 
         // 同步 currentActionData 指向攻击子系统（保持原先外部读取习惯）
@@ -1303,28 +1257,24 @@ public class CharacterLogic : CharacterBase
 
     private void HandleBlockStarted()
     {
-        if (CanBlock())
-        {
-            SetIsBlockState(true);
-            LogManager.Log($"切换到格挡状态");
-            ChangeState(PlayerState.Blocking);
-        }
+        // 调用重写的PerformBlock方法，执行格挡动作
+        PerformBlock();
     }
 
     private void HandleBlockCanceled()
     {
         LogManager.Log($"取消格挡状态");
-        SetIsBlockState(false);
-        if (CurrentState == PlayerState.Blocking)//格挡状态下取消
+        if (IsBlocking())//格挡状态下取消
         {
+            SetIsBlockState(false);
             isParryWindowActive = false;
             canParry = false;
             RefreshState();
         }
 
-        if (CurrentState == PlayerState.Parrying)//弹反状态下取消
+        if (IsParrying())//弹反状态下取消
         {
-
+            // 弹反状态下的取消逻辑
         }
     }
 
@@ -1376,9 +1326,9 @@ public class CharacterLogic : CharacterBase
         // 强力攻击只能在特定状态下使用
         switch (CurrentState)
         {
-            case PlayerState.Idle:
-            case PlayerState.Running:
-            case PlayerState.Attacking:
+            case CharacterState.Idle:
+            case CharacterState.Running:
+            case CharacterState.Attacking:
                 return true;
 
             default:
@@ -1480,28 +1430,8 @@ public class CharacterLogic : CharacterBase
         LogManager.Log($"[CharacterLogic] 移除额外跳跃次数 -{count}，总额外跳跃: {extraJumpCount}，当前剩余: {currentAirJumpsRemaining}");
     }
 
-    private bool CanJump()
-    {
-        bool coyoteTimeValid = Time.time - lastGroundedTime <= actionManager.jumpAction.coyoteTime;
-        bool isGroundedOrCoyote = m_IsGrounded || coyoteTimeValid;
-        bool isDownPressed = inputHandler.MoveInput.y < 0;
 
-        // 在地面或土狼时间内可以跳跃
-        if (isGroundedOrCoyote && !isDownPressed && CanInterruptForJump())
-        {
-            return true;
-        }
-
-        // 空中且有剩余跳跃次数可以跳跃
-        if (!m_IsGrounded && currentAirJumpsRemaining > 0 && !isDownPressed && CanInterruptForJump())
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    private bool CanDash()
+    public override bool CanDash()
     {
         if (Time.time - lastDashTime < actionManager.dashAction.dashCooldown)
         {
@@ -1524,7 +1454,16 @@ public class CharacterLogic : CharacterBase
         return true;
     }
 
-    private bool CanAttack()
+    public override bool IsDodging()
+    {
+        if (PlayerAttributes == null || PlayerAttributes.characterAtttibute == null)
+        {
+            return false;
+        }
+        return PlayerAttributes.characterAtttibute.isDodging;
+    }
+
+    public override bool CanAttack()
     {
         return CanInterruptForAttack();
     }
@@ -1532,9 +1471,9 @@ public class CharacterLogic : CharacterBase
     /// 格挡状态检测
     /// </summary>
     /// <returns></returns>
-    private bool CanBlock()
+    public override bool CanBlock()
     {
-        return CanChangeState(PlayerState.Blocking);
+        return CanChangeState(CharacterState.Blocking);
     }
 
     /// <summary>
@@ -1543,7 +1482,7 @@ public class CharacterLogic : CharacterBase
     /// </summary>
     private bool CanBlockAttack(Vector3 attackerPosition)
     {
-        if (!isBlocking) return false;
+        if (!IsBlocking()) return false;
 
         // 检查攻击方向：只格挡来自前方的攻击
         Vector3 attackDirection = (attackerPosition - transform.position).normalized;
@@ -1558,25 +1497,25 @@ public class CharacterLogic : CharacterBase
     {
         switch (CurrentState)
         {
-            case PlayerState.Down:
-            case PlayerState.GettingUp:
-            case PlayerState.Stunned:
+            case CharacterState.Down:
+            case CharacterState.GettingUp:
+            case CharacterState.Stunned:
                 return false;
 
-            case PlayerState.Dashing: // 跳跃可以打断冲刺
+            case CharacterState.Dodging: // 跳跃可以打断冲刺
                 return true;
 
-            case PlayerState.Attacking:
-            case PlayerState.HeavyAttacking:
-            case PlayerState.AssistAttacking:
-            case PlayerState.SpecialAttacking:
-            case PlayerState.DashAttacking:
-            case PlayerState.JumpAttacking:
+            case CharacterState.Attacking:
+            case CharacterState.HeavyAttacking:
+            case CharacterState.AssistAttacking:
+            case CharacterState.SpecialAttacking:
+            case CharacterState.DashAttacking:
+            case CharacterState.JumpAttacking:
                 // 攻击状态可以直接被跳跃打断
                 return currentAttackActionData == null || currentAttackActionData.canCancel;
 
             default:
-                return CanChangeState(PlayerState.Jumping);
+                return CanChangeState(CharacterState.Jumping);
         }
     }
 
@@ -1585,26 +1524,26 @@ public class CharacterLogic : CharacterBase
     {
         switch (CurrentState)
         {
-            case PlayerState.Down:
-            case PlayerState.GettingUp:
-            case PlayerState.Stunned:
+            case CharacterState.Down:
+            case CharacterState.GettingUp:
+            case CharacterState.Stunned:
                 return false;
 
-            case PlayerState.Jumping:
-            case PlayerState.Falling: // 冲刺可以打断跳跃
+            case CharacterState.Jumping:
+            case CharacterState.Falling: // 冲刺可以打断跳跃
                 return true;
 
-            case PlayerState.Attacking:
-            case PlayerState.HeavyAttacking:
-            case PlayerState.AssistAttacking:
-            case PlayerState.SpecialAttacking:
-            case PlayerState.DashAttacking:
-            case PlayerState.JumpAttacking:
+            case CharacterState.Attacking:
+            case CharacterState.HeavyAttacking:
+            case CharacterState.AssistAttacking:
+            case CharacterState.SpecialAttacking:
+            case CharacterState.DashAttacking:
+            case CharacterState.JumpAttacking:
                 // 攻击状态可以直接被冲刺打断
                 return currentAttackActionData == null || currentAttackActionData.canCancel;
 
             default:
-                return CanChangeState(PlayerState.Dashing);
+                return CanChangeState(CharacterState.Dodging);
         }
     }
 
@@ -1613,20 +1552,20 @@ public class CharacterLogic : CharacterBase
     {
         switch (CurrentState)
         {
-            case PlayerState.Down:
-            case PlayerState.GettingUp:
-            case PlayerState.Stunned:
-                //case PlayerState.Dashing: // 冲刺攻击能打断冲刺
+            case CharacterState.Down:
+            case CharacterState.GettingUp:
+            case CharacterState.Stunned:
+                //case CharacterState.Dodging: // 冲刺攻击能打断冲刺
                 return false;
 
-            case PlayerState.Jumping: // 跳跃中允许攻击
-            case PlayerState.Falling:
+            case CharacterState.Jumping: // 跳跃中允许攻击
+            case CharacterState.Falling:
                 return actionManager != null && actionManager.jumpAttack != null;
 
-            case PlayerState.Attacking:
-            case PlayerState.HeavyAttacking:
-            case PlayerState.DashAttacking:
-            case PlayerState.JumpAttacking:
+            case CharacterState.Attacking:
+            case CharacterState.HeavyAttacking:
+            case CharacterState.DashAttacking:
+            case CharacterState.JumpAttacking:
                 // 在后摇阶段且允许连招时可以中断
                 if (currentAttackPhase == AttackPhase.Recovery &&
                     currentAttackActionData != null &&
@@ -1637,7 +1576,7 @@ public class CharacterLogic : CharacterBase
                 // 其他阶段需要动画可中断
                 //return animHandler.CanInterruptCurrentAnimation();
                 return false; // 攻击状态下不允许被新攻击打断
-            case PlayerState.Blocking://格挡状态可以打断,直接攻击
+            case CharacterState.Blocking://格挡状态可以打断,直接攻击
                 return true;
             default:
                 return true;
@@ -1657,9 +1596,9 @@ public class CharacterLogic : CharacterBase
         // 冲刺攻击优先级较高，可以打断大多数状态
         switch (CurrentState)
         {
-            case PlayerState.Down:
-            case PlayerState.GettingUp:
-            case PlayerState.Stunned:
+            case CharacterState.Down:
+            case CharacterState.GettingUp:
+            case CharacterState.Stunned:
                 return false;
 
             default:
@@ -1668,16 +1607,235 @@ public class CharacterLogic : CharacterBase
     }
 
 
-    public bool IsAttacking()
+    public override bool IsAttacking()
     {
-        return CurrentState == PlayerState.Attacking ||
-               CurrentState == PlayerState.HeavyAttacking ||
-               CurrentState == PlayerState.DashAttacking ||
-               CurrentState == PlayerState.JumpAttacking ||
-               CurrentState == PlayerState.Parrying ||//弹反也算攻击状态
-               CurrentState == PlayerState.SpecialAttacking ||
-               CurrentState == PlayerState.AssistAttacking;
+        return CurrentState == CharacterState.Attacking ||
+               CurrentState == CharacterState.HeavyAttacking ||
+               CurrentState == CharacterState.DashAttacking ||
+               CurrentState == CharacterState.JumpAttacking ||
+               CurrentState == CharacterState.Parrying ||//弹反也算攻击状态
+               CurrentState == CharacterState.SpecialAttacking ||
+               CurrentState == CharacterState.AssistAttacking;
     }
+
+    #region IMoveable 接口实现
+    /// <summary>
+    /// 检查是否可以移动
+    /// </summary>
+    /// <returns></returns>
+    public override bool CanMove()
+    {
+        // 死亡或硬直状态下不能移动
+        if (IsDead || IsStunned)
+            return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// 执行移动
+    /// </summary>
+    /// <param name="direction"></param>
+    public override void Move(Vector2 direction)
+    {
+        if (!CanMove())
+            return;
+
+        // 根据当前状态执行不同的移动逻辑
+        if (CurrentState == CharacterState.Idle || CurrentState == CharacterState.Running)
+        {
+            HandleMovement(direction);
+        }
+        else if (CurrentState == CharacterState.Jumping || CurrentState == CharacterState.Falling)
+        {
+            HandleAirMovement();
+        }
+
+        // 转向处理
+        if (!IsAttacking() && !IsBlocking() && !IsStunned)
+        {
+            if (direction.x > 0 && !isFacingRight)
+                Flip();
+            else if (direction.x < 0 && isFacingRight)
+                Flip();
+        }
+    }
+
+    /// <summary>
+    /// 检查是否正在移动
+    /// </summary>
+    /// <returns></returns>
+    public override bool IsMoving()
+    {
+        // 地面移动状态
+        if (CurrentState == CharacterState.Running)
+            return true;
+
+        // 空中移动状态，根据速度判断
+        if ((CurrentState == CharacterState.Jumping || CurrentState == CharacterState.Falling) && Mathf.Abs(rb.linearVelocity.x) > 0.1f)
+            return true;
+
+        return false;
+    }
+    #endregion IMoveable 接口实现
+
+    #region IJumpable 接口实现
+    /// <summary>
+    /// 检查是否可以跳跃
+    /// </summary>
+    /// <returns></returns>
+    public override bool CanJump()
+    {
+        bool coyoteTimeValid = Time.time - lastGroundedTime <= actionManager.jumpAction.coyoteTime;
+        bool isGroundedOrCoyote = m_IsGrounded || coyoteTimeValid;
+        bool isDownPressed = inputHandler.MoveInput.y < 0;
+
+        // 在地面或土狼时间内可以跳跃
+        if (isGroundedOrCoyote && !isDownPressed && CanInterruptForJump())
+        {
+            return true;
+        }
+
+        // 空中且有剩余跳跃次数可以跳跃
+        if (!m_IsGrounded && currentAirJumpsRemaining > 0 && !isDownPressed && CanInterruptForJump())
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 执行跳跃
+    /// </summary>
+    public override void PerformJump()
+    {
+        if (!CanJump())
+            return;
+
+        bool isAirJump = !m_IsGrounded;
+
+        // 计算跳跃力度
+        float jumpPower = actionManager.jumpAction.jumpForce;
+        if (isAirJump && actionManager.jumpAction.baseMaxAirJumps > 0)
+        {
+            // 空中跳跃使用力度系数
+            jumpPower *= actionManager.jumpAction.airJumpForceMultiplier;
+        }
+
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpPower);
+        ChangeState(CharacterState.Jumping);
+
+        // 如果是空中跳跃，消耗一次跳跃次数
+        if (isAirJump)
+        {
+            ConsumeAirJump();
+        }
+
+        OnJump?.Invoke();
+
+        // 设置跳跃保护帧
+        jumpProtectionFrames = JUMP_PROTECTION_FRAME_COUNT;
+    }
+
+    /// <summary>
+    /// 检查是否正在跳跃
+    /// </summary>
+    /// <returns></returns>
+    public override bool IsJumping()
+    {
+        return CurrentState == CharacterState.Jumping || CurrentState == CharacterState.Falling;
+    }
+
+    /// <summary>
+    /// 检查是否可以二段跳
+    /// </summary>
+    /// <returns></returns>
+    public override bool CanDoubleJump()
+    {
+        // 不在地面且有剩余跳跃次数可以二段跳
+        return !m_IsGrounded && currentAirJumpsRemaining > 0;
+    }
+
+    /// <summary>
+    /// 执行二段跳
+    /// </summary>
+    public override void PerformDoubleJump()
+    {
+        if (CanDoubleJump())
+        {
+            PerformJump();
+        }
+    }
+    #endregion IJumpable 接口实现
+
+    #region IBlockable 接口实现
+    /// <summary>
+    /// 执行格挡动作
+    /// </summary>
+    public override void PerformBlock()
+    {
+        if (CanBlock())
+        {
+            // 调用基类方法，切换到Blocking状态
+            base.PerformBlock();
+            // 设置格挡状态变量
+            SetIsBlockState(true);
+            LogManager.Log($"切换到格挡状态");
+        }
+    }
+
+    /// <summary>
+    /// 检查是否正在格挡
+    /// </summary>
+    /// <returns></returns>
+    public override bool IsBlocking()
+    {
+        return isBlocking;
+    }
+
+    /// <summary>
+    /// 处理格挡时受到的伤害
+    /// </summary>
+    /// <param name="damageInfo">伤害信息</param>
+    /// <param name="actionData">攻击动作数据</param>
+    /// <param name="frameData">攻击帧数据</param>
+    /// <param name="attacker">攻击者</param>
+    public override void BlockDamage(DamageInfo damageInfo, AttackActionData actionData, AttackFrameData frameData, CharacterBase attacker)
+    {
+        if (CanBlockAttack(attacker.transform.position))//检测格挡攻击方向
+        {
+            HandleBlockSuccess(actionData, frameData, attacker);
+            LogManager.Log($"格挡成功");
+        }
+    }
+
+    /// <summary>
+    /// 检查是否可以弹反
+    /// </summary>
+    /// <returns></returns>
+    public override bool CanParry()
+    {
+        return isParryWindowActive && canParry;
+    }
+
+    /// <summary>
+    /// 执行弹反动作
+    /// </summary>
+    public override void PerformParry()
+    {
+        TryParry();
+    }
+
+    /// <summary>
+    /// 检查是否正在弹反
+    /// </summary>
+    /// <returns></returns>
+    public override bool IsParrying()
+    {
+        return CurrentState == CharacterState.Parrying;
+    }
+    #endregion IBlockable 接口实现
 
     #endregion
 
@@ -1690,11 +1848,7 @@ public class CharacterLogic : CharacterBase
         {
             if (CanAttack())
             {
-                attackController.TryPerformAttack(
-                    CurrentState == PlayerState.Dashing,
-                    m_IsGrounded,
-                    CurrentState == PlayerState.Parrying,
-                    canParry);
+                attackController.TryPerformAttack(CurrentState == CharacterState.Dodging, m_IsGrounded, CurrentState == CharacterState.Parrying, canParry);
 
                 // 清理 InputHandler 的缓冲
                 inputHandler?.ConsumeInput(InputCommandType.Attack);
@@ -1743,38 +1897,10 @@ public class CharacterLogic : CharacterBase
         }
     }
 
-    private void PerformJump()
-    {
-        bool isAirJump = !m_IsGrounded;
-
-        // 计算跳跃力度
-        float jumpPower = actionManager.jumpAction.jumpForce;
-        if (isAirJump && actionManager.jumpAction.baseMaxAirJumps > 0)
-        {
-            // 空中跳跃使用力度系数
-            jumpPower *= actionManager.jumpAction.airJumpForceMultiplier;
-        }
-
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpPower);
-        ChangeState(PlayerState.Jumping);
-
-        // 如果是空中跳跃，消耗一次跳跃次数
-        if (isAirJump)
-        {
-            ConsumeAirJump();
-        }
-
-        OnJump?.Invoke();
-
-        // 设置跳跃保护帧
-        jumpProtectionFrames = JUMP_PROTECTION_FRAME_COUNT;
-
-        LogManager.Log($"[CharacterLogic] 执行{(isAirJump ? "空中" : "地面")}跳跃，打断当前状态");
-    }
 
     private void PerformDash()
     {
-        ChangeState(PlayerState.Dashing);
+        ChangeState(CharacterState.Dodging);
         lastDashTime = Time.time;
 
         if (inputHandler != null)
@@ -1856,18 +1982,16 @@ public class CharacterLogic : CharacterBase
     #endregion
 
     #region 状态管理
-    public void ChangeState(PlayerState newState)
+    public override void ChangeState(CharacterState newState)
     {
         if (CurrentState == newState) return;
 
-        // 如果已经死亡，禁止任何状态切换（除非需要在死亡时做特殊处理）
-        if (CurrentState == PlayerState.Death)
-            return;
+        CharacterState previousState = CurrentState;
 
         // 退出当前状态
         switch (CurrentState)
         {
-            case PlayerState.Dashing:
+            case CharacterState.Dodging:
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x * 0.5f, rb.linearVelocity.y);
                 if (PlayerAttributes != null && PlayerAttributes.characterAtttibute != null)
                 {
@@ -1875,17 +1999,17 @@ public class CharacterLogic : CharacterBase
                 }
                 Physics2D.IgnoreLayerCollision(PlayerLayer, EnemyLayer, false);
                 break;
-            case PlayerState.Attacking:
-            case PlayerState.HeavyAttacking:
-            case PlayerState.DashAttacking:
-            case PlayerState.JumpAttacking:
-            case PlayerState.Parrying:
+            case CharacterState.Attacking:
+            case CharacterState.HeavyAttacking:
+            case CharacterState.DashAttacking:
+            case CharacterState.JumpAttacking:
+            case CharacterState.Parrying:
                 // 退出攻击状态时重置攻击数据
-                if (newState != PlayerState.Attacking &&
-                    newState != PlayerState.HeavyAttacking &&
-                    newState != PlayerState.DashAttacking &&
-                    newState != PlayerState.JumpAttacking &&
-                    newState != PlayerState.Parrying)
+                if (newState != CharacterState.Attacking &&
+                    newState != CharacterState.HeavyAttacking &&
+                    newState != CharacterState.DashAttacking &&
+                    newState != CharacterState.JumpAttacking &&
+                    newState != CharacterState.Parrying)
                 {
                     BreakAttack();
 
@@ -1897,44 +2021,44 @@ public class CharacterLogic : CharacterBase
         // 进入新状态 — 设置 currentActionData 为对应 ActionManager 中的行为（若存在）
         switch (newState)
         {
-            case PlayerState.Attacking:
-            case PlayerState.HeavyAttacking:
-            case PlayerState.DashAttacking:
-            case PlayerState.JumpAttacking:
-            case PlayerState.Parrying:
+            case CharacterState.Attacking:
+            case CharacterState.HeavyAttacking:
+            case CharacterState.DashAttacking:
+            case CharacterState.JumpAttacking:
+            case CharacterState.Parrying:
                 // 攻击类状态使用 currentAttackActionData
                 currentActionData = currentAttackActionData != null ? (ActionData)currentAttackActionData : null;
                 break;
 
-            case PlayerState.Idle:
+            case CharacterState.Idle:
                 currentActionData = actionManager != null ? (ActionData)actionManager.idleAction : null;
                 break;
 
-            case PlayerState.Running:
+            case CharacterState.Running:
                 currentActionData = actionManager != null ? (ActionData)actionManager.moveAction : null;
                 break;
 
-            case PlayerState.Dashing:
+            case CharacterState.Dodging:
                 currentActionData = actionManager != null ? (ActionData)actionManager.dashAction : null;
                 break;
 
-            case PlayerState.Jumping:
+            case CharacterState.Jumping:
                 currentActionData = actionManager != null ? (ActionData)actionManager.jumpAction : null;
                 break;
 
-            case PlayerState.Falling:
+            case CharacterState.Falling:
                 currentActionData = actionManager != null ? actionManager.fallAction : null;
                 break;
 
-            case PlayerState.Blocking:
+            case CharacterState.Blocking:
                 currentActionData = actionManager != null ? (ActionData)actionManager.blockAction : null;
                 break;
 
-            case PlayerState.Hurt:
+            case CharacterState.Hurt:
                 currentActionData = actionManager != null ? actionManager.hurtAction : null;
                 break;
 
-            case PlayerState.Death:
+            case CharacterState.Death:
                 currentActionData = actionManager != null ? actionManager.deathAction : null;
                 break;
 
@@ -1944,34 +2068,33 @@ public class CharacterLogic : CharacterBase
         }
 
 
-        PlayerState previousState = CurrentState;
-        CurrentState = newState;
-        OnStateChanged?.Invoke(previousState, newState);
+        // 调用基类的ChangeState方法，利用基类的状态管理机制
+        base.ChangeState(newState);
 
-        LogManager.Log($"[CharacterLogic] 状态切换: {previousState} -> {newState}");
+        //LogManager.Log($"[CharacterLogic] 状态切换: {previousState} -> {newState}");
     }
 
-    private bool CanChangeState(PlayerState newState)
+    private bool CanChangeState(CharacterState newState)
     {
         switch (CurrentState)
         {
-            case PlayerState.Down:
-            case PlayerState.GettingUp:
-            case PlayerState.Stunned:
+            case CharacterState.Down:
+            case CharacterState.GettingUp:
+            case CharacterState.Stunned:
                 return false;
 
-            case PlayerState.Falling:
-            case PlayerState.Jumping:
-                if (newState == PlayerState.Jumping)//跳跃或者下落的时候可以切换到跳跃
+            case CharacterState.Falling:
+            case CharacterState.Jumping:
+                if (newState == CharacterState.Jumping)//跳跃或者下落的时候可以切换到跳跃
                 {
                     return true;
                 }
                 return false;//跳跃的时候不能切换到格挡,否则下落攻击会变成格挡
 
-            case PlayerState.Attacking:
-            case PlayerState.HeavyAttacking:
-            case PlayerState.DashAttacking:
-            case PlayerState.JumpAttacking:
+            case CharacterState.Attacking:
+            case CharacterState.HeavyAttacking:
+            case CharacterState.DashAttacking:
+            case CharacterState.JumpAttacking:
                 return animHandler.CanInterruptCurrentAnimation();
 
             default:
@@ -1986,7 +2109,7 @@ public class CharacterLogic : CharacterBase
     private IEnumerator EndDashAfterTime()
     {
         yield return WaitForSecondsCache.WaitForSeconds(actionManager.dashAction.dashDuration);
-        if (CurrentState == PlayerState.Dashing)
+        if (CurrentState == CharacterState.Dodging)
         {
             RefreshState();
         }
@@ -2104,16 +2227,12 @@ public class CharacterLogic : CharacterBase
         base.TakeDamage(damageInfo, attackActionData, frameData, attacker);
         if (IsDead || PlayerAttributes.characterAtttibute.IsInvincible()) return;
 
-
-        // 检查是否在格挡状态,并且在弹反窗口内
-        if (isBlocking)//格挡状态•	TryParry()
+        // 检查是否在格挡状态
+        if (IsBlocking())
         {
             LogManager.Log($"当前在格挡状态");
-            if (CanBlockAttack(attacker.transform.position))//检测格挡攻击方向
-            {
-                HandleBlockSuccess(attackActionData, frameData, attacker);
-                LogManager.Log($"格挡成功");
-            }
+            // 调用BlockDamage方法处理格挡伤害
+            BlockDamage(damageInfo, attackActionData, frameData, attacker);
         }
 
         ApplyDamageWithCalculation(damageInfo, attackActionData, frameData, attacker);
@@ -2172,7 +2291,7 @@ public class CharacterLogic : CharacterBase
     /// </summary>
     private void HandleDeath(CharacterBase killer = null)
     {
-        if (IsDead && CurrentState == PlayerState.Death) return;
+        if (IsDead && CurrentState == CharacterState.Death) return;
 
         LogManager.Log($"[CharacterLogic] 死亡: 被 {(killer != null ? killer.name : "未知")} 击杀");
 
@@ -2187,7 +2306,7 @@ public class CharacterLogic : CharacterBase
         BreakAttack();
 
         // 设置为死亡状态，禁止后续状态切换
-        ChangeState(PlayerState.Death);
+        ChangeState(CharacterState.Death);
         attackController.EndAttack(true);
 
         // 禁用输入并停止物理运动

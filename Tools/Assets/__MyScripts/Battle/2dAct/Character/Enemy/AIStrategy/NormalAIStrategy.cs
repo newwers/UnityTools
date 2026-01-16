@@ -1,45 +1,71 @@
-﻿using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "Normal AI Strategy", menuName = "Enemy System/AI Strategies/Normal")]
+[CreateAssetMenu(fileName = "Normal AI Strategy", menuName = "AI Strategies/Normal")]
 public class NormalAIStrategy : BaseAIStrategy
 {
     private float lastPatrolTime;
+    /// <summary>
+    /// 巡逻状态
+    /// todo:闪避时是否在巡逻?
+    /// </summary>
     private bool isPatrolling = false;
     private Vector3 currentPatrolTarget;
 
-    public override EnemyAIState DecideNextState()
+    protected EnemyAIController enemyAIController;
+
+    public override void Initialize(CharacterBase controller, EnemyConfigData config)
     {
-        if (!CanMakeDecision()) return controller.CurrentAIState;
+        base.Initialize(controller, config);
+
+        enemyAIController = controller as EnemyAIController;
+    }
+
+    public override CharacterState DecideNextState()
+    {
+        if (!CanMakeDecision()) return enemyAIController.CurrentAIState;
         lastDecisionTime = Time.time;
 
         // 死亡优先
-        if (controller.IsDead) return EnemyAIState.Death;
+        if (enemyAIController.IsDead) return CharacterState.Death;
 
         // 硬直状态
-        if (controller.IsStunned) return EnemyAIState.Stunned;
+        if (enemyAIController.IsStunned) return CharacterState.Stunned;
 
-        // 检查目标
-        GameObject target = controller.FindNearestPlayer();
-        controller.SetCurrentTarget(target != null ? target.transform : null);
+        if (controller.IsDodging())//闪避中
+        {
+            return CharacterState.Dodging;
+        }
+
+        // 检查是否应该使用恢复技能
+        if (ShouldUseRecoverySkill())
+        {
+            enemyAIController.PerformRecoverySkill();
+            return CharacterState.Idle; // 恢复技能后进入待机状态
+        }
+
+
 
         // 有目标时的逻辑
         if (controller.CurrentTarget != null)
         {
             float distance = GetDistanceToTarget();
 
+            // 检查是否应该闪避
+            if (ShouldDodge())
+            {
+                // 计算闪避方向（远离目标）
+                Vector2 dodgeDirection = (controller.transform.position - controller.CurrentTarget.position).normalized;
+                controller.PerformDash(dodgeDirection);
+                return CharacterState.Dodging;
+            }
+
             if (distance <= config.attackRange && HasLineOfSightToTarget())
             {
-                return EnemyAIState.Attack;
+                return CharacterState.Attacking;
             }
-            else if (distance <= config.detectRange)
+            else if (HasLineOfSightToTarget())
             {
-                return EnemyAIState.Chase;
-            }
-            else if (distance > config.loseTargetRange)
-            {
-                controller.SetCurrentTarget(null);
-                return EnemyAIState.Patrol;
+                return CharacterState.Chase;
             }
         }
 
@@ -50,7 +76,7 @@ public class NormalAIStrategy : BaseAIStrategy
             lastPatrolTime = Time.time;
         }
 
-        return isPatrolling ? EnemyAIState.Patrol : EnemyAIState.Idle;
+        return isPatrolling ? CharacterState.Patrol : CharacterState.Idle;
     }
 
     public override AttackActionData SelectAttack()
@@ -67,7 +93,7 @@ public class NormalAIStrategy : BaseAIStrategy
         if (config.patrolArea.patrolType == PatrolAreaType.Circle)
         {
             Vector2 randomPoint = Random.insideUnitCircle * config.patrolArea.circleRadius;
-            return controller.PatrolCenter + new Vector3(randomPoint.x, randomPoint.y, 0);
+            return enemyAIController.PatrolCenter + new Vector3(randomPoint.x, randomPoint.y, 0);
         }
         else if (config.patrolArea.patrolType == PatrolAreaType.Rectangle)
         {
@@ -76,7 +102,7 @@ public class NormalAIStrategy : BaseAIStrategy
                 Random.Range(-config.patrolArea.rectangleSize.y / 2, config.patrolArea.rectangleSize.y / 2),
                 0
             );
-            return controller.PatrolCenter + randomPoint;
+            return enemyAIController.PatrolCenter + randomPoint;
         }
 
         return controller.transform.position;
@@ -91,245 +117,37 @@ public class NormalAIStrategy : BaseAIStrategy
     {
         return false; // 普通敌人没有特殊能力
     }
-}
 
-// 精英敌人AI策略
-[CreateAssetMenu(fileName = "Elite AI Strategy", menuName = "Enemy System/AI Strategies/Elite")]
-public class EliteAIStrategy : NormalAIStrategy
-{
-    [Header("精英设置")]
-    [Tooltip("特殊能力冷却时间")]
-    [SerializeField] protected float specialAbilityCooldown = 10f;
-
-    protected float lastSpecialAbilityTime;
-
-    public override EnemyAIState DecideNextState()
+    public override bool ShouldDodge()
     {
-        if (!CanMakeDecision()) return controller.CurrentAIState;
-        lastDecisionTime = Time.time;
+        if (!controller.CanDash()) return false;
 
-        if (controller.IsDead) return EnemyAIState.Death;
-        if (controller.IsStunned) return EnemyAIState.Stunned;
-
-        GameObject target = controller.FindNearestPlayer();
-        controller.SetCurrentTarget(target != null ? target.transform : null);
-
-        if (controller.CurrentTarget != null)
+        // 基于难度参数的动态闪避概率计算
+        float dodgeProbability = config.dodgeProbability;
+        if (GameDifficultyManager.Instance != null)
         {
-            float distance = GetDistanceToTarget();
-            bool hasLOS = HasLineOfSightToTarget();
-
-            // 精英敌人有更复杂的决策逻辑
-            if (distance <= config.attackRange && hasLOS)
-            {
-                // 有机会使用特殊攻击
-                if (ShouldUseSpecialAbility() && distance <= config.attackRange * 1.5f)
-                {
-                    return EnemyAIState.SpecialAttack;
-                }
-                return EnemyAIState.Attack;
-            }
-            else if (distance <= config.detectRange && hasLOS)
-            {
-                return EnemyAIState.Chase;
-            }
-            else if (distance > config.loseTargetRange)
-            {
-                controller.SetCurrentTarget(null);
-            }
+            dodgeProbability *= GameDifficultyManager.Instance.CurrentModifiers.dodgeProbabilityMultiplier;
         }
 
-        // 精英敌人更频繁巡逻
-        return ShouldRetreat() ? EnemyAIState.Retreat : EnemyAIState.Patrol;
+        // 随机判断是否闪避
+        return Random.value < dodgeProbability;
     }
 
-    public override AttackActionData SelectAttack()
+    public override bool ShouldUseRecoverySkill()
     {
-        if (config.eliteAttackActions == null || config.eliteAttackActions.Count == 0)
-            return null;
+        if (!enemyAIController.CanUseRecoverySkill()) return false;
 
-        // 精英敌人根据距离选择攻击
-        float distance = GetDistanceToTarget();
-
-        var suitableAttacks = new List<AttackActionData>();
-        foreach (var attack in config.eliteAttackActions)
+        // 基于难度参数的恢复技能使用概率计算
+        float recoveryProbability = config.recoverySkillProbability;
+        if (GameDifficultyManager.Instance != null)
         {
-            // 根据攻击范围选择合适的攻击
-            if (attack != null && distance <= GetAttackRange(attack))
-            {
-                suitableAttacks.Add(attack);
-            }
+            recoveryProbability *= GameDifficultyManager.Instance.CurrentModifiers.recoverySkillProbabilityMultiplier;
         }
 
-        if (suitableAttacks.Count > 0)
-        {
-            return suitableAttacks[Random.Range(0, suitableAttacks.Count)];
-        }
-
-        return config.eliteAttackActions[0]; // 默认第一个攻击
-    }
-
-    public override bool ShouldRetreat()
-    {
-        // 精英敌人在低血量时撤退
-        if (config.retreatHealthThreshold <= 0) return false;
-
-        float healthPercent = controller.PlayerAttributes.characterAtttibute.currentHealth / controller.PlayerAttributes.characterAtttibute.maxHealth;
-        return healthPercent <= config.retreatHealthThreshold;
-    }
-
-    public override bool ShouldUseSpecialAbility()
-    {
-        if (Time.time - lastSpecialAbilityTime < specialAbilityCooldown)
-            return false;
-
-        // 30%几率使用特殊能力
-        if (Random.value < 0.3f)
-        {
-            lastSpecialAbilityTime = Time.time;
-            return true;
-        }
-
-        return false;
-    }
-
-    public float GetAttackRange(AttackActionData attack)
-    {
-        // 计算攻击的有效范围
-        float maxRange = 0f;
-        foreach (var frame in attack.frameData)
-        {
-            float frameRange = frame.hitboxOffset.x + (frame.hitboxType == HitboxType.Circle ?
-                frame.hitboxRadius : frame.hitboxSize.x);
-            maxRange = Mathf.Max(maxRange, frameRange);
-        }
-        return maxRange;
+        // 随机判断是否使用恢复技能
+        return Random.value < recoveryProbability;
     }
 }
 
-// Boss AI策略
-[CreateAssetMenu(fileName = "Boss AI Strategy", menuName = "Enemy System/AI Strategies/Boss")]
-public class BossAIStrategy : EliteAIStrategy
-{
-    private int currentPhase = 0;
-    private bool phaseTransitioning = false;
 
-    public override void Initialize(EnemyAIController controller, EnemyConfigData config)
-    {
-        base.Initialize(controller, config);
-        currentPhase = 0;
-    }
 
-    public override EnemyAIState DecideNextState()
-    {
-        if (phaseTransitioning) return EnemyAIState.Idle;
-
-        // 检查阶段转换
-        CheckPhaseTransition();
-
-        return base.DecideNextState();
-    }
-
-    public override AttackActionData SelectAttack()
-    {
-        if (config.bossAttackActions == null || config.bossAttackActions.Count == 0)
-            return null;
-
-        // Boss根据阶段选择攻击
-        var phaseAttacks = GetCurrentPhaseAttacks();
-        if (phaseAttacks.Count == 0) return base.SelectAttack();
-
-        // Boss有更智能的攻击选择
-        float distance = GetDistanceToTarget();
-        var suitableAttacks = new List<AttackActionData>();
-
-        foreach (var attack in phaseAttacks)
-        {
-            if (attack != null && distance <= GetAttackRange(attack) * 1.2f)
-            {
-                suitableAttacks.Add(attack);
-            }
-        }
-
-        if (suitableAttacks.Count > 0)
-        {
-            // 根据攻击冷却和优先级选择
-            suitableAttacks.Sort((a, b) => b.priority.CompareTo(a.priority));
-            return suitableAttacks[0];
-        }
-
-        return base.SelectAttack();
-    }
-
-    public override bool ShouldUseSpecialAbility()
-    {
-        // Boss更频繁使用特殊能力
-        if (Time.time - lastSpecialAbilityTime < specialAbilityCooldown * 0.7f)
-            return false;
-
-        // 根据阶段调整几率
-        float probability = 0.4f + (currentPhase * 0.2f);
-        if (Random.value < probability)
-        {
-            lastSpecialAbilityTime = Time.time;
-            return true;
-        }
-
-        return false;
-    }
-
-    private void CheckPhaseTransition()
-    {
-        if (config.bossPhases == null || config.bossPhases.Count == 0)
-            return;
-
-        float healthPercent = controller.PlayerAttributes.characterAtttibute.currentHealth / controller.PlayerAttributes.characterAtttibute.maxHealth;
-
-        for (int i = currentPhase; i < config.bossPhases.Count; i++)
-        {
-            if (healthPercent <= config.bossPhases[i].healthPercentThreshold)
-            {
-                if (i > currentPhase)
-                {
-                    StartPhaseTransition(i);
-                }
-                break;
-            }
-        }
-    }
-
-    private void StartPhaseTransition(int newPhase)
-    {
-        phaseTransitioning = true;
-        currentPhase = newPhase;
-
-        // 播放阶段转换效果
-        if (config.bossPhases[newPhase].phaseTransitionEffect != null)
-        {
-            //Instantiate(config.bossPhases[newPhase].phaseTransitionEffect,controller.transform.position, Quaternion.identity);
-        }
-
-        // 应用新阶段的配置
-        var phaseConfig = config.bossPhases[newPhase].phaseConfig;
-        if (phaseConfig != null)
-        {
-            controller.ApplyAIConfig(phaseConfig);
-        }
-
-        // 阶段转换完成
-        phaseTransitioning = false;
-    }
-
-    private List<AttackActionData> GetCurrentPhaseAttacks()
-    {
-        //return config.bossAttackActions;
-        var attacks = new List<AttackActionData>();
-
-        // 加上基础攻击
-        attacks.AddRange(config.attackActions);
-        attacks.AddRange(config.eliteAttackActions);
-        attacks.AddRange(config.bossAttackActions);
-
-        return attacks;
-    }
-}
