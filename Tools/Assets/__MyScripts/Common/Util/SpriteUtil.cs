@@ -3,7 +3,7 @@ using UnityEngine;
 
 public static class SpriteUtil
 {
-        public static Texture2D GetSpriteTexture(Sprite sprite)
+    public static Texture2D GetSpriteTexture(Sprite sprite)
     {
         if (sprite == null)
             return null;
@@ -25,7 +25,7 @@ public static class SpriteUtil
 
         return newTexture;
     }
-    
+
     /// <summary>
     /// 设置spriteRenderer中使用SpriteProgressshader的材质的进度值
     /// </summary>
@@ -60,23 +60,29 @@ public static class SpriteUtil
     /// <summary>
     /// 根据SpriteRenderer调整碰撞体
     /// </summary>
-    /// <param name="spriteBounds">SpriteRenderer.sprite.bound</param>
+    /// <param name="sprite"></param>
     /// <param name="boxCollider"></param>
-    public static void AdjustBoxCollider(Bounds spriteBounds, BoxCollider2D boxCollider)
+    public static void AdjustBoxCollider(SpriteRenderer sprite, BoxCollider2D boxCollider)
     {
-        if (boxCollider == null)
+        if (boxCollider == null || sprite == null)
             return;
-        boxCollider.size = spriteBounds.size;
-        boxCollider.offset = spriteBounds.center;
 
-        //boxCollider.size = new Vector2(
-        //    spriteBounds.size.x,
-        //    spriteBounds.size.y
-        //);
-        //boxCollider.offset = new Vector2(
-        //    spriteBounds.center.x,
-        //    spriteBounds.center.y
-        //);
+        // 获取精灵的原始边界
+        Bounds spriteLocalBounds = sprite.sprite.bounds;
+
+        // 将本地边界转换到世界空间，然后再转换回碰撞器所在的本地空间
+        Transform colliderTransform = boxCollider.transform;
+
+        // 计算世界空间中的边界
+        Vector3 worldSize = Vector3.Scale(spriteLocalBounds.size, sprite.transform.lossyScale);
+        Vector3 worldCenter = sprite.transform.TransformPoint(spriteLocalBounds.center);
+
+        // 转换到碰撞器的本地空间
+        Vector3 localSize = colliderTransform.InverseTransformVector(worldSize);
+        Vector3 localCenter = colliderTransform.InverseTransformPoint(worldCenter);
+
+        boxCollider.size = new Vector2(Mathf.Abs(localSize.x), Mathf.Abs(localSize.y));
+        boxCollider.offset = new Vector2(localCenter.x, localCenter.y);
     }
 
     public static void AdjustPolygonCollider(SpriteRenderer targetSpriteRenderer, PolygonCollider2D polygonCollider)
@@ -95,10 +101,12 @@ public static class SpriteUtil
         }
     }
 
-    public static void AdjustCircleCollider(Bounds spriteBounds, CircleCollider2D circleCollider)
+    public static void AdjustCircleCollider(SpriteRenderer sprite, CircleCollider2D circleCollider)
     {
         if (circleCollider == null)
             return;
+
+        Bounds spriteBounds = sprite.bounds;
 
         // 使用边界大小的平均值作为半径基础
         float baseRadius = Mathf.Max(spriteBounds.size.x, spriteBounds.size.y) * 0.5f;
