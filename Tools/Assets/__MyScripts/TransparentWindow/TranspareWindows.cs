@@ -100,7 +100,7 @@ public class TranspareWindows : MonoBehaviour
 
     public void Awake()
     {
-        hwnd = GetActiveWindow();
+        hwnd = FindWindow(null, UnityEngine.Application.productName);
 #if !UNITY_EDITOR
         SetWindowTop(true);
         SetWindowTranspareWithSetWindowLong();
