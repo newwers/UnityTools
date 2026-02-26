@@ -15,10 +15,10 @@ MonoBehaviour:
   achievementData:
     achievementId: ACH_TRAVEL_FAR_SINGLE
     achievementName: "\u73A91\u5206\u949F(\u89E3\u9501steam480\u6210\u5C31)"
-    description: "\u89E3\u9501steam480\u6E38\u620F\u4E2D\u65C5\u884C500\u6B65\u7684\u6210\u5C31"
+    description: "\u73A91\u5206\u949F\u89E3\u9501steam480\u6E38\u620F\u4E2D\u65C5\u884C500\u6B65\u7684\u6210\u5C31"
     isAchieved: 1
     associatedVariableName: PlayTIme
     valueType: 1
     intValue: 0
-    floatValue: 8.05939
+    floatValue: 0
   requiredPlayTimeSeconds: 60

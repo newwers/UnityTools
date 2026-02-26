@@ -145,6 +145,7 @@ namespace SteamSDK
                     {
                         achievementSO.AchievementData.IntValue = 0;
                         achievementSO.AchievementData.FloatValue = 0.0f;
+                        achievementSO.AchievementData.IsAchieved = false;
                     }
                 }
             }
