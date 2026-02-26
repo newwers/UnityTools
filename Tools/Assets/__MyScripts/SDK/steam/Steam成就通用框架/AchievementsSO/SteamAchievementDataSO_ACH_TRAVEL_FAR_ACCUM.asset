@@ -16,8 +16,8 @@ MonoBehaviour:
     achievementId: ACH_TRAVEL_FAR_ACCUM
     achievementName: "\u89E3\u9501steam480\u6210\u5C31"
     description: "\u89E3\u9501steam480\u6210\u5C31 \u7D2F\u8BA11\u82F1\u91CC\u8DDD\u79BB"
-    isAchieved: 1
-    associatedVariableName: TravelFar
-    valueType: 0
+    isAchieved: 0
+    associatedVariableName: FeetTraveled
+    valueType: 1
     intValue: 0
     floatValue: 0

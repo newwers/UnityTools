@@ -16,8 +16,8 @@ MonoBehaviour:
     achievementId: ACH_WIN_ONE_GAME
     achievementName: "\u89E3\u9501steam480\u6210\u5C31"
     description: "\u89E3\u9501steam480\u6210\u5C31 \u8D62\u4E00\u628A\u6E38\u620F"
-    isAchieved: 1
-    associatedVariableName: WinOneGame
+    isAchieved: 0
+    associatedVariableName: NumWins
     valueType: 0
     intValue: 0
     floatValue: 0
