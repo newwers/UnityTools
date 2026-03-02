@@ -10,7 +10,6 @@ using UnityEngine;
 using static Z.UI.UIReferenceComponent;
 using System.Text;
 
-
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -86,7 +85,9 @@ namespace Z.UI
         UIReferenceComponent m_ui;
         private SerializedProperty m_uiReferenceList;
         List<UIReferenceData> m_vPreviousDatas;
-        private int m_draggedSlotIndex = -1; // 新增字段
+        private int m_draggedSlotIndex = -1;
+        // 新增：前缀输入框的字段
+        private string m_prefix = "";
 
         private void OnEnable()
         {
@@ -101,7 +102,36 @@ namespace Z.UI
                     m_vPreviousDatas.Add(new UIReferenceData() { component = m_ui.Datas[i].component });
                 }
             }
+        }
 
+        // 新增：更新所有Datas的name前缀
+        private void UpdateAllNamesWithPrefix()
+        {
+            if (string.IsNullOrEmpty(m_prefix) || m_ui.Datas == null) return;
+
+            for (int i = 0; i < m_ui.Datas.Count; i++)
+            {
+                var item = m_ui.Datas[i];
+                if (item.component == null) continue;
+
+                // 1. 确定基础名称（无前缀）
+                string baseName;
+                if (string.IsNullOrWhiteSpace(item.name))
+                {
+                    // 无名称时用 组件名_组件类型 作为基础名
+                    baseName = $"{item.component.name.Replace(' ', '_')}_{item.component.GetType().Name}";
+                }
+                else
+                {
+                    // 有名称时，移除已有的相同前缀（避免重复添加）
+                    baseName = item.name.StartsWith($"{m_prefix}_")
+                        ? item.name.Substring($"{m_prefix}_".Length)
+                        : item.name;
+                }
+
+                // 2. 拼接新前缀
+                item.name = $"{m_prefix}_{baseName}";
+            }
         }
 
         public override void OnInspectorGUI()
@@ -112,10 +142,19 @@ namespace Z.UI
                 return;
             }
 
-
-
-
             serializedObject.Update();
+
+            // ========== 新增：前缀设置区域 ==========
+            EditorGUILayout.BeginHorizontal();
+            m_prefix = EditorGUILayout.TextField("名称前缀:", m_prefix);
+            if (GUILayout.Button("更新所有前缀", GUILayout.Width(120)))
+            {
+                UpdateAllNamesWithPrefix();
+                EditorUtility.SetDirty(target);
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Separator(); // 分隔线
+            // =======================================
 
             for (int i = 0; i < m_ui.Datas.Count; i++)
             {
@@ -139,7 +178,6 @@ namespace Z.UI
                     Debug.Log("m_draggedSlotIndex:" + m_draggedSlotIndex);
                 }
 
-
                 if (GUILayout.Button("X"))
                 {
                     m_ui.Datas.Remove(item);
@@ -152,23 +190,16 @@ namespace Z.UI
                         }
                     }
 
-
                     EditorUtility.SetDirty(target);
                     break;
                 }
                 EditorGUILayout.EndHorizontal();
             }
 
-
-
-
-            //EditorGUILayout.PropertyField(m_uiReferenceList);
-
             if (GUILayout.Button("添加"))
             {
                 m_ui.Datas.Add(new UIReferenceComponent.UIReferenceData());
                 m_vPreviousDatas.Add(new UIReferenceComponent.UIReferenceData());
-
                 UnityEditor.EditorUtility.SetDirty(target);
             }
 
@@ -186,16 +217,11 @@ namespace Z.UI
                 GUIUtility.systemCopyBuffer = sb.ToString();
             }
 
-
-
-            if (UnityEngine.Event.current.type == EventType.DragExited) // 只有在拖拽操作完成后才显示GenericMenu
+            if (UnityEngine.Event.current.type == EventType.DragExited)
             {
                 if (DragAndDrop.objectReferences.Length > 0 && m_draggedSlotIndex >= 0 && m_draggedSlotIndex < m_ui.Datas.Count)
                 {
                     var item = m_ui.Datas[m_draggedSlotIndex];
-
-
-                    // 调用EditorUtility.DisplayCustomMenu方法显示一个弹窗，让你选择引用类型
                     var obj = DragAndDrop.objectReferences[0];
                     var go = obj as GameObject;
                     Component[] comps;
@@ -209,25 +235,26 @@ namespace Z.UI
                     }
 
                     GenericMenu menu = new GenericMenu();
-
                     foreach (var comp in comps)
                     {
                         menu.AddItem(new GUIContent(comp.GetType().Name), false, () =>
                         {
                             item.component = comp;
-                            item.name = $"{comp.name.Replace(' ', '_')}_{comp.GetType().Name}";
+                            // ========== 修改：自动生成name时添加前缀 ==========
+                            string baseName = $"{comp.name.Replace(' ', '_')}_{comp.GetType().Name}";
+                            item.name = string.IsNullOrEmpty(m_prefix)
+                                ? baseName
+                                : $"{m_prefix}_{baseName}";
+                            // ==============================================
                         });
                     }
-
                     menu.ShowAsContext();
-
                 }
             }
 
             serializedObject.ApplyModifiedProperties();
             base.OnInspectorGUI();
         }
-
     }
 #endif
 }
