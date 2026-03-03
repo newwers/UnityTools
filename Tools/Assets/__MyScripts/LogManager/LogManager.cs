@@ -68,8 +68,10 @@ public static class LogManager
         if (EnableLogs) Debug.Log($"<color=green>{message}</color>");
     }
 
-    public static void PhoneSystemInfo(StreamWriter sw)
+    public static string PhoneSystemInfo()
     {
+        StringBuilder sb = new StringBuilder();
+        
         System.Diagnostics.Process process = new System.Diagnostics.Process();
         process.StartInfo.FileName = "cmd.exe";
         process.StartInfo.Arguments = "/c ver";
@@ -79,10 +81,11 @@ public static class LogManager
         process.Start();
         string str = process.StandardOutput.ReadToEnd();
         process.WaitForExit();
-        sw.WriteLine("*********************************************************************************************************start");
-        sw.WriteLine("By " + SystemInfo.deviceName);
+
+        sb.AppendLine("*********************************************************************************************************start");
+        sb.AppendLine("By " + SystemInfo.deviceName);
         System.DateTime now = System.DateTime.Now;
-        sw.WriteLine(string.Concat(new object[]
+        sb.AppendLine(string.Concat(new object[]
         {
                 now.Year.ToString(),
                 "年",
@@ -96,22 +99,34 @@ public static class LogManager
                 ":",
                 now.Second.ToString()
         }));
-        sw.WriteLine("操作系统详细版本:  " + str);
-        sw.WriteLine();
-        sw.WriteLine("操作系统:  " + SystemInfo.operatingSystem);
-        sw.WriteLine("系统内存大小:  " + SystemInfo.systemMemorySize.ToString());
-        sw.WriteLine("设备模型:  " + SystemInfo.deviceModel);
-        sw.WriteLine("设备唯一标识符:  " + SystemInfo.deviceUniqueIdentifier);
-        sw.WriteLine("处理器数量:  " + SystemInfo.processorCount.ToString());
-        sw.WriteLine("处理器类型:  " + SystemInfo.processorType);
-        sw.WriteLine("显卡标识符:  " + SystemInfo.graphicsDeviceID.ToString());
-        sw.WriteLine("显卡名称:  " + SystemInfo.graphicsDeviceName);
-        sw.WriteLine("显卡厂商:  " + SystemInfo.graphicsDeviceVendor);
-        sw.WriteLine("显卡驱动版本:  " + SystemInfo.graphicsDeviceVersion);
-        sw.WriteLine("显存大小:  " + SystemInfo.graphicsMemorySize.ToString());
-        sw.WriteLine("显卡着色器级别:  " + SystemInfo.graphicsShaderLevel.ToString());
-        sw.WriteLine("*********************************************************************************************************end");
-        sw.WriteLine("LogInfo:");
-        sw.WriteLine();
+        sb.AppendLine("操作系统详细版本:  " + str);
+        sb.AppendLine();
+        sb.AppendLine("操作系统:  " + SystemInfo.operatingSystem);
+        sb.AppendLine("系统内存大小:  " + SystemInfo.systemMemorySize.ToString());
+        sb.AppendLine("设备模型:  " + SystemInfo.deviceModel);
+        sb.AppendLine("设备唯一标识符:  " + SystemInfo.deviceUniqueIdentifier);
+        sb.AppendLine("处理器数量:  " + SystemInfo.processorCount.ToString());
+        sb.AppendLine("处理器类型:  " + SystemInfo.processorType);
+        sb.AppendLine("显卡标识符:  " + SystemInfo.graphicsDeviceID.ToString());
+        sb.AppendLine("显卡名称:  " + SystemInfo.graphicsDeviceName);
+        sb.AppendLine("显卡厂商:  " + SystemInfo.graphicsDeviceVendor);
+        sb.AppendLine("显卡驱动版本:  " + SystemInfo.graphicsDeviceVersion);
+        sb.AppendLine("显存大小:  " + SystemInfo.graphicsMemorySize.ToString());
+        sb.AppendLine("显卡着色器级别:  " + SystemInfo.graphicsShaderLevel.ToString());
+
+        // 新增：显示器数量和每个显示器的分辨率
+        sb.AppendLine("显示器数量:  " + Display.displays.Length.ToString());
+        for (int i = 0; i < Display.displays.Length; i++)
+        {
+            // 激活当前显示器（确保能获取到正确的分辨率）
+            Display.displays[i].Activate();
+            sb.AppendLine($"显示器 {i + 1} 分辨率:  {Display.displays[i].systemWidth} × {Display.displays[i].systemHeight}");
+        }
+
+        sb.AppendLine("*********************************************************************************************************end");
+        sb.AppendLine("LogInfo:");
+        sb.AppendLine();
+
+        return sb.ToString();
     }
 }
