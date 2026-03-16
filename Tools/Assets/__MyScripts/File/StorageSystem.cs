@@ -26,6 +26,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 
 
@@ -52,9 +53,9 @@ public class SaveData
     public string PlayerName;
     public DateTime lastBackupTime; // 添加这个字段
     public Dictionary<string, object> data = new Dictionary<string, object>();//通用数据
-    public Dictionary<int, List<SceneItemSaveData>> sceneItemSaveData = new Dictionary<int, List<SceneItemSaveData>>();//物体场景中状态数据
-    public Dictionary<string, ItemUnlockData> itemUnlockData = new Dictionary<string, ItemUnlockData>();//物体解锁状态数据
-    public Dictionary<string, FixedItemShopSaveData> m_FixedItemShopSaveData = new Dictionary<string, FixedItemShopSaveData>();//固定道具商店保存数据
+    //public Dictionary<int, List<SceneItemSaveData>> sceneItemSaveData = new Dictionary<int, List<SceneItemSaveData>>();//物体场景中状态数据
+    //public Dictionary<string, ItemUnlockData> itemUnlockData = new Dictionary<string, ItemUnlockData>();//物体解锁状态数据
+    //public Dictionary<string, FixedItemShopSaveData> m_FixedItemShopSaveData = new Dictionary<string, FixedItemShopSaveData>();//固定道具商店保存数据
     public Dictionary<string, object> SettingData = new Dictionary<string, object>();//设置数据
 
 
@@ -144,34 +145,34 @@ public class SaveData
         Set(key, new float[] { value.x, value.y, value.z });
     }
 
-    public void SetFixedItemSaveData(Dictionary<string, FixedItemShopSaveData> data)
-    {
-        m_FixedItemShopSaveData = data;
-    }
+    //public void SetFixedItemSaveData(Dictionary<string, FixedItemShopSaveData> data)
+    //{
+    //    m_FixedItemShopSaveData = data;
+    //}
 
-    public Dictionary<string, FixedItemShopSaveData> GetFixedItemSaveData()
-    {
-        return m_FixedItemShopSaveData;
-    }
+    //public Dictionary<string, FixedItemShopSaveData> GetFixedItemSaveData()
+    //{
+    //    return m_FixedItemShopSaveData;
+    //}
 
-    public void SetItemUnlockSaveData(Dictionary<string, ItemUnlockData> data)
-    {
-        itemUnlockData = data;
-    }
+    //public void SetItemUnlockSaveData(Dictionary<string, ItemUnlockData> data)
+    //{
+    //    itemUnlockData = data;
+    //}
 
-    public Dictionary<string, ItemUnlockData> GetItemUnlockSaveData()
-    {
-        return itemUnlockData;
-    }
+    //public Dictionary<string, ItemUnlockData> GetItemUnlockSaveData()
+    //{
+    //    return itemUnlockData;
+    //}
 
-    public void SetSceneItemSaveData(Dictionary<int, List<SceneItemSaveData>> data)
-    {
-        sceneItemSaveData = data;
-    }
-    public Dictionary<int, List<SceneItemSaveData>> GetSceneItemSaveData()
-    {
-        return sceneItemSaveData;
-    }
+    //public void SetSceneItemSaveData(Dictionary<int, List<SceneItemSaveData>> data)
+    //{
+    //    sceneItemSaveData = data;
+    //}
+    //public Dictionary<int, List<SceneItemSaveData>> GetSceneItemSaveData()
+    //{
+    //    return sceneItemSaveData;
+    //}
 
     //public void SetSceneGoldSaveData(List<SceneGoldSaveData> data)
     //{
@@ -396,72 +397,51 @@ public static class StorageSystem
     /// 改进：处理文件共享冲突问题
     /// </summary>
     /// <returns>是否压缩成功</returns>
-    public static bool CompressPersistentDataToLogZip()
+    public static async Task<bool> CompressPersistentDataToLogZipAsync(IProgress<string> progress = null)
     {
         try
         {
-            // 获取源文件夹路径
             string sourcePath = Application.persistentDataPath + "/../";
-
-            // 验证源路径是否存在
             if (!Directory.Exists(sourcePath))
             {
                 Debug.LogError($"源文件夹不存在: {sourcePath}");
                 return false;
             }
 
-            // 创建临时目录用于处理可能被占用的文件
-            string tempPath = Path.Combine(Path.GetTempPath(), "LogCompressorTemp_" + Guid.NewGuid().ToString());
+            string tempPath = Path.Combine(Path.GetTempPath(), "LogCompressorTemp_" + Guid.NewGuid());
             Directory.CreateDirectory(tempPath);
 
             try
             {
-                // 复制文件到临时目录，跳过无法访问的文件
-                CopyDirectoryWithExceptionHandling(sourcePath, tempPath);
+                // 1. 异步复制文件（耗时操作放到后台）
+                progress?.Report("正在复制文件...");
+                await Task.Run(() => CopyDirectoryWithExceptionHandling(sourcePath, tempPath));
 
-                // 获取应用程序根目录路径(Windows平台)
+                // 2. 异步压缩（耗时操作放到后台）
+                progress?.Report("正在创建压缩包...");
                 string targetDirectory = Path.GetDirectoryName(Application.dataPath);
                 string targetPath = Path.Combine(targetDirectory, "log.zip");
 
-                // 如果已存在同名压缩文件则删除
                 if (File.Exists(targetPath))
                 {
                     File.Delete(targetPath);
-                    Debug.Log("已删除现有log.zip文件");
                 }
 
-                // 从临时目录创建压缩文件
-                ZipFile.CreateFromDirectory(tempPath, targetPath, System.IO.Compression.CompressionLevel.Optimal, true);
+                // 使用Task.Run将同步的压缩方法放到线程池执行
+                await Task.Run(() => ZipFile.CreateFromDirectory(tempPath, targetPath, System.IO.Compression.CompressionLevel.Optimal, true));
 
-                // 验证压缩文件是否创建成功
-                if (File.Exists(targetPath))
-                {
-                    Debug.Log($"压缩成功，文件保存至: {targetPath}");
-
-                    // 打开文件夹并选中文件
-                    OpenFolderAndSelectFile(targetPath);
-
-                    return true;
-                }
-                else
-                {
-                    Debug.LogError("压缩失败，未生成log.zip文件");
-                    return false;
-                }
+                progress?.Report("压缩完成！");
+                // 3. 打开文件夹（此操作较快，可以在主线程执行）
+                OpenFolderAndSelectFile(targetPath);
+                return true;
             }
             finally
             {
                 // 清理临时目录
                 if (Directory.Exists(tempPath))
                 {
-                    try
-                    {
-                        Directory.Delete(tempPath, true);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogWarning($"清理临时文件失败: {ex.Message}");
-                    }
+                    try { Directory.Delete(tempPath, true); }
+                    catch (Exception ex) { Debug.LogWarning($"清理临时文件失败: {ex.Message}"); }
                 }
             }
         }
@@ -493,7 +473,7 @@ public static class StorageSystem
             {
                 // 尝试复制文件，使用FileOptions防止锁定
                 File.Copy(file, destFile, true);
-                Debug.Log($"已复制文件: {fileName}");
+                //Debug.Log($"已复制文件: {fileName}");
             }
             catch (IOException ex) when (ex.Message.Contains("正由另一进程使用") ||
                                         ex.Message.Contains("Sharing violation"))

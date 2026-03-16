@@ -1,5 +1,4 @@
-﻿using System.IO;
-using UnityEngine;
+﻿using UnityEngine;
 
 public static class LogManager
 {
@@ -68,24 +67,12 @@ public static class LogManager
         if (EnableLogs) Debug.Log($"<color=green>{message}</color>");
     }
 
-    public static string PhoneSystemInfo()
+    public static void PhoneSystemInfo()
     {
-        StringBuilder sb = new StringBuilder();
-        
-        System.Diagnostics.Process process = new System.Diagnostics.Process();
-        process.StartInfo.FileName = "cmd.exe";
-        process.StartInfo.Arguments = "/c ver";
-        process.StartInfo.RedirectStandardOutput = true;
-        process.StartInfo.UseShellExecute = false;
-        process.StartInfo.CreateNoWindow = true;
-        process.Start();
-        string str = process.StandardOutput.ReadToEnd();
-        process.WaitForExit();
-
-        sb.AppendLine("*********************************************************************************************************start");
-        sb.AppendLine("By " + SystemInfo.deviceName);
+        Log("********************************************** Start ***********************************************************");
+        Log("By " + SystemInfo.deviceName);
         System.DateTime now = System.DateTime.Now;
-        sb.AppendLine(string.Concat(new object[]
+        Log(string.Concat(new object[]
         {
                 now.Year.ToString(),
                 "年",
@@ -99,34 +86,30 @@ public static class LogManager
                 ":",
                 now.Second.ToString()
         }));
-        sb.AppendLine("操作系统详细版本:  " + str);
-        sb.AppendLine();
-        sb.AppendLine("操作系统:  " + SystemInfo.operatingSystem);
-        sb.AppendLine("系统内存大小:  " + SystemInfo.systemMemorySize.ToString());
-        sb.AppendLine("设备模型:  " + SystemInfo.deviceModel);
-        sb.AppendLine("设备唯一标识符:  " + SystemInfo.deviceUniqueIdentifier);
-        sb.AppendLine("处理器数量:  " + SystemInfo.processorCount.ToString());
-        sb.AppendLine("处理器类型:  " + SystemInfo.processorType);
-        sb.AppendLine("显卡标识符:  " + SystemInfo.graphicsDeviceID.ToString());
-        sb.AppendLine("显卡名称:  " + SystemInfo.graphicsDeviceName);
-        sb.AppendLine("显卡厂商:  " + SystemInfo.graphicsDeviceVendor);
-        sb.AppendLine("显卡驱动版本:  " + SystemInfo.graphicsDeviceVersion);
-        sb.AppendLine("显存大小:  " + SystemInfo.graphicsMemorySize.ToString());
-        sb.AppendLine("显卡着色器级别:  " + SystemInfo.graphicsShaderLevel.ToString());
+        Log("操作系统:  " + SystemInfo.operatingSystem);
+        Log("系统内存大小:  " + SystemInfo.systemMemorySize.ToString());
+        Log("设备模型:  " + SystemInfo.deviceModel);
+        Log("设备唯一标识符:  " + SystemInfo.deviceUniqueIdentifier);
+        Log("处理器数量:  " + SystemInfo.processorCount.ToString());
+        Log("处理器类型:  " + SystemInfo.processorType);
+        Log("显卡标识符:  " + SystemInfo.graphicsDeviceID.ToString());
+        Log("显卡名称:  " + SystemInfo.graphicsDeviceName);
+        Log("显卡厂商:  " + SystemInfo.graphicsDeviceVendor);
+        Log("显卡驱动版本:  " + SystemInfo.graphicsDeviceVersion);
+        Log("显存大小:  " + SystemInfo.graphicsMemorySize.ToString());
+        Log("显卡着色器级别:  " + SystemInfo.graphicsShaderLevel.ToString());
 
-        // 新增：显示器数量和每个显示器的分辨率
-        sb.AppendLine("显示器数量:  " + Display.displays.Length.ToString());
+        //Log($"当前显示器分辨率:  {Screen.currentResolution.width} × {Screen.currentResolution.height}");
+        // 显示器数量和每个显示器的分辨率
+        Log("显示器数量:  " + Display.displays.Length.ToString());
         for (int i = 0; i < Display.displays.Length; i++)
         {
             // 激活当前显示器（确保能获取到正确的分辨率）
-            Display.displays[i].Activate();
-            sb.AppendLine($"显示器 {i + 1} 分辨率:  {Display.displays[i].systemWidth} × {Display.displays[i].systemHeight}");
+            //Display.displays[i].Activate();(这段代码会导致透明效果失效,白屏)
+            Log($"显示器 {i + 1} 分辨率:  {Display.displays[i].systemWidth} × {Display.displays[i].systemHeight}");
         }
 
-        sb.AppendLine("*********************************************************************************************************end");
-        sb.AppendLine("LogInfo:");
-        sb.AppendLine();
+        Log("******************************************** end *************************************************************");
 
-        return sb.ToString();
     }
 }
