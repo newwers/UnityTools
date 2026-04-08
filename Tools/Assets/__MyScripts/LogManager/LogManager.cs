@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Text;
+using UnityEngine;
 
 public static class LogManager
 {
@@ -6,6 +7,13 @@ public static class LogManager
     public static bool EnableLogs { get; set; } = true;      // 控制普通日志
     public static bool EnableWarnings { get; set; } = true;   // 控制警告日志
     public static bool EnableErrors { get; set; } = true;     // 控制错误日志
+
+    // 获取时间前缀 [时时分分秒秒]
+    private static string GetTimePrefix()
+    {
+        System.DateTime now = System.DateTime.Now;
+        return string.Format("[{0:D2}:{1:D2}:{2:D2}]", now.Hour, now.Minute, now.Second);
+    }
 
     // 初始化方法（在游戏启动时自动调用）
     //    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -20,59 +28,61 @@ public static class LogManager
     // 普通日志输出
     public static void Log(object message)
     {
-        if (EnableLogs) Debug.Log(message);
+        if (EnableLogs) Debug.Log($"{GetTimePrefix()} {message}");
     }
 
     public static void Log(object message, Object context)
     {
-        if (EnableLogs) Debug.Log(message, context);
+        if (EnableLogs) Debug.Log($"{GetTimePrefix()} {message}", context);
     }
 
     // 警告日志输出
     public static void LogWarning(object message)
     {
-        if (EnableWarnings) Debug.LogWarning(message);
+        if (EnableWarnings) Debug.LogWarning($"{GetTimePrefix()} {message}");
     }
 
     public static void LogWarning(object message, Object context)
     {
-        if (EnableWarnings) Debug.LogWarning(message, context);
+        if (EnableWarnings) Debug.LogWarning($"{GetTimePrefix()} {message}", context);
     }
 
     // 错误日志输出
     public static void LogError(object message)
     {
-        if (EnableErrors) Debug.LogError(message);
+        if (EnableErrors) Debug.LogError($"{GetTimePrefix()} {message}");
     }
 
     public static void LogError(object message, Object context)
     {
-        if (EnableErrors) Debug.LogError(message, context);
+        if (EnableErrors) Debug.LogError($"{GetTimePrefix()} {message}", context);
     }
 
     // 带标签的日志方法（可选）
     public static void TaggedLog(string tag, object message)
     {
-        if (EnableLogs) Debug.Log($"[{tag}] {message}");
+        if (EnableLogs) Debug.Log($"{GetTimePrefix()} [{tag}] {message}");
     }
 
     //打印红色log
     public static void Log_Red(object message)
     {
-        if (EnableLogs) Debug.Log($"<color=red>{message}</color>");
+        if (EnableLogs) Debug.Log($"<color=red>{GetTimePrefix()} {message}</color>");
     }
     //打印绿色log
     public static void Log_Green(object message)
     {
-        if (EnableLogs) Debug.Log($"<color=green>{message}</color>");
+        if (EnableLogs) Debug.Log($"<color=green>{GetTimePrefix()} {message}</color>");
     }
 
     public static void PhoneSystemInfo()
     {
-        Log("********************************************** Start ***********************************************************");
-        Log("By " + SystemInfo.deviceName);
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine("********************************************** Start ***********************************************************");
+        sb.AppendLine("游戏版本号:" + Application.version);
+        sb.AppendLine("By " + SystemInfo.deviceName);
         System.DateTime now = System.DateTime.Now;
-        Log(string.Concat(new object[]
+        sb.AppendLine(string.Concat(new object[]
         {
                 now.Year.ToString(),
                 "年",
@@ -86,30 +96,31 @@ public static class LogManager
                 ":",
                 now.Second.ToString()
         }));
-        Log("操作系统:  " + SystemInfo.operatingSystem);
-        Log("系统内存大小:  " + SystemInfo.systemMemorySize.ToString());
-        Log("设备模型:  " + SystemInfo.deviceModel);
-        Log("设备唯一标识符:  " + SystemInfo.deviceUniqueIdentifier);
-        Log("处理器数量:  " + SystemInfo.processorCount.ToString());
-        Log("处理器类型:  " + SystemInfo.processorType);
-        Log("显卡标识符:  " + SystemInfo.graphicsDeviceID.ToString());
-        Log("显卡名称:  " + SystemInfo.graphicsDeviceName);
-        Log("显卡厂商:  " + SystemInfo.graphicsDeviceVendor);
-        Log("显卡驱动版本:  " + SystemInfo.graphicsDeviceVersion);
-        Log("显存大小:  " + SystemInfo.graphicsMemorySize.ToString());
-        Log("显卡着色器级别:  " + SystemInfo.graphicsShaderLevel.ToString());
+        sb.AppendLine("操作系统:  " + SystemInfo.operatingSystem);
+        sb.AppendLine("系统内存大小:  " + SystemInfo.systemMemorySize.ToString());
+        sb.AppendLine("设备模型:  " + SystemInfo.deviceModel);
+        sb.AppendLine("设备唯一标识符:  " + SystemInfo.deviceUniqueIdentifier);
+        sb.AppendLine("处理器数量:  " + SystemInfo.processorCount.ToString());
+        sb.AppendLine("处理器类型:  " + SystemInfo.processorType);
+        sb.AppendLine("显卡标识符:  " + SystemInfo.graphicsDeviceID.ToString());
+        sb.AppendLine("显卡名称:  " + SystemInfo.graphicsDeviceName);
+        sb.AppendLine("显卡厂商:  " + SystemInfo.graphicsDeviceVendor);
+        sb.AppendLine("显卡驱动版本:  " + SystemInfo.graphicsDeviceVersion);
+        sb.AppendLine("显存大小:  " + SystemInfo.graphicsMemorySize.ToString());
+        sb.AppendLine("显卡着色器级别:  " + SystemInfo.graphicsShaderLevel.ToString());
 
-        //Log($"当前显示器分辨率:  {Screen.currentResolution.width} × {Screen.currentResolution.height}");
+        //sb.AppendLine($"当前显示器分辨率:  {Screen.currentResolution.width} × {Screen.currentResolution.height}");
         // 显示器数量和每个显示器的分辨率
-        Log("显示器数量:  " + Display.displays.Length.ToString());
+        sb.AppendLine("显示器数量:  " + Display.displays.Length.ToString());
         for (int i = 0; i < Display.displays.Length; i++)
         {
             // 激活当前显示器（确保能获取到正确的分辨率）
             //Display.displays[i].Activate();(这段代码会导致透明效果失效,白屏)
-            Log($"显示器 {i + 1} 分辨率:  {Display.displays[i].systemWidth} × {Display.displays[i].systemHeight}");
+            sb.AppendLine($"显示器 {i + 1} 分辨率:  {Display.displays[i].systemWidth} × {Display.displays[i].systemHeight}");
         }
 
-        Log("******************************************** end *************************************************************");
+        sb.AppendLine("******************************************** end *************************************************************");
 
+        Log(sb.ToString());
     }
 }

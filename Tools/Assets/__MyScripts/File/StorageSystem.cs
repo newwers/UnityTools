@@ -274,15 +274,15 @@ public static class StorageSystem
         return PlayerPrefs.GetString(key, string.Empty);
     }
 
-    public static void SaveIntToPlayerPrefs(int data, string key)
+    public static void SaveIntToPlayerPrefs(string key, int data)
     {
         PlayerPrefs.SetInt(key, data);
         PlayerPrefs.Save();
     }
 
-    public static int LoadIntFromPlayerPrefs(string key)
+    public static int LoadIntFromPlayerPrefs(string key, int defaultValue = 0)
     {
-        return PlayerPrefs.GetInt(key, 0);
+        return PlayerPrefs.GetInt(key, defaultValue);
     }
 
     public static void SaveBoolToPlayerPrefs(bool data, string key)
@@ -420,7 +420,9 @@ public static class StorageSystem
                 // 2. 异步压缩（耗时操作放到后台）
                 progress?.Report("正在创建压缩包...");
                 string targetDirectory = Path.GetDirectoryName(Application.dataPath);
-                string targetPath = Path.Combine(targetDirectory, "log.zip");
+                string version = Application.version;
+                string timestamp = DateTime.Now.ToString("MMddHHmmss");
+                string targetPath = Path.Combine(targetDirectory, $"log_{version}_{timestamp}.zip");
 
                 if (File.Exists(targetPath))
                 {
