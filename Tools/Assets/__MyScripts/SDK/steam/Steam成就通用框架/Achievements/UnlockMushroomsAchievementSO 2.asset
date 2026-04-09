@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c775f2571a12224fa68ff1c3cefceda, type: 3}
+  m_Name: UnlockMushroomsAchievementSO 2
+  m_EditorClassIdentifier: 
+  achievementData:
+    achievementId: Achievement_Unlock_Mushroom_50
+    achievementName: "\u6536\u96C650\u4E2A\u8611\u83C7"
+    description: "\u6536\u96C650\u4E2A\u8611\u83C7"
+    isAchieved: 0
+    associatedVariableName: MushroomNum
+    valueType: 0
+    intValue: 0
+    floatValue: 0
+  requiredNum: 50

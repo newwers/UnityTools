@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8d0b415f9139d740a2575bfb56771ee, type: 3}
+  m_Name: LegendaryMushroomEffectAchievementSO
+  m_EditorClassIdentifier: 
+  achievementData:
+    achievementId: Achievement_Legendary_Mushroom_Effect
+    achievementName: "\u89E6\u53D11\u6B21\u4F20\u8BF4\u7EA7\u8611\u83C7\u7684\u7279\u6548"
+    description: "\u89E6\u53D11\u6B21\u4F20\u8BF4\u7EA7\u8611\u83C7\u7684\u7279\u6548"
+    isAchieved: 0
+    associatedVariableName: 
+    valueType: 0
+    intValue: 0
+    floatValue: 0
+  requiredNum: 1

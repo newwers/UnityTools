@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ef855d71c0e72e4b98048424d68b52d, type: 3}
+  m_Name: WateringCountAchievementSO 2
+  m_EditorClassIdentifier: 
+  achievementData:
+    achievementId: Achievement_Watering_Count_1000
+    achievementName: "\u8FDB\u884C\u4E861000\u6B21\u704C\u6E89"
+    description: "\u8FDB\u884C\u4E861000\u6B21\u704C\u6E89"
+    isAchieved: 0
+    associatedVariableName: WateringCount
+    valueType: 0
+    intValue: 0
+    floatValue: 0
+  requiredNum: 1000

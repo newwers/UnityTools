@@ -8,11 +8,56 @@ namespace SteamSDK
     {
         [SerializeField]
         protected SteamAchievementData achievementData = new SteamAchievementData();
+        public int requiredNum = 0;
 
+
+        //private void OnEnable()
+        //{
+        //    LogManager.Log($"成就: {achievementData.AchievementId}OnEnable");//在游戏启动后会运行
+        //}
         public SteamAchievementData AchievementData
         {
             get { return achievementData; }
             set { achievementData = value; }
+        }
+        /// <summary>
+        /// 获取当前成就的运行时值，子类可以重写此方法以提供特定的逻辑来计算成就条件的当前值，例如当前游戏时间、已完成的任务数量等
+        /// </summary>
+        /// <returns></returns>
+        public virtual float GetRunTimeValue()
+        {
+            return 0;
+        }
+
+        public float GetValue()
+        {
+            if (achievementData.ValueType == ValueType.Int)
+            {
+                return achievementData.IntValue;
+            }
+            else if (achievementData.ValueType == ValueType.Float)
+            {
+                return achievementData.FloatValue;
+            }
+            return 0;
+        }
+
+        public virtual void SetValue(float value)
+        {
+            if (achievementData.ValueType == ValueType.Int)
+            {
+                if (achievementData.IntValue < (int)value)
+                {
+                    achievementData.IntValue = (int)value;
+                }
+            }
+            else if (achievementData.ValueType == ValueType.Float)
+            {
+                if (achievementData.FloatValue < value)
+                {
+                    achievementData.FloatValue = value;
+                }
+            }
         }
 
         /// <summary>
@@ -38,6 +83,11 @@ namespace SteamSDK
         {
             achievementData.IsAchieved = isAchieved;
 
+            if (string.IsNullOrEmpty(achievementData.AssociatedVariableName))
+            {
+                return;
+            }
+
             if (achievementData.ValueType == SteamSDK.ValueType.Int)
             {
                 int value;
@@ -57,6 +107,13 @@ namespace SteamSDK
         /// </summary>
         public virtual void OnStoreStats()
         {
+            SetValue(GetRunTimeValue());
+
+            if (string.IsNullOrEmpty(achievementData.AssociatedVariableName))
+            {
+                return;
+            }
+
             if (achievementData.ValueType == SteamSDK.ValueType.Int)
             {
                 SteamUserStats.SetStat(achievementData.AssociatedVariableName, achievementData.IntValue);

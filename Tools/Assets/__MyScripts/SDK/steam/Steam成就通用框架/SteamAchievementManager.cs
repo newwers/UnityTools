@@ -22,7 +22,7 @@ using UnityEngine;
 
 namespace SteamSDK
 {
-    public class SteamAchievementManager : BaseMonoSingleClass<SteamAchievementManager>
+    public class SteamAchievementManager : MonoSingleton<SteamAchievementManager>
     {
         [Tooltip("统计数据存储的时间间隔（秒）")]
         public float m_statsStoreInterval = 30.0f;
@@ -102,7 +102,7 @@ namespace SteamSDK
 
             // 获取当前玩家昵称
             PlayerName = SteamFriends.GetPersonaName();
-            LogManager.Log($"Steam SDK 初始化成功 (AppID: {SteamUtils.GetAppID()}), 当前用户: {PlayerName}");
+            Debug.Log($"Steam SDK 初始化成功 (AppID: {SteamUtils.GetAppID()}), 当前用户: {PlayerName}");
 
             // 在编辑器中注册播放模式状态变化事件
 #if UNITY_EDITOR
@@ -112,14 +112,14 @@ namespace SteamSDK
             // 获取当前玩家Steam ID
             CSteamID steamId = SteamUser.GetSteamID();
             ulong steamId64 = steamId.m_SteamID;
-            LogManager.Log($"当前玩家Steam ID: {steamId64}");
+            Debug.Log($"当前玩家Steam ID: {steamId64}");
 
             //获取玩家语言
             Language = SteamApps.GetCurrentGameLanguage();
-            LogManager.Log($"当前游戏语言: {Language}");
+            Debug.Log($"当前游戏语言: {Language}");
             //获取玩家steam客户端语言
             Language = SteamUtils.GetSteamUILanguage();
-            LogManager.Log($"当前steam客户端语言: {Language}");
+            Debug.Log($"当前steam客户端语言: {Language}");
         }
 
         private void OnApplicationQuit()
@@ -166,24 +166,24 @@ namespace SteamSDK
             if (!SteamManager.Initialized)
                 return;
 
-            if (!m_bRequestedStats)//请求当前玩家的统计数据
-            {
-                if (!SteamManager.Initialized)
-                {
-                    m_bRequestedStats = true;
-                    return;
-                }
+            // if (!m_bRequestedStats)//请求当前玩家的统计数据
+            // {
+            //     if (!SteamManager.Initialized)
+            //     {
+            //         m_bRequestedStats = true;
+            //         return;
+            //     }
+            //
+            //     // If yes, request our stats
+            //     bool bSuccess = SteamUserStats.RequestCurrentStats();
+            //
+            //     // This function should only return false if we weren't logged in, and we already checked that.
+            //     // But handle it being false again anyway, just ask again later.
+            //     m_bRequestedStats = bSuccess;
+            // }
 
-                // If yes, request our stats
-                bool bSuccess = SteamUserStats.RequestCurrentStats();
-
-                // This function should only return false if we weren't logged in, and we already checked that.
-                // But handle it being false again anyway, just ask again later.
-                m_bRequestedStats = bSuccess;
-            }
-
-            if (!m_bStatsValid)//如果还没有接收到统计数据和成就状态的回调,则不进行成就检查
-                return;
+            // if (!m_bStatsValid)//如果还没有接收到统计数据和成就状态的回调,则不进行成就检查
+            //     return;
 
             // 定期检查所有成就SO的条件
             m_timeSinceLastAchievementCheck += Time.deltaTime;
@@ -224,11 +224,11 @@ namespace SteamSDK
         {
             if (pCallback.m_bActive != 0)
             {
-                LogManager.Log("Steam Overlay 被激活");
+                Debug.Log("Steam Overlay 被激活");
             }
             else
             {
-                LogManager.Log("Steam Overlay 已关闭");
+                Debug.Log("Steam Overlay 已关闭");
             }
         }
 
@@ -236,11 +236,11 @@ namespace SteamSDK
         {
             if (pCallback.m_bSuccess != 1 || bIOFailure)
             {
-                LogManager.Log(" 获取不到玩家数量!");
+                Debug.Log(" 获取不到玩家数量!");
             }
             else
             {
-                LogManager.Log("当前游戏玩家数量: " + pCallback.m_cPlayers);
+                Debug.Log("当前游戏玩家数量: " + pCallback.m_cPlayers);
             }
         }
         /// <summary>
@@ -254,7 +254,7 @@ namespace SteamSDK
             if (pCallback.m_eResult != EResult.k_EResultOK)
                 return;
 
-            LogManager.Log("Received stats and achievements from Steam");
+            Debug.Log("Received stats and achievements from Steam");
 
             m_bStatsValid = true;
 
@@ -280,11 +280,11 @@ namespace SteamSDK
 
             if (pCallback.m_eResult == EResult.k_EResultOK)
             {
-                LogManager.Log("Successfully stored stats and achievements");
+                Debug.Log("Successfully stored stats and achievements");
             }
             else
             {
-                LogManager.LogError($"Failed to store stats and achievements: {pCallback.m_eResult}");
+                Debug.LogError($"Failed to store stats and achievements: {pCallback.m_eResult}");
             }
         }
 
@@ -298,11 +298,11 @@ namespace SteamSDK
             {
                 if (0 == pCallback.m_nMaxProgress)
                 {
-                    LogManager.Log("Achievement '" + pCallback.m_rgchAchievementName + "' unlocked!");
+                    Debug.Log("Achievement '" + pCallback.m_rgchAchievementName + "' unlocked!");
                 }
                 else
                 {
-                    LogManager.Log("Achievement '" + pCallback.m_rgchAchievementName + "' progress callback, (" + pCallback.m_nCurProgress + "," + pCallback.m_nMaxProgress + ")");
+                    Debug.Log("Achievement '" + pCallback.m_rgchAchievementName + "' progress callback, (" + pCallback.m_nCurProgress + "," + pCallback.m_nMaxProgress + ")");
                 }
             }
         }
@@ -314,7 +314,7 @@ namespace SteamSDK
         {
             SteamAPICall_t handle = SteamUserStats.GetNumberOfCurrentPlayers();
             m_NumberOfCurrentPlayers.Set(handle);
-            LogManager.Log("调用获取在线玩家数量函数");
+            Debug.Log("调用获取在线玩家数量函数");
         }
 
         /// <summary>
@@ -327,11 +327,11 @@ namespace SteamSDK
 
             if (SteamUserStats.StoreStats())
             {
-                LogManager.Log("Stats stored successfully");
+                Debug.Log("Stats stored successfully");
             }
             else
             {
-                LogManager.LogError("Failed to store stats");
+                Debug.LogError("Failed to store stats");
             }
         }
 
@@ -353,7 +353,7 @@ namespace SteamSDK
             // 存储统计数据
             m_bStoreStats = true;
 
-            LogManager.Log($"解锁成就: {achievementId}");
+            Debug.Log($"解锁成就: {achievementId}");
         }
 
         /// <summary>
@@ -374,7 +374,7 @@ namespace SteamSDK
             // 存储统计数据
             m_bStoreStats = true;
 
-            LogManager.Log($"重置成就: {achievementId}");
+            Debug.Log($"重置成就: {achievementId}");
         }
 
         public void ResetAllAchievement()
@@ -382,7 +382,7 @@ namespace SteamSDK
             if (!SteamManager.Initialized) return;
 
             SteamUserStats.ResetAllStats(true);//true表示同时重置统计数据和成就,false表示只重置统计数据
-            LogManager.Log("重置所有统计数据和成就");
+            Debug.Log("重置所有统计数据和成就");
 
             // 更新配置文件中的所有成就状态
             foreach (var achievementSO in achievementSOs)
@@ -441,7 +441,7 @@ namespace SteamSDK
         {
             foreach (var achievementSO in achievementSOs)
             {
-                if (achievementSO.AchievementData.AchievementId == achievementId)
+                if (achievementSO.AchievementData.AchievementId.Contains(achievementId))
                 {
                     achievementSO.OnCheck();
                     break;
@@ -463,13 +463,13 @@ namespace SteamSDK
         {
             if (!SteamManager.Initialized)
             {
-                LogManager.LogError("Steam未初始化，请确保Steam客户端正在运行");
+                Debug.LogError("Steam未初始化，请确保Steam客户端正在运行");
                 return;
             }
 
             if (!SteamUser.BLoggedOn())
             {
-                LogManager.LogError("请先登录Steam账户");
+                Debug.LogError("请先登录Steam账户");
                 return;
             }
 

@@ -86,10 +86,25 @@ public class SteamAchievementEditorWindow : EditorWindow
                 isEditing = true;
             }
 
-            EditorGUILayout.LabelField(achievement.AchievementId, EditorStyles.boldLabel, GUILayout.Width(150));
-            EditorGUILayout.LabelField(achievement.AchievementName, GUILayout.Width(150));
-            EditorGUILayout.LabelField(achievement.AssociatedVariableName, GUILayout.Width(150));
-            EditorGUILayout.LabelField(achievement.IsAchieved ? "Achieved" : "Not Achieved", GUILayout.Width(100));
+            EditorGUILayout.LabelField(achievement.AchievementId, EditorStyles.boldLabel, GUILayout.MinWidth(50));
+            EditorGUILayout.LabelField(achievement.AchievementName, GUILayout.MinWidth(50));
+            if (Application.isPlaying)
+            {
+                EditorGUILayout.LabelField($"{achievementSO.GetRunTimeValue()}/{achievementSO.requiredNum}", GUILayout.MinWidth(50));
+            }
+            else
+            {
+                EditorGUILayout.LabelField($"0/{achievementSO.requiredNum}", GUILayout.MinWidth(50));
+            }
+            EditorGUILayout.LabelField(achievement.AssociatedVariableName, GUILayout.MinWidth(50));
+            EditorGUILayout.LabelField(achievement.IsAchieved ? "Achieved" : "Not Achieved", GUILayout.MinWidth(30));
+
+            if (GUILayout.Button("Select", GUILayout.Width(50)))
+            {
+                //选择成就SO资产
+                Selection.activeObject = achievementSO;
+
+            }
 
             if (GUILayout.Button("Edit", GUILayout.Width(50)))
             {
@@ -115,7 +130,7 @@ public class SteamAchievementEditorWindow : EditorWindow
                     AssetDatabase.SaveAssets();
                 }
             }
-            
+
             if (GUILayout.Button("Reset", GUILayout.Width(50)))
             {
                 if (EditorUtility.DisplayDialog("Reset Achievement", "Are you sure you want to reset this achievement?", "Yes", "No"))
@@ -128,7 +143,7 @@ public class SteamAchievementEditorWindow : EditorWindow
                     AssetDatabase.SaveAssets();
                 }
             }
-            
+
             if (GUILayout.Button("Delete", GUILayout.Width(50)))
             {
                 if (EditorUtility.DisplayDialog("Delete Achievement", "Are you sure you want to delete this achievement?", "Yes", "No"))

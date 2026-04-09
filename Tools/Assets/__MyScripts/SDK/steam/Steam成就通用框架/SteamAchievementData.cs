@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 namespace SteamSDK
@@ -19,21 +19,26 @@ namespace SteamSDK
         /// 成就ID，必须唯一，通常与Steamworks中定义的成就ID一致
         /// </summary>
         [SerializeField]
+        [Tooltip("成就ID，必须唯一，通常与Steamworks中定义的成就ID一致 ,类似 ACH_TRAVEL_FAR_SINGLE 这种格式")]
         private string achievementId;
 
         [SerializeField]
+        [Tooltip("成就名称")]
         private string achievementName;
 
         [SerializeField]
+        [Tooltip("成就描述")]
         private string description;
 
         [SerializeField]
+        [Tooltip("成就是否已达成")]
         private bool isAchieved;
 
         /// <summary>
         /// 成就关联的变量名称，用于在游戏中跟踪成就状态，必须与Steamworks中定义的统计变量名称一致
         /// </summary>
         [SerializeField]
+        [Tooltip("成就关联的变量名称，用于在游戏中跟踪成就状态，必须与Steamworks中定义的统计变量名称一致")]
         private string associatedVariableName;
 
         /// <summary>
