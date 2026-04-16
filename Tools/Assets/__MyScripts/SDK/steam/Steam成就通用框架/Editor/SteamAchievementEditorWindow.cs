@@ -168,10 +168,38 @@ public class SteamAchievementEditorWindow : EditorWindow
         EditorGUILayout.LabelField(isEditing ? "Edit Achievement" : "Add New Achievement", EditorStyles.boldLabel);
         EditorGUILayout.Space(5);
 
+        EditorGUILayout.BeginHorizontal();
         tempAchievement.AchievementId = EditorGUILayout.TextField("Achievement ID", tempAchievement.AchievementId);
+        if (GUILayout.Button("Copy", GUILayout.Width(100)))
+        {
+            //复制AchievementId到剪切板
+            EditorGUIUtility.systemCopyBuffer = tempAchievement.AchievementId;
+        }
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.BeginHorizontal();
         tempAchievement.AchievementName = EditorGUILayout.TextField("Achievement Name", tempAchievement.AchievementName);
+        if (GUILayout.Button("Copy", GUILayout.Width(100)))
+        {
+            //复制Achievement Name到剪切板
+            EditorGUIUtility.systemCopyBuffer = tempAchievement.AchievementName;
+        }
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.BeginHorizontal();
         tempAchievement.Description = EditorGUILayout.TextArea(tempAchievement.Description, GUILayout.Height(60));
+        if (GUILayout.Button("Copy", GUILayout.Width(100)))
+        {
+            //复制Achievement Description到剪切板
+            EditorGUIUtility.systemCopyBuffer = tempAchievement.Description;
+        }
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.BeginHorizontal();
         tempAchievement.AssociatedVariableName = EditorGUILayout.TextField("Associated Variable Name", tempAchievement.AssociatedVariableName);
+        if (GUILayout.Button("Copy", GUILayout.Width(100)))
+        {
+            //复制Achievement AssociatedVariableName
+            EditorGUIUtility.systemCopyBuffer = tempAchievement.AssociatedVariableName;
+        }
+        EditorGUILayout.EndHorizontal();
         tempAchievement.IsAchieved = EditorGUILayout.Toggle("Is Achieved", tempAchievement.IsAchieved);
 
         EditorGUILayout.Space(10);

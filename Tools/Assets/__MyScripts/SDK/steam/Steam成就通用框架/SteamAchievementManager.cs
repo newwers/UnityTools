@@ -444,7 +444,6 @@ namespace SteamSDK
                 if (achievementSO.AchievementData.AchievementId.Contains(achievementId))
                 {
                     achievementSO.OnCheck();
-                    break;
                 }
             }
         }
