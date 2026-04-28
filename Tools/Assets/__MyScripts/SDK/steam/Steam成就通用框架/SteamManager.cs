@@ -357,6 +357,22 @@ public class SteamManager : MonoBehaviour
             bitmap.UnlockBits(bmpData);
         }
     }
+
+        /// <summary>
+    /// steam判断是否购买dlc
+    /// </summary>
+    /// <param name="dlcId"></param>
+    /// <returns></returns>
+    public static bool IsDLCInstalled(ulong dlcId)
+    {
+        if (!SteamManager.Initialized)
+        {
+            return false;
+        }
+
+        return SteamApps.BIsDlcInstalled((AppId_t)dlcId);
+    }
+    
 #else
 	public static bool Initialized {
 		get {
