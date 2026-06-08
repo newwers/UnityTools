@@ -1,4 +1,4 @@
-﻿using SteamSDK;
+using SteamSDK;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -58,6 +58,20 @@ public class SteamAchievementEditorWindow : EditorWindow
             return;
         }
 
+        int achievedCount = achievementSOs.FindAll(so => so != null && so.AchievementData.IsAchieved).Count;
+        float progress = achievementSOs.Count > 0 ? (float)achievedCount / achievementSOs.Count * 100f : 0f;
+
+        EditorGUILayout.BeginVertical("box");
+        EditorGUILayout.LabelField("Achievement Statistics", EditorStyles.boldLabel);
+        EditorGUILayout.Space(5);
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField($"Total Achievements: {achievementSOs.Count}", GUILayout.MinWidth(150));
+        EditorGUILayout.LabelField($"Achieved: {achievedCount}", GUILayout.MinWidth(100));
+        EditorGUILayout.LabelField($"Progress: {progress:F1}%", GUILayout.MinWidth(100));
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.EndVertical();
+        EditorGUILayout.Space(10);
+
         // Achievement List
         EditorGUILayout.BeginVertical("box");
         EditorGUILayout.LabelField("Achievements", EditorStyles.boldLabel);
@@ -72,7 +86,13 @@ public class SteamAchievementEditorWindow : EditorWindow
                 continue;
 
             var achievement = achievementSO.AchievementData;
+            
+            if (achievement.IsAchieved)
+            {
+                GUI.backgroundColor = new Color(0.7f, 0.9f, 0.7f);
+            }
             EditorGUILayout.BeginHorizontal("box");
+            GUI.backgroundColor = Color.white;
 
             if (GUILayout.Toggle(selectedIndex == i, "", GUILayout.Width(20)))
             {
@@ -265,6 +285,9 @@ public class SteamAchievementEditorWindow : EditorWindow
                 achievementSOs.Add(achievementSO);
             }
         }
+
+        //按成就api ID排序   
+        achievementSOs.Sort((a, b) => string.Compare(a.AchievementData.AchievementId, b.AchievementData.AchievementId, StringComparison.Ordinal));
     }
 
     void CreateNewAchievementSO()
@@ -403,5 +426,6 @@ public class SteamAchievementEditorWindow : EditorWindow
         }
         AssetDatabase.SaveAssets();
         EditorUtility.DisplayDialog("Reset Success", "All achievements have been reset", "OK");
+        EditorApplication.isPlaying = false;
     }
 }

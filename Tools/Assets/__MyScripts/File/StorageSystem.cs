@@ -564,12 +564,50 @@ public static class StorageSystem
             // 清理旧备份
             CleanupOldBackups(backupDir);
 
+            // 将整个备份文件夹复制到项目根目录
+            string projectRootDir = Path.GetDirectoryName(Application.dataPath);
+            string projectRootBackupDir = Path.Combine(projectRootDir, BACKUP_FOLDER_NAME);
+            CopyDirectory(backupDir, projectRootBackupDir, true);
+            Debug.Log($"已将备份文件夹复制到项目根目录: {projectRootBackupDir}");
+
+
             return true;
         }
         catch (Exception e)
         {
             Debug.LogError($"备份文件时发生错误: {e.Message}");
             return false;
+        }
+    }
+
+    /// <summary>
+    /// 复制整个目录到目标位置
+    /// </summary>
+    /// <param name="sourceDir">源目录路径</param>
+    /// <param name="targetDir">目标目录路径</param>
+    /// <param name="overwrite">是否覆盖现有文件</param>
+    private static void CopyDirectory(string sourceDir, string targetDir, bool overwrite)
+    {
+        if (!Directory.Exists(sourceDir))
+            return;
+
+        if (!Directory.Exists(targetDir))
+        {
+            Directory.CreateDirectory(targetDir);
+        }
+
+        foreach (string file in Directory.GetFiles(sourceDir))
+        {
+            string fileName = Path.GetFileName(file);
+            string targetFilePath = Path.Combine(targetDir, fileName);
+            File.Copy(file, targetFilePath, overwrite);
+        }
+
+        foreach (string subDir in Directory.GetDirectories(sourceDir))
+        {
+            string subDirName = Path.GetFileName(subDir);
+            string targetSubDir = Path.Combine(targetDir, subDirName);
+            CopyDirectory(subDir, targetSubDir, overwrite);
         }
     }
 
