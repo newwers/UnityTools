@@ -1,4 +1,4 @@
-﻿using Steamworks;
+using Steamworks;
 using UnityEngine;
 
 namespace SteamSDK
@@ -130,6 +130,7 @@ namespace SteamSDK
         public virtual void OnTriggerAchievement()
         {
             achievementData.IsAchieved = true;
+            LogManager.Log_Green($"成就达成: {achievementData.AchievementId}");
             OnStoreStats();
             SteamUserStats.SetAchievement(achievementData.AchievementId);//通知steam 成就达成
         }
@@ -137,6 +138,11 @@ namespace SteamSDK
         internal void OnResetAchievement()
         {
             achievementData.IsAchieved = false;
+            OnReset();
+        }
+
+        public virtual void OnReset()
+        {
         }
     }
 }

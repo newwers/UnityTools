@@ -39,7 +39,7 @@ namespace TopGame.Core
             //}
         }
         //------------------------------------------------------
-        private void OnLanguageChangeCallback(LocalizationManager.ELanguageType languageType)
+        private void OnLanguageChangeCallback(Z.Core.Localization.LocalizationManager.ELanguageType languageType)
         {
             if (m_image == null || gameObject.activeInHierarchy == false)
             {

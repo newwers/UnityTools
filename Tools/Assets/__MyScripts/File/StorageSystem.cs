@@ -296,6 +296,12 @@ public static class StorageSystem
         return PlayerPrefs.GetInt(key, 0) == 1;
     }
 
+    public static void DeleteKeyFromPlayerPrefs(string key)
+    {
+        PlayerPrefs.DeleteKey(key);
+        PlayerPrefs.Save();
+    }
+
     public static string ObjectToJson(object obj)
     {
         return JsonUtility.ToJson(obj);

@@ -22,7 +22,7 @@ using UnityEngine;
 
 namespace SteamSDK
 {
-    public class SteamAchievementManager : MonoSingleton<SteamAchievementManager>
+    public class SteamAchievementManager :  BaseMonoSingleClass<SteamAchievementManager>
     {
         [Tooltip("统计数据存储的时间间隔（秒）")]
         public float m_statsStoreInterval = 30.0f;

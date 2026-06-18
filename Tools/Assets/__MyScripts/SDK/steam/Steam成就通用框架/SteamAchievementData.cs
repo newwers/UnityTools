@@ -143,15 +143,6 @@ namespace SteamSDK
                 throw new ArgumentException("Achievement ID cannot be empty");
             }
 
-            if (string.IsNullOrEmpty(achievementName))
-            {
-                throw new ArgumentException("Achievement name cannot be empty");
-            }
-
-            if (string.IsNullOrEmpty(associatedVariableName))
-            {
-                throw new ArgumentException("Associated variable name cannot be empty");
-            }
         }
 
         public override string ToString()

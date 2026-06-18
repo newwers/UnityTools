@@ -425,7 +425,8 @@ public class SteamAchievementEditorWindow : EditorWindow
             }
         }
         AssetDatabase.SaveAssets();
-        EditorUtility.DisplayDialog("Reset Success", "All achievements have been reset", "OK");
         EditorApplication.isPlaying = false;
+        EditorUtility.DisplayDialog("Reset Success", "All achievements have been reset", "OK");
+        
     }
 }
