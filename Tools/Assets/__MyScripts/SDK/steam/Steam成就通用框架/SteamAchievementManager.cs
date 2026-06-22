@@ -120,17 +120,20 @@ namespace SteamSDK
             //获取玩家steam客户端语言
             Language = SteamUtils.GetSteamUILanguage();
             Debug.Log($"当前steam客户端语言: {Language}");
+            
+            SteamUserStats.RequestUserStats(steamId);
         }
 
-        private void OnApplicationQuit()
+        protected override void OnApplicationQuit()
         {
+            base.OnApplicationQuit();
             // 关闭Steam
             if (SteamManager.Initialized)
             {
                 SteamAPI.Shutdown();
             }
         }
-
+        
         // 在编辑器中处理播放模式状态变化的事件
 #if UNITY_EDITOR
         private void OnPlayModeStateChanged(UnityEditor.PlayModeStateChange state)
@@ -166,24 +169,7 @@ namespace SteamSDK
             if (!SteamManager.Initialized)
                 return;
 
-            // if (!m_bRequestedStats)//请求当前玩家的统计数据
-            // {
-            //     if (!SteamManager.Initialized)
-            //     {
-            //         m_bRequestedStats = true;
-            //         return;
-            //     }
-            //
-            //     // If yes, request our stats
-            //     bool bSuccess = SteamUserStats.RequestCurrentStats();
-            //
-            //     // This function should only return false if we weren't logged in, and we already checked that.
-            //     // But handle it being false again anyway, just ask again later.
-            //     m_bRequestedStats = bSuccess;
-            // }
-
-            // if (!m_bStatsValid)//如果还没有接收到统计数据和成就状态的回调,则不进行成就检查
-            //     return;
+            SteamAPI.RunCallbacks();
 
             // 定期检查所有成就SO的条件
             m_timeSinceLastAchievementCheck += Time.deltaTime;
