@@ -28,7 +28,11 @@ namespace SteamSDK
         {
             return 0;
         }
-
+        /// <summary>
+        /// 获取当前成就so中的值，根据成就数据的值类型（整数或浮点数）返回相应的值
+        /// (GetRunTimeValue里面值是最新的,后面steam同步的时候会跟新到成就so value中)
+        /// </summary>
+        /// <returns></returns>
         public float GetValue()
         {
             if (achievementData.ValueType == ValueType.Int)
@@ -50,12 +54,20 @@ namespace SteamSDK
                 {
                     achievementData.IntValue = (int)value;
                 }
+                else if (achievementData.IntValue > (int)value)
+                {
+                    LogManager.LogWarning($"尝试设置成就值为 {value}，但当前值 {achievementData.IntValue} 已经更高，保持当前值不变!!!");
+                }
             }
             else if (achievementData.ValueType == ValueType.Float)
             {
                 if (achievementData.FloatValue < value)
                 {
                     achievementData.FloatValue = value;
+                }
+                else if (achievementData.FloatValue > value)
+                {
+                    LogManager.LogWarning($"尝试设置成就值为 {value}，但当前值 {achievementData.FloatValue} 已经更高，保持当前值不变!!!");
                 }
             }
         }
@@ -82,7 +94,7 @@ namespace SteamSDK
         public virtual void OnUserStatsReceived(bool isAchieved)
         {
             achievementData.IsAchieved = isAchieved;
-
+            LogManager.Log_Green($"成就数据接收: {achievementData.AchievementId}, 是否达成: {isAchieved}");
             if (string.IsNullOrEmpty(achievementData.AssociatedVariableName))
             {
                 return;
@@ -107,7 +119,7 @@ namespace SteamSDK
         /// </summary>
         public virtual void OnStoreStats()
         {
-            SetValue(GetRunTimeValue());
+            SetValue(GetRunTimeValue());//将当前运行时值设置为成就数据的值，以便在存储统计数据时使用
 
             if (string.IsNullOrEmpty(achievementData.AssociatedVariableName))
             {
@@ -130,7 +142,7 @@ namespace SteamSDK
         public virtual void OnTriggerAchievement()
         {
             achievementData.IsAchieved = true;
-            LogManager.Log_Green($"成就达成: {achievementData.AchievementId}");
+            //LogManager.Log_Green($"成就达成: {achievementData.AchievementId}");
             OnStoreStats();
             SteamUserStats.SetAchievement(achievementData.AchievementId);//通知steam 成就达成
         }

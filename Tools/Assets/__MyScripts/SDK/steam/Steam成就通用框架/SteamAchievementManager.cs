@@ -149,8 +149,12 @@ namespace SteamSDK
                         achievementSO.AchievementData.IntValue = 0;
                         achievementSO.AchievementData.FloatValue = 0.0f;
                         achievementSO.AchievementData.IsAchieved = false;
+                        // 标记为已修改
+                        UnityEditor.EditorUtility.SetDirty(achievementSO);
                     }
                 }
+                // 保存资源
+                UnityEditor.AssetDatabase.SaveAssets();
             }
         }
 #endif

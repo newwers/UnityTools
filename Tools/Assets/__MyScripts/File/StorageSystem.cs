@@ -285,6 +285,17 @@ public static class StorageSystem
         return PlayerPrefs.GetInt(key, defaultValue);
     }
 
+    public static void SaveFloatToPlayerPrefs(string key, float data)
+    {
+        PlayerPrefs.SetFloat(key, data);
+        PlayerPrefs.Save();
+    }
+
+    public static float LoadFloatFromPlayerPrefs(string key, float defaultValue = 0)
+    {
+        return PlayerPrefs.GetFloat(key, defaultValue);
+    }
+
     public static void SaveBoolToPlayerPrefs(bool data, string key)
     {
         PlayerPrefs.SetInt(key, data ? 1 : 0);
