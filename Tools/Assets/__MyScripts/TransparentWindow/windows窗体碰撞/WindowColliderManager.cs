@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 枚举桌面上可见的顶层窗口，在窗口矩形范围创建对应大小的 BoxCollider2D 作为地板，
+/// 枚举桌面上可见的顶层窗口，在窗口顶部/底部创建实体 BoxCollider2D 作为地板，
+/// 左右两侧创建触发器 BoxCollider2D（厚度参数可调），
 /// 定时轮询同步窗口的移动、关闭、新开。
 /// </summary>
 public class WindowColliderManager : BaseMonoSingleClass<WindowColliderManager>
@@ -30,8 +31,12 @@ public class WindowColliderManager : BaseMonoSingleClass<WindowColliderManager>
     [Header("碰撞器设置")]
     [Tooltip("窗口碰撞器所在层级名称（需与动物碰撞矩阵放行）")]
     public string colliderLayerName = "Ground";
+    [Tooltip("边条碰撞器厚度（世界单位）：顶/底碰撞器的高度与左右触发器的宽度共用此参数")]
+    public float edgeThickness = 0.3f;
+    [Tooltip("平台效果器只对该层生效（动物可站上窗口边缘并从下方穿过）")]
+    public string animalLayerName = "Animal";
 
-    private readonly Dictionary<IntPtr, GameObject> activeColliders = new Dictionary<IntPtr, GameObject>();
+    private readonly Dictionary<IntPtr, WindowColliderParts> activeColliders = new Dictionary<IntPtr, WindowColliderParts>();
     private float pollTimer;
     private int lastWindowCount = -1;
     private int colliderLayer = -1;
@@ -161,7 +166,7 @@ public class WindowColliderManager : BaseMonoSingleClass<WindowColliderManager>
 
         // 移除已消失或不再符合条件的窗口碰撞器
         List<IntPtr> removedHandles = null;
-        foreach (KeyValuePair<IntPtr, GameObject> kvp in activeColliders)
+        foreach (KeyValuePair<IntPtr, WindowColliderParts> kvp in activeColliders)
         {
             bool keep = false;
             for (int i = 0; i < windows.Count; i++)
@@ -181,9 +186,9 @@ public class WindowColliderManager : BaseMonoSingleClass<WindowColliderManager>
         {
             foreach (IntPtr hwnd in removedHandles)
             {
-                if (activeColliders[hwnd] != null)
+                if (activeColliders[hwnd] != null && activeColliders[hwnd].gameObject != null)
                 {
-                    Destroy(activeColliders[hwnd]);
+                    Destroy(activeColliders[hwnd].gameObject);
                 }
                 activeColliders.Remove(hwnd);
             }
@@ -195,21 +200,21 @@ public class WindowColliderManager : BaseMonoSingleClass<WindowColliderManager>
             WindowInfo window = windows[i];
             if (!IsWindowAllowed(window)) continue;
 
-            if (activeColliders.TryGetValue(window.hWnd, out GameObject colliderObj))
+            if (activeColliders.TryGetValue(window.hWnd, out WindowColliderParts parts))
             {
-                if (colliderObj == null)
+                if (parts == null || parts.gameObject == null)
                 {
-                    colliderObj = CreateColliderObject(window);
-                    activeColliders[window.hWnd] = colliderObj;
+                    parts = CreateColliderParts(window);
+                    activeColliders[window.hWnd] = parts;
                 }
             }
             else
             {
-                colliderObj = CreateColliderObject(window);
-                activeColliders[window.hWnd] = colliderObj;
+                parts = CreateColliderParts(window);
+                activeColliders[window.hWnd] = parts;
             }
 
-            UpdateCollider(colliderObj, window);
+            UpdateCollider(parts, window);
         }
     }
 
@@ -223,7 +228,19 @@ public class WindowColliderManager : BaseMonoSingleClass<WindowColliderManager>
         return true;
     }
 
-    private GameObject CreateColliderObject(WindowInfo window)
+    /// <summary>
+    /// 单个窗口的碰撞器组：顶/底实体碰撞器（带平台效果器）+ 左右触发器
+    /// </summary>
+    private class WindowColliderParts
+    {
+        public GameObject gameObject;
+        public BoxCollider2D top;
+        public BoxCollider2D bottom;
+        public BoxCollider2D leftTrigger;
+        public BoxCollider2D rightTrigger;
+    }
+
+    private WindowColliderParts CreateColliderParts(WindowInfo window)
     {
         string objectName = string.IsNullOrEmpty(window.title)
             ? $"WindowCollider_{window.hWnd}"
@@ -231,25 +248,74 @@ public class WindowColliderManager : BaseMonoSingleClass<WindowColliderManager>
         GameObject colliderObj = new GameObject(objectName);
         colliderObj.layer = colliderLayer;
         colliderObj.transform.SetParent(colliderRoot, false);
-        colliderObj.AddComponent<BoxCollider2D>();
-        return colliderObj;
+
+        WindowColliderParts parts = new WindowColliderParts
+        {
+            gameObject = colliderObj,
+            top = CreateChildCollider(colliderObj, "Top", isTrigger: false, useByEffect: true),
+            bottom = CreateChildCollider(colliderObj, "Bottom", isTrigger: false, useByEffect: true),
+            leftTrigger = CreateChildCollider(colliderObj, "Left", isTrigger: true, useByEffect: false),
+            rightTrigger = CreateChildCollider(colliderObj, "Right", isTrigger: true, useByEffect: false)
+        };
+        return parts;
     }
 
-    private void UpdateCollider(GameObject colliderObj, WindowInfo window)
+    /// <summary>
+    /// 创建单个边条子物体（子物体位置固定在原点，用 collider.offset 表达世界坐标）
+    /// </summary>
+    private BoxCollider2D CreateChildCollider(GameObject parent, string childName, bool isTrigger, bool useByEffect)
     {
+        GameObject child = new GameObject(childName);
+        child.layer = colliderLayer;
+        child.transform.SetParent(parent.transform, false);
+
+        BoxCollider2D box = child.AddComponent<BoxCollider2D>();
+        box.isTrigger = isTrigger;
+        box.usedByEffector = useByEffect;
+
+        if (!isTrigger)
+        {
+            // 平台效果器：仅对 Animal 层生效，动物可站上表面、从下方穿过
+            int animalLayer = LayerMask.NameToLayer(animalLayerName);
+            if (animalLayer >= 0)
+            {
+                PlatformEffector2D effector = child.AddComponent<PlatformEffector2D>();
+                effector.colliderMask = 1 << animalLayer;
+                effector.surfaceArc = 135f;
+            }
+            else
+            {
+                LogManager.LogError($"[WindowColliderManager] 找不到层级 {animalLayerName}，PlatformEffector2D 未生效");
+            }
+        }
+        return box;
+    }
+
+    private void UpdateCollider(WindowColliderParts parts, WindowInfo window)
+    {
+        if (parts.gameObject == null) return;
+
         Rect worldRect = ScreenRectToWorldRect(window.screenRect);
 
-        BoxCollider2D box = colliderObj.GetComponent<BoxCollider2D>();
-        if (box == null) return;
+        // GameObject 固定在原点，用 offset 表达世界坐标
+        float thickness = Mathf.Max(0.01f, edgeThickness);
+        float centerX = worldRect.center.x;
+        float centerY = worldRect.center.y;
+        float width = worldRect.width;
+        float height = worldRect.height;
 
-        // GameObject 固定在原点，用 offset 表达世界中心
-        Vector2 center = worldRect.center;
-        Vector2 size = worldRect.size;
-        if (size.x < 0.01f) size.x = 0.01f;
-        if (size.y < 0.01f) size.y = 0.01f;
-
-        box.offset = center;
-        box.size = size;
+        // 顶部（实体地板）：贴窗口顶边向内延伸
+        parts.top.offset = new Vector2(centerX, worldRect.yMax - thickness * 0.5f);
+        parts.top.size = new Vector2(width, thickness);
+        // 底部（实体地板）：贴窗口底边向内延伸
+        parts.bottom.offset = new Vector2(centerX, worldRect.yMin + thickness * 0.5f);
+        parts.bottom.size = new Vector2(width, thickness);
+        // 左侧（触发器）：贴窗口左边向内延伸
+        parts.leftTrigger.offset = new Vector2(worldRect.xMin + thickness * 0.5f, centerY);
+        parts.leftTrigger.size = new Vector2(thickness, height);
+        // 右侧（触发器）：贴窗口右边向内延伸
+        parts.rightTrigger.offset = new Vector2(worldRect.xMax - thickness * 0.5f, centerY);
+        parts.rightTrigger.size = new Vector2(thickness, height);
     }
 
     /// <summary>
@@ -286,11 +352,11 @@ public class WindowColliderManager : BaseMonoSingleClass<WindowColliderManager>
 
     private void ClearAllColliders()
     {
-        foreach (KeyValuePair<IntPtr, GameObject> kvp in activeColliders)
+        foreach (KeyValuePair<IntPtr, WindowColliderParts> kvp in activeColliders)
         {
-            if (kvp.Value != null)
+            if (kvp.Value != null && kvp.Value.gameObject != null)
             {
-                Destroy(kvp.Value);
+                Destroy(kvp.Value.gameObject);
             }
         }
         activeColliders.Clear();
